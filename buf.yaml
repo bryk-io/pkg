@@ -1,0 +1,26 @@
+version: v1beta1
+build:
+  roots:
+    - proto
+breaking:
+  use:
+    - FILE
+lint:
+  service_suffix: API
+  enum_zero_value_suffix: _INVALID
+  rpc_allow_google_protobuf_empty_requests: true
+  rpc_allow_google_protobuf_empty_responses: true
+  allow_comment_ignores: true
+  ignore:
+    - third_party
+  use:
+    - DEFAULT
+    - COMMENTS
+  except:
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - RPC_RESPONSE_STANDARD_NAME
+  ignore_only:
+    ENUM_ZERO_VALUE_SUFFIX:
+      - raft/v1/model.proto
+    RPC_REQUEST_STANDARD_NAME:
+      - raft/v1/raft_api.proto

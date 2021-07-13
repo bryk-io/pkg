@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package sample.v1;
+
+option go_package = "sample/v1;samplev1";
+option java_multiple_files = true;
+option java_outer_classname = "BarApiProto";
+option java_package = "io.bryk.pkg.sample.v1";
+option optimize_for = SPEED;
+option php_namespace = "Bryk\\Pkg\\Sample\\V1";
+option ruby_package = "bryk.pkg.sample.v1";
+
+// Common types
+import "google/protobuf/empty.proto";
+
+// Local dependencies
+import "sample/v1/model.proto";
+import "third_party/google/api/annotations.proto";
+
+// Sample "bar" service server.
+service BarAPI {
+  // Reachability test.
+  rpc Ping (google.protobuf.Empty) returns (Pong) {
+    option (google.api.http) = {
+      post: "/bar/ping"
+    };
+  }
+  // Health test.
+  rpc Health (google.protobuf.Empty) returns (HealthResponse) {
+    option (google.api.http) = {
+      post: "/bar/health"
+    };
+  }
+  // Sample request.
+  rpc Request (google.protobuf.Empty) returns (Response) {
+    option (google.api.http) = {
+      post: "/bar/request"
+    };
+  }
+}

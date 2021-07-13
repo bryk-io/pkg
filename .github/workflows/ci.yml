@@ -1,0 +1,74 @@
+name: ci
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch: {}
+jobs:
+  test:
+    name: code quality and correctness
+    strategy:
+      matrix:
+        go-version: [1.14.x, 1.15.x, 1.16.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      # Go
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Configure runner environment
+      - name: Set up runner environment
+        run: ./.github/workflows/assets/utils.sh setup
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+
+      # If "vendor" is in cache, restore.
+      # To run conditional steps use:
+      # if: steps.vendor-cache.outputs.cache-hit != 'true'
+      - name: Restore modules from cache
+        id: vendor-cache
+        uses: actions/cache@v2.1.6
+        env:
+          cache-name: vendor
+        with:
+          path: ./vendor
+          key: ${{ env.cache-name }}-${{ hashFiles('go.sum') }}
+
+      # Style consistency and static analysis using 'golangci-lint'
+      # https://github.com/marketplace/actions/run-golangci-lint
+      - name: Static analysis
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: latest
+
+      # Run unit tests
+      - name: Test
+        run: make test
+
+      # Ensure project compile and build successfully
+      - name: Build
+        run: make build
+
+      # Save artifacts
+      - name: Save artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: assets
+          path: |
+            coverage.html
+
+      # Populate vendor cache to speed up future runs
+      - name: Populate vendor cache
+        run: go mod vendor

@@ -1,0 +1,149 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "sample/v1/bar_api.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/bar/health": {
+      "post": {
+        "summary": "Health test.",
+        "operationId": "BarAPI_Health",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1HealthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "BarAPI"
+        ]
+      }
+    },
+    "/bar/ping": {
+      "post": {
+        "summary": "Reachability test.",
+        "operationId": "BarAPI_Ping",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Pong"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "BarAPI"
+        ]
+      }
+    },
+    "/bar/request": {
+      "post": {
+        "summary": "Sample request.",
+        "operationId": "BarAPI_Request",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Response"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "BarAPI"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1HealthResponse": {
+      "type": "object",
+      "properties": {
+        "alive": {
+          "type": "boolean",
+          "description": "Generic availability check, set to 'false' in case of errors."
+        }
+      },
+      "description": "Health test response."
+    },
+    "v1Pong": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "title": "Whether the service is 'ready-for-use'"
+        }
+      },
+      "description": "Reachability test response."
+    },
+    "v1Response": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "A key on the entity"
+        }
+      },
+      "description": "Generic request response."
+    }
+  }
+}

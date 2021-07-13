@@ -1,0 +1,132 @@
+run:
+  deadline: 5m
+  issues-exit-code: 1
+  tests: true
+  build-tags: []
+  skip-dirs:
+    - vendor$
+    - third_party$
+    - testdata$
+    - examples$
+    - Godeps$
+    - builtin$
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.pb\\.gw\\.go$"
+    - ".*\\.validator\\.pb\\.go$"
+  modules-download-mode: readonly
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - revive
+    - gofmt
+    - ineffassign
+    - staticcheck
+    - structcheck
+    - typecheck
+    - varcheck
+    - gocyclo
+    - goconst
+    - depguard
+    - misspell
+    - lll
+    - nakedret
+    - prealloc
+    - gosec
+    - bodyclose
+    - stylecheck
+    - unparam
+    - durationcheck
+    - unconvert
+    - asciicheck
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - godot
+    - ifshort
+    - noctx
+    - predeclared
+    - exportloopref
+    - wastedassign
+    - whitespace
+    #- wrapcheck
+    #- nestif
+    #- funlen
+  disable:
+    - deadcode
+    - unused
+    - dupl
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - lll
+        - nakedret
+        - funlen
+        - nestif
+        - noctx
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: false
+  govet:
+    check-shadowing: false
+    enable:
+      - atomic
+      - atomicalign
+      - buildtag
+      - cgocall
+      - composites
+      - copylocks
+      - httpresponse
+      - loopclosure
+      - lostcancel
+      - nilfunc
+      - shift
+      - structtag
+      - unmarshal
+      - unreachable
+      - unusedresult
+      - tests
+      #- fieldalignment
+  gofmt:
+    simplify: true
+  gocyclo:
+    min-complexity: 18
+  goconst:
+    min-len: 3
+    min-occurrences: 5
+  depguard:
+    list-type: blacklist
+    include-go-root: false
+    packages: []
+  misspell:
+    locale: US
+    ignore-words: []
+  lll:
+    line-length: 120
+    tab-width: 2
+  nakedret:
+    max-func-lines: 30
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+  dupl:
+    threshold: 150
+  exhaustive:
+    default-signifies-exhaustive: true
+  funlen:
+    lines: 90
+    statements: 70

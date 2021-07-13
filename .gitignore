@@ -1,0 +1,26 @@
+# Generals
+.DS_Store
+.idea
+
+# Deps
+vendor/**
+
+# NodeJS
+node_modules
+package-lock.json
+build
+
+# PKI
+*.crt
+*.csr
+*.cer
+*.pem
+*.key
+!**/testdata/*.cer
+!**/testdata/*.pem
+
+# Secre files
+**/*secret*
+
+# Code coverage reports
+coverage.*

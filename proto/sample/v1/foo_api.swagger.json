@@ -1,0 +1,328 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "sample/v1/foo_api.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/foo/client_stream": {
+      "get": {
+        "summary": "Sample client stream request.",
+        "operationId": "FooAPI_OpenClientStream",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1StreamResult"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "sender",
+            "description": "Identifier for the endpoint generating the stream message.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "stamp",
+            "description": "Message generation UNIX timestamp.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "FooAPI"
+        ]
+      }
+    },
+    "/foo/faulty": {
+      "post": {
+        "summary": "Returns an error roughly about 20% of the time.",
+        "operationId": "FooAPI_Faulty",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DummyResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "FooAPI"
+        ]
+      }
+    },
+    "/foo/health": {
+      "post": {
+        "summary": "Health test.",
+        "operationId": "FooAPI_Health",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1HealthResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "FooAPI"
+        ]
+      }
+    },
+    "/foo/ping": {
+      "post": {
+        "summary": "Reachability test.",
+        "operationId": "FooAPI_Ping",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Pong"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "FooAPI"
+        ]
+      }
+    },
+    "/foo/request": {
+      "post": {
+        "summary": "Sample request.",
+        "operationId": "FooAPI_Request",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Response"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "FooAPI"
+        ]
+      }
+    },
+    "/foo/server_stream": {
+      "get": {
+        "summary": "Sample server stream request.",
+        "operationId": "FooAPI_OpenServerStream",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/v1GenericStreamChunk"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "title": "Stream result of v1GenericStreamChunk"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "FooAPI"
+        ]
+      }
+    },
+    "/foo/slow": {
+      "post": {
+        "summary": "Exhibit a random latency between 10 and 200ms.",
+        "operationId": "FooAPI_Slow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DummyResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        },
+        "tags": [
+          "FooAPI"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1DummyResponse": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "description": "Generic status check, set to 'false' in case of errors."
+        }
+      },
+      "description": "Sample response structure."
+    },
+    "v1GenericStreamChunk": {
+      "type": "object",
+      "properties": {
+        "sender": {
+          "type": "string",
+          "description": "Identifier for the endpoint generating the stream message."
+        },
+        "stamp": {
+          "type": "string",
+          "format": "int64",
+          "description": "Message generation UNIX timestamp."
+        }
+      },
+      "description": "Generic stream messages returned by the server."
+    },
+    "v1HealthResponse": {
+      "type": "object",
+      "properties": {
+        "alive": {
+          "type": "boolean",
+          "description": "Generic availability check, set to 'false' in case of errors."
+        }
+      },
+      "description": "Health test response."
+    },
+    "v1Pong": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "title": "Whether the service is 'ready-for-use'"
+        }
+      },
+      "description": "Reachability test response."
+    },
+    "v1Response": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "A key on the entity"
+        }
+      },
+      "description": "Generic request response."
+    },
+    "v1StreamResult": {
+      "type": "object",
+      "properties": {
+        "received": {
+          "type": "string",
+          "format": "int64",
+          "description": "Set to the total number of messages received during the request."
+        }
+      },
+      "description": "Generic stream result."
+    }
+  }
+}
