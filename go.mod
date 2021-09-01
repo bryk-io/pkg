@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/rs/zerolog v1.23.0
+	github.com/rs/zerolog v1.24.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/goleak v1.1.10
