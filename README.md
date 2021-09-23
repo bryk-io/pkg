@@ -5,7 +5,7 @@
 [![Software License](https://img.shields.io/badge/license-BSD3-red.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bryk-io/pkg?style=flat)](https://goreportcard.com/report/github.com/bryk-io/pkg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)
-[![GoDoc](https://godoc.org/go.bryk.io/pkg?status.png)](https://pkg.go.dev/go.bryk.io/pkg)
+[![Go Reference](https://pkg.go.dev/badge/go.bryk.io/pkg.svg)](https://pkg.go.dev/go.bryk.io/pkg)
 
 This repository provides a public collection of development resources and utilities.
 

@@ -25,7 +25,7 @@ type Client struct {
 	halt     context.CancelFunc // halt notification trigger
 	capacity int                // pool connection capacity
 	cache    *pool              // DRPC connection pool
-	closed   bool               // already closed flag
+	closed   chan struct{}      // already closed flag
 	addr     string             // user-provided network endpoint
 	http     bool               // HTTP support-enabled flag
 }
@@ -40,6 +40,7 @@ func NewClient(network, address string, options ...ClientOption) (*Client, error
 		mdw:      []clmw.Middleware{},
 		halt:     halt,
 		addr:     address,
+		closed:   make(chan struct{}),
 		capacity: 1,
 	}
 	if err := cl.setup(options...); err != nil {
@@ -68,12 +69,12 @@ func (cl *Client) Close() error {
 	for err := range cl.cache.Drain() {
 		cl.log.Warning(err)
 	}
-	cl.closed = true
+	close(cl.closed)
 	return nil
 }
 
-// Closed returns true if the client is definitely closed.
-func (cl *Client) Closed() bool {
+// Closed returns a channel that is closed when the client is definitely closed.
+func (cl *Client) Closed() <-chan struct{} {
 	cl.mtx.Lock()
 	defer cl.mtx.Unlock()
 	return cl.closed

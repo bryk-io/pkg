@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -10,7 +11,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// nolint: varcheck
+// nolint: varcheck, deadcode
 const (
 	colorBlack = iota + 30
 	colorRed
@@ -25,12 +26,34 @@ const (
 	colorDarkGray = 90
 )
 
+// ZeroOptions defines the available settings to adjust the behavior
+// of a logger instance backed by the `zerolog` library.
+type ZeroOptions struct {
+	// Whether to print messages in a textual representation. If not enabled
+	// messages are logged in a structured (JSON) format by default.
+	PrettyPrint bool
+
+	// ErrorField is the field name used to display error messages. When
+	// using pretty print on a color-enabled console, the field will be
+	// highlighted by default for readability.
+	ErrorField string
+
+	// A destination for all produced messages. This can be a file, network
+	// connection, or any other element supporting the `io.Writer` interface.
+	// If no sink is specified `os.Stderr` will be used by default.
+	Sink io.Writer
+}
+
 // WithZero provides a log handler using the zerolog library.
-func WithZero(pretty bool, errorField string) Logger {
-	zerolog.ErrorFieldName = errorField
+func WithZero(options ZeroOptions) Logger {
+	// Use `os.Stderr` as default sink
+	if options.Sink == nil {
+		options.Sink = os.Stderr
+	}
+	zerolog.ErrorFieldName = options.ErrorField
 	handler := zerolog.New(os.Stderr).With().Timestamp().Logger()
-	if pretty {
-		handler = handler.Output(zeroCW())
+	if options.PrettyPrint {
+		handler = handler.Output(zeroCW(options.Sink))
 	}
 	return &zeroHandler{
 		log: handler,
@@ -44,7 +67,7 @@ type zeroHandler struct {
 }
 
 func (zh *zeroHandler) Sub(tags Fields) Logger {
-	return &zeroHandler{log: zh.log.With().Fields(tags).Logger()}
+	return &zeroHandler{log: zh.log.With().Fields(map[string]interface{}(tags)).Logger()}
 }
 
 func (zh *zeroHandler) WithFields(fields Fields) Logger {
@@ -123,7 +146,7 @@ func (zh *zeroHandler) Printf(level Level, format string, args ...interface{}) {
 func (zh *zeroHandler) setFields(ev *zerolog.Event) *zerolog.Event {
 	zh.mu.Lock()
 	if zh.fields != nil {
-		ev.Fields(*zh.fields)
+		ev.Fields(map[string]interface{}(*zh.fields))
 		zh.fields = nil
 	}
 	zh.mu.Unlock()
@@ -136,9 +159,9 @@ func colorize(s interface{}, c int) string {
 	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
 }
 
-func zeroCW() zerolog.ConsoleWriter {
+func zeroCW(sink io.Writer) zerolog.ConsoleWriter {
 	return zerolog.ConsoleWriter{
-		Out:        os.Stderr,
+		Out:        sink,
 		TimeFormat: time.RFC3339,
 		FormatFieldName: func(i interface{}) string {
 			return colorize(fmt.Sprintf("%s=", i), colorDarkGray)

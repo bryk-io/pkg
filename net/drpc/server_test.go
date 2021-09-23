@@ -99,7 +99,10 @@ func TestServer(t *testing.T) {
 	assert := tdd.New(t)
 
 	// Main logger
-	ll := xlog.WithZero(true, "error")
+	ll := xlog.WithZero(xlog.ZeroOptions{
+		PrettyPrint: true,
+		ErrorField:  "error",
+	})
 
 	// Server middleware
 	smw := []srvmw.Middleware{
@@ -422,6 +425,37 @@ func TestServer(t *testing.T) {
 			_, err := client.Ping(ctx, &emptypb.Empty{})
 			assert.Nil(err, "invalid auth")
 		})
+
+		// Close client connection
+		assert.Nil(cl.Close(), "close client connection")
+
+		// Stop server
+		assert.Nil(srv.Stop(), "stop server")
+	})
+
+	t.Run("WithRetry", func(t *testing.T) {
+		// RPC server
+		opts := []Option{
+			WithPort(8080),
+			WithServiceProvider(sampleServiceProvider()),
+		}
+		srv, err := NewServer(opts...)
+		assert.Nil(err, "new server")
+		go func() {
+			_ = srv.Start()
+		}()
+
+		// Client connection
+		clm := append(cmw, clmw.Retry(5, ll.Sub(xlog.Fields{"component": "client"})))
+		cl, err := NewClient("tcp", ":8080", WithClientMiddleware(clm...))
+		assert.Nil(err, "client connection")
+
+		// RPC client
+		client := samplev1.NewDRPCFooAPIClient(cl)
+
+		// Call operation with automatic retries
+		_, err = client.Slow(context.TODO(), &emptypb.Empty{})
+		assert.Nil(err, "unexpected error")
 
 		// Close client connection
 		assert.Nil(cl.Close(), "close client connection")

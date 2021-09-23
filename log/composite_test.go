@@ -1,14 +1,21 @@
 package log
 
 import (
+	"io/ioutil"
+	stdL "log"
+	"os"
 	"testing"
 )
 
-func TestWithZero(t *testing.T) {
-	log := WithZero(ZeroOptions{
+func TestComposite(t *testing.T) {
+	sl := stdL.New(os.Stdout, "", stdL.LstdFlags)
+	l1 := WithZero(ZeroOptions{
 		PrettyPrint: true,
 		ErrorField:  "error",
 	})
+	l2 := WithStandard(sl)
+
+	log := Composite(l1, l2)
 
 	sampleFields := Fields{
 		"foo": 1,
@@ -104,18 +111,29 @@ func TestWithZero(t *testing.T) {
 	})
 }
 
-func ExampleWithZero() {
-	// Create logger instance
-	log := WithZero(ZeroOptions{
+func ExampleComposite() {
+	// Pretty print to standard output
+	l1 := WithZero(ZeroOptions{
 		PrettyPrint: true,
 		ErrorField:  "error",
+		Sink:        os.Stderr,
 	})
 
-	// Use log handler
-	log.Debug("use log handler now")
+	// Send structured (JSON) logs to a file
+	lf, _ := ioutil.TempFile("", "_logs")
+	l2 := WithZero(ZeroOptions{
+		PrettyPrint: false,
+		ErrorField:  "error",
+		Sink:        lf,
+	})
+
+	// Create a composite logger instance
+	log := Composite(l1, l2)
+
+	// Use composite logger instance as usual
 	log.WithFields(Fields{
 		"foo": 1,
 		"bar": true,
 		"baz": "application",
-	}).Info("loggers support structured information")
+	}).Debug("initializing application")
 }

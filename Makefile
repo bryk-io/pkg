@@ -9,7 +9,7 @@ LD_FLAGS += -s -w
 # locally (on a dev container) or using a builder image.
 buf:=buf
 ifndef REMOTE_CONTAINERS_SOCKETS
-	buf=docker run --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:0.43.2 buf
+	buf=docker run --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.0.0-rc1 buf
 endif
 
 # For commands that require a specific package path, default to all local
@@ -49,7 +49,7 @@ lint:
 ## scan: Look for known vulnerabilities in the project dependencies
 # https://github.com/sonatype-nexus-community/nancy
 scan:
-	@go list -f '{{if not .Indirect}}{{.}}{{end}}' -m all | nancy sleuth --skip-update-check
+	@go list -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' -m all | nancy sleuth --skip-update-check
 
 ## test: Run all unitary tests
 test:

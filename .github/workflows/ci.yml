@@ -8,11 +8,91 @@ on:
       - master
   workflow_dispatch: {}
 jobs:
+  # Scan direct Go dependencies for known vulnerabilities
+  scan:
+    name: scan for vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      # Go
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
+
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Configure runner environment
+      - name: Set up runner environment
+        run: ./.github/workflows/assets/utils.sh setup
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+
+      # List direct dependencies
+      - name: List dependencies
+        run: go list -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' -m all > go.list
+
+      # Scan dependencies using Nancy
+      # https://github.com/sonatype-nexus-community/nancy-github-action
+      - name: Scan dependencies
+        uses: sonatype-nexus-community/nancy-github-action@main
+  
+  # Validate the protocol buffer definitions on the project
+  # using 'buf'. Remove if not required.
+  protos:
+    name: validate protobuf definitions
+    needs: scan
+    runs-on: ubuntu-latest
+    steps:
+      # Go
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
+
+      # Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Configure runner environment
+      - name: Set up runner environment
+        run: ./.github/workflows/assets/utils.sh setup
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+
+      # Setup buf
+      - name: Setup buf
+        id: setup-buf
+        uses: bufbuild/buf-setup-action@v0.5.0
+        with:
+          version: '1.0.0-rc1'
+
+      # Static analysis
+      - name: Static analysis
+        uses: bufbuild/buf-lint-action@v1.0.0
+        if: ${{ steps.setup-buf.outcome == 'success' }}
+
+      # Detect breaking changes
+      - name: Detect breaking changes
+        uses: bufbuild/buf-breaking-action@v1.0.0
+        if: ${{ steps.setup-buf.outcome == 'success' }}
+        with:
+          against: 'https://github.com/${{ github.repository }}.git#branch=master'
+        env:
+          BUF_INPUT_HTTPS_USERNAME: ${{ github.actor }}
+          BUF_INPUT_HTTPS_PASSWORD: ${{ secrets.ACCESS_TOKEN }}
+
+  # Runs on every push and pull request on the selected branches.
+  # Can also be executed manually.
   test:
     name: code quality and correctness
+    needs: protos
     strategy:
       matrix:
-        go-version: [1.14.x, 1.15.x, 1.16.x]
+        go-version: [1.15.x, 1.16.x, 1.17.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -49,7 +129,7 @@ jobs:
       # Style consistency and static analysis using 'golangci-lint'
       # https://github.com/marketplace/actions/run-golangci-lint
       - name: Static analysis
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v2.5.2
         with:
           version: latest
 
