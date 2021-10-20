@@ -1,0 +1,22 @@
+version: "2"
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:0.34.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "13133:13133" # health_check extension
+      - "55680:55680" # default grpc receiver endpoint
+    depends_on:
+      - jaeger
+      - zipkin
+  jaeger:
+    image: jaegertracing/all-in-one:1.23
+    ports:
+      - "16686:16686" # ui
+      - "14250" # grpc receiver endpoint
+  zipkin:
+    image: openzipkin/zipkin:2.23
+    ports:
+      - "9411:9411" # ui and HTTP API

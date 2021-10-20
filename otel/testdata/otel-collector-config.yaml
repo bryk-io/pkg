@@ -1,0 +1,51 @@
+# https://opentelemetry.io/docs/collector/configuration/
+# https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/README.md
+extensions:
+  health_check:
+    port: 13133
+# https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/README.md
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+# https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/README.md
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 500
+    spike_limit_mib: 100
+  batch:
+    send_batch_size: 100
+    timeout: 2s
+  resource:
+    attributes:
+      - key: custom.collector.field
+        value: "zone-1"
+        action: upsert
+# https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md
+exporters:
+  logging:
+    loglevel: debug
+  jaeger:
+    endpoint: "jaeger:14250"
+    insecure: true
+  zipkin:
+    endpoint: "http://zipkin:9411/api/v2/spans"
+    insecure: true
+    format: json
+service:
+  extensions: [ health_check ]
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch, resource ]
+      exporters: [ logging, jaeger, zipkin ]
+    metrics:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ logging ]
+    logs:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch, resource ]
+      exporters: [ logging ]
