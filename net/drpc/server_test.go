@@ -198,7 +198,7 @@ func TestServer(t *testing.T) {
 		assert.Equal(0, active, "number of active connections")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 
 	t.Run("WithUnixSocket", func(t *testing.T) {
@@ -230,7 +230,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 		_ = os.Remove(socket)
 	})
 
@@ -276,7 +276,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 
 	t.Run("WithHTTP", func(t *testing.T) {
@@ -313,7 +313,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 
 	t.Run("WithHTTPAndTLS", func(t *testing.T) {
@@ -370,7 +370,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 
 	t.Run("WithAuth", func(t *testing.T) {
@@ -430,7 +430,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 
 	t.Run("WithRetry", func(t *testing.T) {
@@ -461,7 +461,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 
 	t.Run("WithRateLimit", func(t *testing.T) {
@@ -500,7 +500,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 
 	t.Run("Streaming", func(t *testing.T) {
@@ -650,7 +650,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(cl.Close(), "close client connection")
 
 		// Stop server
-		assert.Nil(srv.Stop(), "stop server")
+		_ = srv.Stop()
 	})
 }
 
