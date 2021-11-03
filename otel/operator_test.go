@@ -13,7 +13,22 @@ import (
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/export/metric"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
+
+// Verify a local collector instance is available using its `healthcheck`
+// endpoint.
+func isCollectorAvailable() bool {
+	res, err := http.Get("http://localhost:13133/")
+	if res != nil {
+		res.Body.Close()
+	}
+	if err != nil {
+		return false
+	}
+	return res.StatusCode == http.StatusOK
+}
 
 func childOperation(ctx context.Context, oop *Operator, level int) <-chan bool {
 	rand.Seed(time.Now().Unix())
@@ -72,8 +87,16 @@ func TestNewOperator(t *testing.T) {
 	assert := tdd.New(t)
 
 	// Exporters
-	// traceExp, metricExp, err := ExporterOTLP("localhost:55680", true, nil)
-	traceExp, metricExp, err := ExporterStdout(true)
+	var (
+		traceExp  trace.SpanExporter
+		metricExp metric.Exporter
+		err       error
+	)
+	if isCollectorAvailable() {
+		traceExp, metricExp, err = ExporterOTLP("localhost:55680", true, nil)
+	} else {
+		traceExp, metricExp, err = ExporterStdout(true)
+	}
 	assert.Nil(err, "failed to create exporter")
 
 	// Operator instance
