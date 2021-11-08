@@ -38,7 +38,11 @@ type PublicKey struct {
 
 	// Public key material encoded in the MULTIBASE format.
 	// https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-03
-	Public string `json:"publicKeyMultibase" yaml:"publicKeyMultibase"`
+	Public string `json:"publicKeyMultibase,omitempty" yaml:"publicKeyMultibase,omitempty"`
+
+	// Public key material encoded as base58.
+	// https://w3c-ccg.github.io/security-vocab/contexts/security-v1.jsonld
+	PublicKeyBase58 string `json:"publicKeyBase58,omitempty" yaml:"publicKeyBase58,omitempty"`
 
 	// Private portion of the cryptographic key.
 	Private []byte `json:"private,omitempty" yaml:"private,omitempty"`
@@ -52,7 +56,10 @@ func (k *PublicKey) String() string {
 // Bytes returns the byte representation of the public key properly decoding
 // it from a value entry.
 func (k *PublicKey) Bytes() ([]byte, error) {
-	return multibaseDecode(k.Public)
+	if k.Type == KeyTypeEd {
+		return multibaseDecode(k.Public)
+	}
+	return base58.Decode(k.PublicKeyBase58)
 }
 
 // Sign the provided input and return the generated signature value.
@@ -294,7 +301,11 @@ func newCryptoKey(kt KeyType) (*PublicKey, error) {
 	}
 
 	// Set encoded value
-	pk.Public = multibaseEncode(pub)
+	if kt == KeyTypeEd {
+		pk.Public = multibaseEncode(pub)
+	} else {
+		pk.PublicKeyBase58 = base58.Encode(pub)
+	}
 	return pk, nil
 }
 
@@ -380,7 +391,11 @@ func loadExistingKey(private []byte, kt KeyType) (*PublicKey, error) {
 	}
 
 	// Set encoded value
-	pk.Public = multibaseEncode(pub)
+	if kt == KeyTypeEd {
+		pk.Public = multibaseEncode(pub)
+	} else {
+		pk.PublicKeyBase58 = base58.Encode(pub)
+	}
 	return pk, nil
 }
 

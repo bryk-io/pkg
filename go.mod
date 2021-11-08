@@ -26,11 +26,11 @@ require (
 	github.com/stretchr/testify v1.7.0
 	go.bryk.io/miracl v0.4.0
 	go.mongodb.org/mongo-driver v1.7.4
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.26.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.0
-	go.opentelemetry.io/contrib/instrumentation/host v0.26.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.0
-	go.opentelemetry.io/contrib/instrumentation/runtime v0.26.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.26.1
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1
+	go.opentelemetry.io/contrib/instrumentation/host v0.26.1
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.26.1
 	go.opentelemetry.io/contrib/propagators v0.22.0
 	go.opentelemetry.io/otel v1.1.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.24.0
@@ -47,7 +47,7 @@ require (
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/net v0.0.0-20211101193420-4a448f8816b3
+	golang.org/x/net v0.0.0-20211105192438-b53810dc28af
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac

@@ -161,20 +161,6 @@ func FromDocument(doc *Document) (*Identifier, error) {
 	id.data.KeyAgreement = append(id.data.KeyAgreement, doc.KeyAgreement...)
 	id.data.CapabilityInvocation = append(id.data.CapabilityInvocation, doc.CapabilityInvocation...)
 	id.data.CapabilityDelegation = append(id.data.CapabilityDelegation, doc.CapabilityDelegation...)
-
-	// Restore created timestamp
-	if doc.Created != "" {
-		if created, err := time.Parse(time.RFC3339, doc.Created); err == nil {
-			id.data.Created = &created
-		}
-	}
-
-	// Restore updated timestamp
-	if doc.Updated != "" {
-		if updated, err := time.Parse(time.RFC3339, doc.Updated); err == nil {
-			id.data.Updated = &updated
-		}
-	}
 	return id, nil
 }
 
@@ -295,7 +281,12 @@ func (d *Identifier) String() string {
 // making the document safe to be published and shared.
 func (d *Identifier) Document(safe bool) *Document {
 	doc := &Document{
-		Context:              []string{defaultContext, securityContext},
+		Context: []interface{}{
+			defaultContext,
+			securityContext,
+			ed25519Context,
+			x25519Context,
+		},
 		Subject:              d.String(),
 		Controller:           d.data.Controller,
 		VerificationMethod:   d.VerificationMethods(),
@@ -305,12 +296,6 @@ func (d *Identifier) Document(safe bool) *Document {
 		KeyAgreement:         d.data.KeyAgreement,
 		CapabilityInvocation: d.data.CapabilityInvocation,
 		CapabilityDelegation: d.data.CapabilityDelegation,
-	}
-	if d.data.Created != nil {
-		doc.Created = d.data.Created.Format(time.RFC3339)
-	}
-	if d.data.Updated != nil {
-		doc.Updated = d.data.Updated.Format(time.RFC3339)
 	}
 
 	// Remove private keys on safe representations.

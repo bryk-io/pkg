@@ -1,0 +1,9 @@
+{
+  "name": "ld-checker",
+  "version": "0.1.0",
+  "description": "Simple JSON-LD document validator",
+  "main": "index.js",
+  "dependencies": {
+    "jsonld-checker": "^0.1.8-unstable.3"
+  }
+}

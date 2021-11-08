@@ -13,6 +13,38 @@ import (
 	"go.bryk.io/pkg/crypto/ed25519"
 )
 
+// https://did-algo.aidtech.network/v1/ns
+var extV1 = `{
+  "@context": {
+    "extensions": {
+      "@id": "https://did-algo.aidtech.network/v1/ns#extension",
+      "@container": "@set",
+      "@context": {
+        "id": {
+          "@id": "https://did-algo.aidtech.network/v1/ns#/extension-id"
+        },
+        "version": {
+          "@id": "https://did-algo.aidtech.network/v1/ns#extension-version"
+        },
+        "data": {
+          "@id": "https://did-algo.aidtech.network/v1/ns#extension-data",
+          "@context": {
+            "asset": {
+              "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-asset"
+            },
+            "address": {
+              "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-address"
+            },
+            "network": {
+              "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-network"
+            }
+          }
+        }
+      }
+    }
+  }
+}`
+
 type sampleExtensionData struct {
 	UUID  string `json:"uuid"`
 	Stamp int64  `json:"stamp"`
@@ -33,6 +65,51 @@ func decode(data []byte) (*Identifier, error) {
 		return nil, err
 	}
 	return FromDocument(doc)
+}
+
+func TestRegisterContext(t *testing.T) {
+	assert := tdd.New(t)
+	id, err := NewIdentifierWithMode("bryk", "sample-network", ModeUUID)
+	if err != nil {
+		assert.Fail(err.Error())
+		return
+	}
+
+	// Add a couple of keys
+	assert.Nil(id.AddNewVerificationMethod("key-1", KeyTypeEd), "add key error")
+	assert.Nil(id.AddNewVerificationMethod("koblitz", KeyTypeSecp256k1), "add key error")
+	assert.Nil(id.AddNewVerificationMethod("new-encoding", KeyTypeEd), "add key error")
+	assert.NotNil(id.AddNewVerificationMethod("key-1", KeyTypeEd), "duplicated key id")
+	id.AddService(&ServiceEndpoint{
+		ID:       "my-service",
+		Type:     "acme-service",
+		Endpoint: "https://acme.com/my-service",
+		Extensions: []Extension{
+			{
+				ID:      "custom.extension",
+				Version: "0.1.0",
+				Data: map[string]string{
+					"address": "Q4HSY6GM7AJGVSZGWPI5NZW2TJ4SIFHPSBXG4MCL72B5DAJL3PCCXIE3HI",
+					"asset":   "ALGO",
+					"network": "testnet",
+				},
+			},
+		},
+	})
+
+	// Get DID document
+	doc := id.Document(true)
+
+	// Register custom context
+	extContext := make(map[string]interface{})
+	_ = json.Unmarshal([]byte(extV1), &extContext)
+	doc.RegisterContext(extContext)
+
+	// JSON encode/decode
+	js, err := json.MarshalIndent(doc, "", "  ")
+	assert.Nil(err)
+	assert.NotZero(len(js))
+	// _ = ioutil.WriteFile("testdata/sample.json", js, 0644)
 }
 
 func TestIdentifier(t *testing.T) {

@@ -5,9 +5,6 @@ import (
 	"errors"
 )
 
-const defaultContext = "https://www.w3.org/ns/did/v1"
-const securityContext = "https://w3id.org/security/v1"
-
 // Extension provides a flexible mechanism to add contextual parameters to
 // the standard elements used on a DID document.
 type Extension struct {
@@ -35,7 +32,7 @@ func (ext Extension) load(holder interface{}) error {
 type Document struct {
 	// JSON-LD context statement for the document.
 	// https://w3c-ccg.github.io/did-spec/#context
-	Context []string `json:"@context" yaml:"-"`
+	Context []interface{} `json:"@context" yaml:"-"`
 
 	// DID described by the document.
 	// https://w3c.github.io/did-core/#did-subject
@@ -50,15 +47,6 @@ type Document struct {
 	// refer to the same DID subject can be made using the `alsoKnownAs` property.
 	// https://w3c.github.io/did-core/#also-known-as
 	AlsoKnownAs []string `json:"alsoKnownAs,omitempty" yaml:"alsoKnownAs,omitempty"`
-
-	// Timestamp of the original creation, normalized to UTC 00:00.
-	// https://w3c-ccg.github.io/did-spec/#created-optional
-	Created string `json:"created,omitempty" yaml:"created,omitempty"`
-
-	// Timestamp of the latest updated registered for the document, normalized to
-	// UTC 00:00.
-	// https://w3c-ccg.github.io/did-spec/#updated-optional
-	Updated string `json:"updated,omitempty" yaml:"updated,omitempty"`
 
 	// A DID document can express verification methods, such as cryptographic public
 	// keys, which can be used to authenticate or authorize interactions with the DID
@@ -143,6 +131,28 @@ type Document struct {
 	Services []ServiceEndpoint `json:"service,omitempty" yaml:"service,omitempty"`
 }
 
+// DocumentMetadata provides information pertaining to the DID document itself,
+// rather than the DID subject.
+// https://www.w3.org/TR/did-core/#metadata-structure
+//
+// Additional details:
+//   https://github.com/w3c/did-core/issues/65
+//   https://github.com/w3c/did-core/issues/203
+type DocumentMetadata struct {
+	// Timestamp of the original creation, normalized to UTC 00:00.
+	// https://w3c-ccg.github.io/did-spec/#created-optional
+	Created string `json:"created,omitempty" yaml:"created,omitempty"`
+
+	// Timestamp of the latest updated registered for the document, normalized to
+	// UTC 00:00.
+	// https://w3c-ccg.github.io/did-spec/#updated-optional
+	Updated string `json:"updated,omitempty" yaml:"updated,omitempty"`
+
+	// Whether the DID should be considered active or not.
+	// https://www.w3.org/TR/did-spec-registries/#deactivated
+	Deactivated bool `json:"deactivated" yaml:"deactivated"`
+}
+
 // ServiceEndpoint represents any type of service the entity wishes to advertise,
 // including decentralized identity management services for further discovery,
 // authentication, authorization, or interaction.
@@ -184,6 +194,18 @@ func (se *ServiceEndpoint) GetExtension(id string, version string, holder interf
 		}
 	}
 	return errors.New("no extension")
+}
+
+// RegisterContext adds a new context entry to the document. Useful when
+// adding new data entries.
+// https://w3c.github.io/json-ld-syntax/#the-context
+func (d *Document) RegisterContext(el interface{}) {
+	for _, v := range d.Context {
+		if el == v {
+			return
+		}
+	}
+	d.Context = append(d.Context, el)
 }
 
 // ExpandedLD returns an expanded JSON-LD document.

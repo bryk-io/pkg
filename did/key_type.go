@@ -25,7 +25,7 @@ const (
 // String returns the value identifier for a given key type value.
 func (v KeyType) String() string {
 	values := [...]string{
-		"Ed25519VerificationKey2018",
+		"Ed25519VerificationKey2020",
 		"RsaVerificationKey2018",
 		"EcdsaSecp256k1VerificationKey2019",
 	}
@@ -39,7 +39,7 @@ func (v KeyType) String() string {
 // by the key.
 func (v KeyType) SignatureType() string {
 	values := [...]string{
-		"Ed25519Signature2018",
+		"Ed25519Signature2020",
 		"RsaSignature2018",
 		"EcdsaSecp256k1Signature2019",
 	}
