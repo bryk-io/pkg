@@ -12,6 +12,14 @@ import (
 // https://w3c.github.io/did-core/#identifier
 const prefix = "did:"
 
+// Common context values used for all DID instances.
+var defaultContexts = []interface{}{
+	defaultContext,
+	securityContext,
+	ed25519Context,
+	x25519Context,
+}
+
 // Identifier instance based on the DID specification.
 type Identifier struct {
 	data *identifierData
@@ -57,6 +65,10 @@ type identifierData struct {
 	// Indicates that there are DID controller(s) other than the DID subject.
 	// https://w3c.github.io/did-core/#authorization-and-delegation
 	Controller string
+
+	// JSON-LD context statement for the document.
+	// https://w3c-ccg.github.io/did-spec/#context
+	Context []interface{} `json:"@context" yaml:"-"`
 
 	// Cryptographic keys associated with the subject.
 	VerificationMethods []*PublicKey
@@ -107,6 +119,7 @@ func NewIdentifier(method string, idString string) (*Identifier, error) {
 			ID:      idString,
 			Method:  method,
 			Created: &now,
+			Context: defaultContexts,
 		},
 	}, nil
 }
@@ -155,6 +168,7 @@ func FromDocument(doc *Document) (*Identifier, error) {
 	}
 
 	// Restore verification relationships
+	id.data.Context = doc.Context
 	id.data.Controller = doc.Controller
 	id.data.AuthenticationMethod = append(id.data.AuthenticationMethod, doc.Authentication...)
 	id.data.AssertionMethod = append(id.data.AssertionMethod, doc.AssertionMethod...)
@@ -281,12 +295,7 @@ func (d *Identifier) String() string {
 // making the document safe to be published and shared.
 func (d *Identifier) Document(safe bool) *Document {
 	doc := &Document{
-		Context: []interface{}{
-			defaultContext,
-			securityContext,
-			ed25519Context,
-			x25519Context,
-		},
+		Context:              d.data.Context,
 		Subject:              d.String(),
 		Controller:           d.data.Controller,
 		VerificationMethod:   d.VerificationMethods(),
@@ -305,6 +314,18 @@ func (d *Identifier) Document(safe bool) *Document {
 		}
 	}
 	return doc
+}
+
+// RegisterContext adds a new context entry to the document. Useful when
+// adding new data entries.
+// https://w3c.github.io/json-ld-syntax/#the-context
+func (d *Identifier) RegisterContext(el interface{}) {
+	for _, v := range d.data.Context {
+		if el == v {
+			return
+		}
+	}
+	d.data.Context = append(d.data.Context, el)
 }
 
 // Controller returns the DID currently set as controller for the identifier

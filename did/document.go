@@ -196,18 +196,6 @@ func (se *ServiceEndpoint) GetExtension(id string, version string, holder interf
 	return errors.New("no extension")
 }
 
-// RegisterContext adds a new context entry to the document. Useful when
-// adding new data entries.
-// https://w3c.github.io/json-ld-syntax/#the-context
-func (d *Document) RegisterContext(el interface{}) {
-	for _, v := range d.Context {
-		if el == v {
-			return
-		}
-	}
-	d.Context = append(d.Context, el)
-}
-
 // ExpandedLD returns an expanded JSON-LD document.
 // http://www.w3.org/TR/json-ld-api/#expansion-algorithm
 func (d *Document) ExpandedLD() ([]byte, error) {

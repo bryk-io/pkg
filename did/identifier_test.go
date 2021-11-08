@@ -97,19 +97,23 @@ func TestRegisterContext(t *testing.T) {
 		},
 	})
 
-	// Get DID document
-	doc := id.Document(true)
-
 	// Register custom context
 	extContext := make(map[string]interface{})
 	_ = json.Unmarshal([]byte(extV1), &extContext)
-	doc.RegisterContext(extContext)
+	id.RegisterContext(extContext)
 
 	// JSON encode/decode
+	doc := id.Document(false)
 	js, err := json.MarshalIndent(doc, "", "  ")
 	assert.Nil(err)
 	assert.NotZero(len(js))
 	// _ = ioutil.WriteFile("testdata/sample.json", js, 0644)
+
+	// Restore id from document
+	id2, err := FromDocument(doc)
+	assert.Nil(err, "restore from document failed")
+	doc2 := id2.Document(false)
+	assert.Equal(doc, doc2, "invalid document contents")
 }
 
 func TestIdentifier(t *testing.T) {
