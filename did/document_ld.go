@@ -13,7 +13,43 @@ const (
 	securityContext = "https://w3id.org/security/v1"
 	ed25519Context  = "https://w3id.org/security/suites/ed25519-2020/v1"
 	x25519Context   = "https://w3id.org/security/suites/x25519-2020/v1"
+	extV1Context    = "https://did-ns.aidtech.network/v1"
 )
+
+// https://did-ns.aidtech.network/v1/
+var extV1 = `{
+  "@context": {
+    "id": "@id",
+    "type": "@type",
+    "@protected": true,
+    "extensions": {
+      "@id": "https://did-ns.aidtech.network/v1#extension",
+      "@container": "@set",
+      "@context": {
+        "id": {
+          "@id": "https://did-ns.aidtech.network/v1#extension-id"
+        },
+        "version": {
+          "@id": "https://did-ns.aidtech.network/v1#extension-version"
+        },
+        "data": {
+          "@id": "https://did-ns.aidtech.network/v1#extension-data",
+          "@context": {
+            "asset": {
+              "@id": "https://did-ns.aidtech.network/v1#algo-connect-asset"
+            },
+            "address": {
+              "@id": "https://did-ns.aidtech.network/v1#algo-connect-address"
+            },
+            "network": {
+              "@id": "https://did-ns.aidtech.network/v1#algo-connect-network"
+            }
+          }
+        }
+      }
+    }
+  }
+}`
 
 // https://www.w3.org/ns/did/v1
 var didV1 = `{
@@ -285,6 +321,12 @@ func (ol *offlineLoader) init() {
 		DocumentURL: x25519Context,
 		ContextURL:  x25519Context,
 		Document:    x255192020,
+	}
+	extCtx, _ := ld.DocumentFromReader(bytes.NewReader([]byte(extV1)))
+	ol.list[extV1Context] = &ld.RemoteDocument{
+		DocumentURL: extV1Context,
+		ContextURL:  extV1Context,
+		Document:    extCtx,
 	}
 }
 

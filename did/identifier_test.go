@@ -13,38 +13,6 @@ import (
 	"go.bryk.io/pkg/crypto/ed25519"
 )
 
-// https://did-algo.aidtech.network/v1/ns
-var extV1 = `{
-  "@context": {
-    "extensions": {
-      "@id": "https://did-algo.aidtech.network/v1/ns#extension",
-      "@container": "@set",
-      "@context": {
-        "id": {
-          "@id": "https://did-algo.aidtech.network/v1/ns#/extension-id"
-        },
-        "version": {
-          "@id": "https://did-algo.aidtech.network/v1/ns#extension-version"
-        },
-        "data": {
-          "@id": "https://did-algo.aidtech.network/v1/ns#extension-data",
-          "@context": {
-            "asset": {
-              "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-asset"
-            },
-            "address": {
-              "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-address"
-            },
-            "network": {
-              "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-network"
-            }
-          }
-        }
-      }
-    }
-  }
-}`
-
 type sampleExtensionData struct {
 	UUID  string `json:"uuid"`
 	Stamp int64  `json:"stamp"`
@@ -98,12 +66,12 @@ func TestRegisterContext(t *testing.T) {
 	})
 
 	// Register custom context
-	extContext := make(map[string]interface{})
-	_ = json.Unmarshal([]byte(extV1), &extContext)
-	id.RegisterContext(extContext)
+	// extContext := make(map[string]interface{})
+	// _ = json.Unmarshal([]byte(extV1), &extContext)
+	id.RegisterContext(extV1Context)
 
 	// JSON encode/decode
-	doc := id.Document(false)
+	doc := id.Document(true)
 	js, err := json.MarshalIndent(doc, "", "  ")
 	assert.Nil(err)
 	assert.NotZero(len(js))
@@ -112,8 +80,13 @@ func TestRegisterContext(t *testing.T) {
 	// Restore id from document
 	id2, err := FromDocument(doc)
 	assert.Nil(err, "restore from document failed")
-	doc2 := id2.Document(false)
+	doc2 := id2.Document(true)
 	assert.Equal(doc, doc2, "invalid document contents")
+
+	_, err = doc.NormalizedLD()
+	assert.Nil(err, "normalized doc")
+	_, err = doc.ExpandedLD()
+	assert.Nil(err, "expanded doc")
 }
 
 func TestIdentifier(t *testing.T) {

@@ -4,61 +4,32 @@
     "https://w3id.org/security/v1",
     "https://w3id.org/security/suites/ed25519-2020/v1",
     "https://w3id.org/security/suites/x25519-2020/v1",
-    {
-      "@context": {
-        "extensions": {
-          "@container": "@set",
-          "@context": {
-            "data": {
-              "@context": {
-                "address": {
-                  "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-address"
-                },
-                "asset": {
-                  "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-asset"
-                },
-                "network": {
-                  "@id": "https://did-algo.aidtech.network/v1/ns#algo-connect-network"
-                }
-              },
-              "@id": "https://did-algo.aidtech.network/v1/ns#extension-data"
-            },
-            "id": {
-              "@id": "https://did-algo.aidtech.network/v1/ns#/extension-id"
-            },
-            "version": {
-              "@id": "https://did-algo.aidtech.network/v1/ns#extension-version"
-            }
-          },
-          "@id": "https://did-algo.aidtech.network/v1/ns#extension"
-        }
-      }
-    }
+    "https://did-ns.aidtech.network/v1"
   ],
-  "id": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df",
+  "id": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b",
   "verificationMethod": [
     {
-      "id": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df#key-1",
+      "id": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b#key-1",
       "type": "Ed25519VerificationKey2020",
-      "controller": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df",
-      "publicKeyMultibase": "z3SfJfUF3GKEfBfS8EBCW1ibcbnZ1MQGY48TMm17c5Eaw"
+      "controller": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b",
+      "publicKeyMultibase": "zBhT46Sc71oZmnArETS2c9CaiToNJyTY2eUh9w95fDpD"
     },
     {
-      "id": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df#koblitz",
+      "id": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b#koblitz",
       "type": "EcdsaSecp256k1VerificationKey2019",
-      "controller": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df",
-      "publicKeyBase58": "yJN8x198AeUF1NsEpfGf1NwL4sMptyzwNt6N6dhwZnBW"
+      "controller": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b",
+      "publicKeyBase58": "2BHp8AjssFZcZm4oaPx7cA8uRXUh9niE4kAVdnZ4Lmq4s"
     },
     {
-      "id": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df#new-encoding",
+      "id": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b#new-encoding",
       "type": "Ed25519VerificationKey2020",
-      "controller": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df",
-      "publicKeyMultibase": "zEzSseFBjHrj8QUS3V7SAz24Ls9iUSDWmwhpXKT1xZPbh"
+      "controller": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b",
+      "publicKeyMultibase": "z9pHWrmhLKA7BfBVmqbwRrsrMPZX8vvXR66LVsxNJrEgD"
     }
   ],
   "service": [
     {
-      "id": "did:bryk:sample-network:8d52ae11-69b3-402f-96c2-72a66dd363df#my-service",
+      "id": "did:bryk:sample-network:3aa00ada-cf1c-4cbc-a6f1-01ad4a0cdd6b#my-service",
       "type": "acme-service",
       "serviceEndpoint": "https://acme.com/my-service",
       "extensions": [
