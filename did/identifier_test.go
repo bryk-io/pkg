@@ -45,9 +45,6 @@ func TestRegisterContext(t *testing.T) {
 
 	// Add a couple of keys
 	assert.Nil(id.AddNewVerificationMethod("key-1", KeyTypeEd), "add key error")
-	assert.Nil(id.AddNewVerificationMethod("koblitz", KeyTypeSecp256k1), "add key error")
-	assert.Nil(id.AddNewVerificationMethod("new-encoding", KeyTypeEd), "add key error")
-	assert.NotNil(id.AddNewVerificationMethod("key-1", KeyTypeEd), "duplicated key id")
 	id.AddService(&ServiceEndpoint{
 		ID:       "my-service",
 		Type:     "acme-service",

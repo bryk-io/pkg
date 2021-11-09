@@ -15,7 +15,6 @@ const prefix = "did:"
 // Common context values used for all DID instances.
 var defaultContexts = []interface{}{
 	defaultContext,
-	securityContext,
 	ed25519Context,
 	x25519Context,
 }
