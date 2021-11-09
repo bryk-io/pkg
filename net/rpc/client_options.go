@@ -10,13 +10,15 @@ import (
 	"google.golang.org/grpc/keepalive"
 )
 
-// ClientOption allows to adjust client settings following a functional pattern.
+// ClientOption allows adjusting client settings following a functional
+// pattern.
 type ClientOption func(*Client) error
 
-// WithInsecureSkipVerify controls whether a client verifies the server's certificate chain
-// and host name. If InsecureSkipVerify is true, TLS accepts any certificate presented by the
-// server and any host name in that certificate. In this mode, TLS is susceptible to MITM attacks.
-// This should be used only for testing.
+// WithInsecureSkipVerify controls whether a client verifies the server's
+// certificate chain and host name. If InsecureSkipVerify is true, TLS accepts
+// any certificate presented by the server and any host name in that certificate.
+// In this mode, TLS is susceptible to MITM attacks. This should be used only
+// for testing.
 func WithInsecureSkipVerify() ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()
@@ -26,9 +28,10 @@ func WithInsecureSkipVerify() ClientOption {
 	}
 }
 
-// WithServerNameOverride adjust the identifier expected to be present on the upstream RPC server's
-// certificate, when using TLS. This option is meant for testing only. If set to a non empty string,
-// it will override the virtual host name of authority (e.g. :authority header field) in requests.
+// WithServerNameOverride adjust the identifier expected to be present on the
+// upstream RPC server's certificate, when using TLS. This option is meant for
+// testing only. If set to a non-empty string, it will override the virtual host
+// name of authority (e.g. :authority header field) in requests.
 func WithServerNameOverride(name string) ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()
@@ -38,7 +41,8 @@ func WithServerNameOverride(name string) ClientOption {
 	}
 }
 
-// WithAuthCertificate enabled certificate-based client authentication with the provided credentials.
+// WithAuthCertificate enabled certificate-based client authentication with the
+// provided credentials.
 func WithAuthCertificate(cert, key []byte) ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()
@@ -96,7 +100,8 @@ func WaitForReady() ClientOption {
 	}
 }
 
-// WithClientTLS set parameters to establish a secure connection channel with the server.
+// WithClientTLS set parameters to establish a secure connection channel with the
+// server.
 func WithClientTLS(opts ClientTLSConfig) ClientOption {
 	return func(c *Client) (err error) {
 		c.mu.Lock()
@@ -118,8 +123,8 @@ func WithCompression() ClientOption {
 }
 
 // WithKeepalive will configure the client to send a ping message when a certain
-// time (in seconds) has passed without activity in the connection. The minimum valid interval
-// is 10 seconds.
+// time (in seconds) has passed without activity in the connection. The minimum valid
+// interval is 10 seconds.
 func WithKeepalive(t int) ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()

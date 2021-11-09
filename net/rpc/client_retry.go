@@ -7,7 +7,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-// RetryCallOptions define the required parameters to execute an RPC call with a retry strategy.
+// RetryCallOptions define the required parameters to execute an RPC call
+// with a retry strategy.
 type RetryCallOptions struct {
 	// Max number of tries for the call before returning an error
 	Attempts uint
@@ -19,7 +20,8 @@ type RetryCallOptions struct {
 	BackoffExponential *time.Duration
 }
 
-// WithRetry allows to set automatic retry settings when invoking a specific RPC method.
+// WithRetry allows setting automatic retry settings when invoking a specific
+// RPC method.
 func WithRetry(config *RetryCallOptions) []grpc.CallOption {
 	var opts []grpc.CallOption
 	if config.Attempts > 0 {

@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -20,6 +21,7 @@ type HTTPGateway struct {
 	encoders      map[string]gwruntime.Marshaler
 	middleware    []func(http.Handler) http.Handler
 	filters       []HTTPGatewayFilter
+	handlerName   string
 	mu            sync.Mutex
 }
 
@@ -33,6 +35,7 @@ func NewHTTPGateway(options ...HTTPGatewayOption) (*HTTPGateway, error) {
 		encoders:      make(map[string]gwruntime.Marshaler),
 		middleware:    []func(http.Handler) http.Handler{},
 		filters:       []HTTPGatewayFilter{},
+		handlerName:   "grpc-gateway",
 	}
 	if err := gw.setup(options...); err != nil {
 		return nil, errors.Wrap(err, "setup error")
@@ -87,6 +90,6 @@ func (gw *HTTPGateway) filterWrapper(h http.Handler, filters []HTTPGatewayFilter
 
 func preserveHeaders() func(v string) (string, bool) {
 	return func(v string) (string, bool) {
-		return v, true
+		return strings.TrimRight(v, "\r\n"), true
 	}
 }

@@ -34,7 +34,7 @@ const netUNIX = "unix"
 
 type authFunc func(ctx context.Context) (context.Context, error)
 
-// Server provides a easy-to-setup usable service handler with several utilities.
+// Server provides an easy-to-setup RPC server handler with several utilities.
 type Server struct {
 	tlsOptions       ServerTLSConfig                // TLS settings
 	services         []*Service                     // Services enabled on the server
@@ -131,10 +131,11 @@ func (srv *Server) GetEndpoint() string {
 	return fmt.Sprintf("%s:%d", srv.address, srv.port)
 }
 
-// Stop will terminate the server processing. When graceful is true, the server stops
-// accepting new connections and RPCs and blocks until all the pending RPCs are finished.
-// Otherwise it cancels all active RPCs on the server side and the corresponding pending
-// RPCs on the client side will get notified by connection errors.
+// Stop will terminate the server processing. When graceful is true, the server
+// stops accepting new connections and requests and blocks until all the pending
+// RPCs are finished. Otherwise, it cancels all active RPCs on the server side and
+// the corresponding pending RPCs on the client side will get notified by connection
+// errors.
 func (srv *Server) Stop(graceful bool) error {
 	// Nothing to do
 	if srv.halt == nil {
@@ -176,10 +177,10 @@ func (srv *Server) Stop(graceful bool) error {
 	return errors.Wrap(e, "stop error")
 }
 
-// Start the server and wait for incoming requests. An optional notification handler to catch
-// an event when the server is ready for use. If a handler is provided but poorly managed the
-// start process will continue after a timeout of 20 milliseconds to prevent blocking the
-// process indefinitely.
+// Start the server and wait for incoming requests. You can provide an optional
+// notification handler to catch an event when the server is ready for use. If
+// a handler is provided but poorly managed, the start process will continue after
+// a timeout of 20 milliseconds to prevent blocking the process indefinitely.
 func (srv *Server) Start(ready chan<- bool) (err error) {
 	// In case of errors, close the provided notification channel as cleanup
 	var cancel = func() {
@@ -249,7 +250,7 @@ func (srv *Server) start(ready chan<- bool, timeout time.Duration) error {
 		return errors.Wrap(srv.grpc.Serve(grpcL), "grpc server error")
 	})
 
-	// Start HTTP gateway using it's own network listener
+	// Start HTTP gateway using its own network listener
 	if srv.gwNl != nil {
 		tasks.Go(func() error {
 			return errors.Wrap(srv.gw.Serve(srv.gwNl), "HTTP gateway with custom network listener error")
@@ -297,7 +298,8 @@ func (srv *Server) getAddress() string {
 	return fmt.Sprintf("%s:%d", srv.address, srv.port)
 }
 
-// Configure the main server's network interface with proper resource limits and TLS settings.
+// Configure the main server's network interface with proper resource limits and
+// TLS settings.
 func (srv *Server) setupNetworkInterface(network, address string) (net.Listener, error) {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
@@ -322,7 +324,7 @@ func (srv *Server) setupNetworkInterface(network, address string) (net.Listener,
 
 // Configure the server's HTTP gateway network interface and multiplexer.
 func (srv *Server) setupGateway() error {
-	// Verify if there's a gateway instance to setup
+	// Verify if there's a gateway instance to set up
 	if srv.gateway == nil {
 		return nil
 	}
@@ -369,7 +371,7 @@ func (srv *Server) setupGateway() error {
 	var gmw []func(http.Handler) http.Handler
 	if srv.oop != nil {
 		// Add OTEL as the first middleware in the chain automatically
-		gmw = append(gmw, srv.oop.HTTPServerMiddleware("grpc-gateway"))
+		gmw = append(gmw, srv.oop.HTTPServerMiddleware(srv.gateway.handlerName))
 	}
 	for _, mw := range append(gmw, srv.gateway.middleware...) {
 		handler = mw(handler)
@@ -399,8 +401,8 @@ func (srv *Server) setupGatewayInterface() error {
 		srv.gateway.port = srv.port
 	}
 
-	// Setup a new network interface if the gateway uses a different TCP port or if the
-	// main RPC server is using a UNIX socket as endpoint
+	// Set up a new network interface if the gateway uses a different TCP port
+	// or if the main RPC server is using a UNIX socket as endpoint
 	if srv.net == netUNIX || srv.gateway.port != srv.port {
 		addr := ""
 		if srv.net != netUNIX {

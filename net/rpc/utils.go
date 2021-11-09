@@ -62,32 +62,35 @@ func LoadCertificate(cert []byte, key []byte) (tls.Certificate, error) {
 	return c, errors.Wrap(err, "failed to load key pair")
 }
 
-// ContextWithMetadata returns a context with the provided value set as metadata. Any
-// existing metadata already present in the context will be preserved. Intended to be used
-// for outgoing RPC calls.
+// ContextWithMetadata returns a context with the provided value set as metadata.
+// Any existing metadata already present in the context will be preserved. Intended
+// to be used for outgoing RPC calls.
 func ContextWithMetadata(ctx context.Context, md map[string]string) context.Context {
+	for k, v := range md {
+		md[k] = strings.TrimRight(v, "\r\n")
+	}
 	orig, _ := metadata.FromOutgoingContext(ctx)
 	newMD := metadata.New(md)
 	return metadata.NewOutgoingContext(ctx, metadata.Join(orig, newMD))
 }
 
-// GetAuthToken is helper function for extracting the "authorization" header from the
-// gRPC metadata of the request. It expects the "authorization" header to be of a certain
-// scheme (e.g. `basic`, `bearer`), in a case-insensitive format (see rfc2617, sec 1.2).
-// If no such authorization is found, or the token is of wrong scheme, an error with gRPC
-// status `Unauthenticated` is returned.
+// GetAuthToken is helper function for extracting the "authorization" header from
+// the gRPC metadata of the request. It expects the "authorization" header to be of
+// a certain scheme (e.g. `basic`, `bearer`), in a case-insensitive format
+// (see rfc2617, sec 1.2). If no such authorization is found, or the token is of wrong
+// scheme, an error with gRPC status `Unauthenticated` is returned.
 func GetAuthToken(ctx context.Context, scheme string) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", status.Errorf(codes.Unauthenticated, "no authorization string")
+		return "", status.Errorf(codes.Unauthenticated, "no authorization token")
 	}
 	t := md.Get("authorization")
 	if len(t) == 0 {
-		return "", status.Errorf(codes.Unauthenticated, "no authorization string")
+		return "", status.Errorf(codes.Unauthenticated, "no authorization token")
 	}
 	splits := strings.SplitN(t[0], " ", 2)
 	if len(splits) < 2 {
-		return "", status.Errorf(codes.Unauthenticated, "bad authorization string")
+		return "", status.Errorf(codes.Unauthenticated, "bad authorization token")
 	}
 	if !strings.EqualFold(splits[0], scheme) {
 		return "", status.Errorf(codes.Unauthenticated, "request unauthenticated with "+scheme)

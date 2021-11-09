@@ -17,8 +17,8 @@ var RecommendedCiphers = []uint16{
 	tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
 }
 
-// RecommendedCurves provides a sane list of curves with assembly implementations for performance
-// and constant time to protect against side-channel attacks.
+// RecommendedCurves provides a sane list of curves with assembly implementations
+// for performance and constant time to protect against side-channel attacks.
 var RecommendedCurves = []tls.CurveID{
 	tls.CurveP521,
 	tls.CurveP384,

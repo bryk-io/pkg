@@ -1,6 +1,6 @@
 package rpc
 
-// ResourceLimits allows to set constrains for the RPC server.
+// ResourceLimits allows setting constrains for the RPC server.
 type ResourceLimits struct {
 	// Maximum number of simultaneous RPC connections (clients).
 	Connections uint32 `json:"connections" mapstructure:"connections"`

@@ -119,3 +119,13 @@ func WithPrettyJSON(mime string) HTTPGatewayOption {
 		return nil
 	}
 }
+
+// WithHandlerName will adjust the OpenTelemetry name used to report spans generated
+// by the HTTP gateway instance. If not provided the default name `grpc-gateway`
+// will be used.
+func WithHandlerName(name string) HTTPGatewayOption {
+	return func(gw *HTTPGateway) error {
+		gw.handlerName = name
+		return nil
+	}
+}

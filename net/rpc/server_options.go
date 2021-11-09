@@ -15,21 +15,21 @@ import (
 // NetworkInterfaceLocal defines the local loopback interface (i.e., localhost / 127.0.0.1).
 const NetworkInterfaceLocal = "local"
 
-// NetworkInterfaceAll will setup a network listener on all available unicast and anycast
-// IP addresses of the local system.
+// NetworkInterfaceAll will set up a network listener on all available `unicast` and
+// `anycast` IP addresses of the local system.
 const NetworkInterfaceAll = "all"
 
-// ServerOption allows to adjust server settings following a functional pattern.
+// ServerOption allows adjusting server settings following a functional pattern.
 type ServerOption func(*Server) error
 
 // TokenValidator represents an external authentication mechanism used to validate
-// bearer credentials. In case of success return codes.OK; for any error return a
+// bearer credentials. In case of success return codes.OK; for any error return
 // a proper status code (like codes.Unauthenticated or codes.PermissionDenied) and,
 // optionally, a custom message.
 type TokenValidator func(token string) (codes.Code, string)
 
 // WithService adds an RPC service handler to the server instance, at least one service
-// is required when starting the server.
+// or service provider is required when starting the server.
 func WithService(ss *Service) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -40,7 +40,7 @@ func WithService(ss *Service) ServerOption {
 }
 
 // WithServiceProvider adds an RPC service handler to the server instance, at least one
-// service is required when starting the server.
+// service or service provider is required when starting the server.
 func WithServiceProvider(sp ServiceProvider) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -64,7 +64,8 @@ func WithPanicRecovery() ServerOption {
 	}
 }
 
-// WithNetworkInterface specifies which network interface to use to listen for incoming requests.
+// WithNetworkInterface specifies which network interface to use to listen for incoming
+// requests.
 func WithNetworkInterface(name string) ServerOption {
 	return func(srv *Server) (err error) {
 		srv.mu.Lock()
@@ -121,8 +122,8 @@ func WithResourceLimits(limits ResourceLimits) ServerOption {
 }
 
 // WithInputValidation will automatically detect any errors on received messages by
-// detecting if a 'Validate' method is available and returning any produced errors with
-// an 'InvalidArgument' status code.
+// detecting if a `Validate` method is available and returning any produced errors
+// with an `InvalidArgument` status code.
 //
 // To further automate input validation use:
 // 	https://github.com/envoyproxy/protoc-gen-validate
@@ -135,9 +136,9 @@ func WithInputValidation() ServerOption {
 	}
 }
 
-// WithTLS enables the server to use secure communication channels with the provided credentials
-// and settings. If a certificate is provided the server name MUST match the identifier included
-// in the certificate.
+// WithTLS enables the server to use secure communication channels with the provided
+// credentials and settings. If a certificate is provided the server name MUST match
+// the identifier included in the certificate.
 func WithTLS(opts ServerTLSConfig) ServerOption {
 	return func(srv *Server) (err error) {
 		srv.mu.Lock()
@@ -148,9 +149,10 @@ func WithTLS(opts ServerTLSConfig) ServerOption {
 	}
 }
 
-// WithAuthByCertificate enables certificate-based authentication on the server. It can be used
-// multiple times to allow for several certificate authorities. This option is only applicable
-// when operating the server through a TLS channel, otherwise will simply be ignored.
+// WithAuthByCertificate enables certificate-based authentication on the server. It
+// can be used multiple times to allow for several certificate authorities. This option
+// is only applicable when operating the server through a TLS channel, otherwise will
+// simply be ignored.
 func WithAuthByCertificate(clientCA []byte) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -160,12 +162,13 @@ func WithAuthByCertificate(clientCA []byte) ServerOption {
 	}
 }
 
-// WithAuthByToken allows to use an external authentication mechanism for the server using
-// bearer tokens as credentials. Setting this option will enable automatic authentication
-// for all methods enabled on the server. When a server requires to support both authenticated
-// and unauthenticated methods the verification process can be performed manually per-method.
+// WithAuthByToken allows to use an external authentication mechanism for the server
+// using bearer tokens as credentials. Setting this option will enable automatic
+// authentication for all methods enabled on the server. When a server requires to
+// support both authenticated and unauthenticated methods, the verification process
+// can be performed manually per-method.
 // 	token, err := GetAuthToken(ctx, "bearer")
-// 	// ... validate token ...
+// 	... validate token ...
 func WithAuthByToken(tv TokenValidator) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -189,8 +192,8 @@ func WithAuthByToken(tv TokenValidator) ServerOption {
 	}
 }
 
-// WithUnaryMiddleware allows to include custom middleware functions when processing incoming
-// unary RPC requests.
+// WithUnaryMiddleware allows including custom middleware functions when processing
+// incoming unary RPC requests.
 func WithUnaryMiddleware(entry grpc.UnaryServerInterceptor) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -200,8 +203,8 @@ func WithUnaryMiddleware(entry grpc.UnaryServerInterceptor) ServerOption {
 	}
 }
 
-// WithStreamMiddleware allows to include custom middleware functions when processing stream
-// RPC operations.
+// WithStreamMiddleware allows including custom middleware functions when processing
+// stream RPC operations.
 func WithStreamMiddleware(entry grpc.StreamServerInterceptor) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -211,7 +214,8 @@ func WithStreamMiddleware(entry grpc.StreamServerInterceptor) ServerOption {
 	}
 }
 
-// WithHTTPGateway configures a gateway interface to allows for HTTP access to the server.
+// WithHTTPGateway configures a gateway interface to allow for HTTP access to
+// the server.
 func WithHTTPGateway(gw *HTTPGateway) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -248,10 +252,10 @@ func WithObservability(oop *otel.Operator) ServerOption {
 	}
 }
 
-// WithReflection enables the server to provide information about publicly-accessible services
-// and assists clients at runtime to construct RPC requests and responses without precompiled
-// service information. It is used by gRPC CLI, which can be used to introspect server protos
-// and send/receive test RPCs.
+// WithReflection enables the server to provide information about publicly-accessible
+// services and assists clients at runtime to construct RPC requests and responses
+// without precompiled service information. It is used by gRPC CLI, which can be
+// used to introspect server protos and send/receive test RPCs.
 //
 // More information about the reflection protocol:
 // 	https://github.com/grpc/grpc/blob/master/doc/server-reflection.md

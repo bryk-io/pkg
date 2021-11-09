@@ -33,7 +33,7 @@ type Client struct {
 	skipVerify       bool
 }
 
-// NewClient setup a new client instance.
+// NewClient set up a new client instance.
 func NewClient(options ...ClientOption) (*Client, error) {
 	c := &Client{}
 	if err := c.setup(options...); err != nil {
@@ -68,7 +68,7 @@ func (c *Client) GetConnection(endpoint string) (conn *grpc.ClientConn, err erro
 
 	// This is the official name resolution syntax to use for DNS targets.
 	// The "authority" value is left blank since is not widely supported.
-	// Another option is to leave the endpoint as-is an set a default name
+	// Another option is to leave the endpoint as-is a set a default name
 	// resolution schema:
 	//
 	// resolver.SetDefaultScheme("dns")
@@ -138,8 +138,8 @@ func NewClientConnection(endpoint string, options ...ClientOption) (*grpc.Client
 	return conn, errors.Wrap(err, "failed to establish connection")
 }
 
-// MonitorClientConnection enable notifications on connection state change. If no interval
-// is provided (i.e. 0) a default value of 2 seconds will be used.
+// MonitorClientConnection enable notifications on connection state change. If no
+// interval is provided (i.e. 0) a default value of 2 seconds will be used.
 func MonitorClientConnection(ctx context.Context, conn *grpc.ClientConn, ti time.Duration) <-chan connectivity.State {
 	// Use a default value, if no internal is provided
 	if ti == 0 {

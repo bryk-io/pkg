@@ -15,6 +15,9 @@ type Attributes xlog.Fields
 
 // Set a specific attribute, overrides any previously set value.
 func (attrs Attributes) Set(key string, value interface{}) {
+	if v, ok := value.(string); ok {
+		value = strings.TrimSpace(v)
+	}
 	if strings.TrimSpace(key) != "" {
 		attrs[key] = value
 	}

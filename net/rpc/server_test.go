@@ -104,6 +104,7 @@ func TestServer(t *testing.T) {
 		otel.WithServiceName("rpc-test"),
 		otel.WithServiceVersion("0.1.0"),
 		otel.WithLogger(ll),
+		otel.WithHostMetrics(true),
 	)
 	assert.Nil(err, "initialize operator")
 	defer oop.Shutdown(context.TODO())
@@ -317,6 +318,7 @@ func TestServer(t *testing.T) {
 		// Register a secondary encoder using standard json package for marshaling.
 		metricsHandler, _ := oop.PrometheusMetricsHandler()
 		gwOptions := []HTTPGatewayOption{
+			WithHandlerName("http-gateway"),
 			WithFilter(customFooPing),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc("/hello", customHandler),
@@ -946,7 +948,7 @@ func TestServer(t *testing.T) {
 
 	t.Run("Metadata", func(t *testing.T) {
 		data := make(map[string]string)
-		data["foo"] = "bar"
+		data["foo"] = fmt.Sprintf("%s\n", "bar")
 		ctx := ContextWithMetadata(context.Background(), data)
 		md, _ := metadata.FromOutgoingContext(ctx)
 		assert.Equal("bar", md.Get("foo")[0], "invalid metadata value")

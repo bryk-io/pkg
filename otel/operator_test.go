@@ -22,7 +22,7 @@ import (
 func isCollectorAvailable() bool {
 	res, err := http.Get("http://localhost:13133/")
 	if res != nil {
-		res.Body.Close()
+		_ = res.Body.Close()
 	}
 	if err != nil {
 		return false

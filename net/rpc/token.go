@@ -7,7 +7,8 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// Provides the "credentials.PerRPCCredentials" interface for regular text tokens.
+// Provides the `credentials.PerRPCCredentials` interface for regular
+// text tokens.
 type authToken struct {
 	kind  string
 	value string

@@ -27,8 +27,8 @@ func (op *Operator) RPCClient() (grpc.UnaryClientInterceptor, grpc.StreamClientI
 
 	// Prometheus metrics
 	if op.prom != nil && op.prom.enabled {
-		// Register client metrics collector with operator registry. Including histograms
-		// allows to calculate service latency but is expensive.
+		// Register client metrics collector with operator registry. Including
+		// histograms allows calculating service latency but is expensive.
 		// https://github.com/grpc-ecosystem/go-grpc-prometheus#histograms
 		metrics := gp.NewClientMetrics()
 		metrics.EnableClientHandlingTimeHistogram()
@@ -63,8 +63,8 @@ func (op *Operator) RPCServer() (grpc.UnaryServerInterceptor, grpc.StreamServerI
 
 	// Prometheus metrics
 	if op.prom != nil && op.prom.enabled {
-		// gRPC server metrics collector with operator registry. Including histograms allows
-		// to calculate service latency but is expensive.
+		// gRPC server metrics collector with operator registry. Including
+		// histograms allows calculating service latency but is expensive.
 		// https://github.com/grpc-ecosystem/go-grpc-prometheus#histograms
 		metrics := gp.NewServerMetrics()
 		metrics.EnableHandlingTimeHistogram()
