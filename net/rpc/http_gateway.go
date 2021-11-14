@@ -11,6 +11,16 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// Invalid HTTP2 headers
+// https://datatracker.ietf.org/doc/html/rfc7540#section-8.1.2.2
+var invalidHeaders = []string{
+	"connection",
+	"keep-alive",
+	"proxy-connection",
+	"transfer-encoding",
+	"upgrade",
+}
+
 // HTTPGateway permits to consume an HTTP2 RPC-based service through a flexible HTTP1.1
 // REST interface.
 type HTTPGateway struct {
@@ -90,6 +100,15 @@ func (gw *HTTPGateway) filterWrapper(h http.Handler, filters []HTTPGatewayFilter
 
 func preserveHeaders() func(v string) (string, bool) {
 	return func(v string) (string, bool) {
-		return strings.TrimRight(v, "\r\n"), true
+		return strings.TrimRight(v, "\r\n"), isHeaderValid(strings.ToLower(v))
 	}
+}
+
+func isHeaderValid(header string) bool {
+	for _, h := range invalidHeaders {
+		if h == header {
+			return false
+		}
+	}
+	return true
 }
