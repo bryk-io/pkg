@@ -4,7 +4,7 @@ import (
 	apitrace "go.opentelemetry.io/otel/trace"
 )
 
-// SpanOption allow to adjust span settings at the moment of creation.
+// SpanOption allow adjusting span settings at the moment of creation.
 type SpanOption func(s *Span)
 
 // WithSpanKind adjust the kind value for the created span. When no

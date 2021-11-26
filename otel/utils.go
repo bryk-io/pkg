@@ -40,7 +40,7 @@ const (
 	lblLibLang     = "telemetry.sdk.language"
 )
 
-// ExporterStdout returns a new traces exporter to send telemetry data
+// ExporterStdout returns a new trace exporter to send telemetry data
 // to standard output.
 func ExporterStdout(pretty bool) (*stdouttrace.Exporter, *stdoutmetric.Exporter, error) {
 	var traceOpts []stdouttrace.Option

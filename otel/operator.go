@@ -115,7 +115,7 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 
 // Shutdown notifies the operator of a pending halt to operations. All exporters
 // will preform any cleanup or synchronization required while honoring all timeouts
-// and cancellations contained in the passed context.
+// and cancellations contained in the provided context.
 func (op *Operator) Shutdown(ctx context.Context) {
 	_ = op.traceProvider.ForceFlush(ctx)
 	_ = op.traceProvider.Shutdown(ctx)
@@ -126,7 +126,7 @@ func (op *Operator) Shutdown(ctx context.Context) {
 
 // MainComponent returns an access handler for the main observability component
 // associated directly with the operator instance. This is useful when a certain
-// application element requires access to the instrumentation API but we want to
+// application element requires access to the instrumentation API, but we want to
 // limit its access to the operator handler.
 func (op *Operator) MainComponent() *Component {
 	return op.Component

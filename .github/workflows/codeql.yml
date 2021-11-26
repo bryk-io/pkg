@@ -44,7 +44,7 @@ jobs:
       - name: Autobuild
         uses: github/codeql-action/autobuild@v1
 
-      # Run manual build only if autobuild fails
+      # Run manual build only if auto-build fails
       - name: Manual build
         if: ${{ failure() }}
         run: |

@@ -25,32 +25,32 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.7.0
 	go.bryk.io/miracl v0.4.0
-	go.mongodb.org/mongo-driver v1.7.4
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.26.1
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.26.1
-	go.opentelemetry.io/contrib/instrumentation/host v0.26.1
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.26.1
-	go.opentelemetry.io/contrib/instrumentation/runtime v0.26.1
+	go.mongodb.org/mongo-driver v1.8.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.27.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.27.0
+	go.opentelemetry.io/contrib/instrumentation/host v0.27.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.27.0
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.27.0
 	go.opentelemetry.io/contrib/propagators v0.22.0
-	go.opentelemetry.io/otel v1.1.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.24.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.24.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.1.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.1.0
-	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.24.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.1.0
-	go.opentelemetry.io/otel/metric v0.24.0
-	go.opentelemetry.io/otel/sdk v1.1.0
-	go.opentelemetry.io/otel/sdk/export/metric v0.24.0
-	go.opentelemetry.io/otel/sdk/metric v0.24.0
-	go.opentelemetry.io/otel/trace v1.1.0
+	go.opentelemetry.io/otel v1.2.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.25.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.25.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.2.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.2.0
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.25.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.2.0
+	go.opentelemetry.io/otel/metric v0.25.0
+	go.opentelemetry.io/otel/sdk v1.2.0
+	go.opentelemetry.io/otel/sdk/export/metric v0.25.0
+	go.opentelemetry.io/otel/sdk/metric v0.25.0
+	go.opentelemetry.io/otel/trace v1.2.0
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.19.1
-	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
+	golang.org/x/net v0.0.0-20211123203042-d83791d6bcd9
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
+	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
 	google.golang.org/genproto v0.0.0-20210828152312-66f60bf46e71
 	google.golang.org/grpc v1.42.0
 	google.golang.org/protobuf v1.27.1
