@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/awnumar/memguard v0.22.2
-	github.com/briandowns/spinner v1.16.0
+	github.com/briandowns/spinner v1.18.0
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/golang/protobuf v1.5.2
