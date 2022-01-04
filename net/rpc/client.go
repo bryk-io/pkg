@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Client provides an RPC client wrapper with several utilities.
@@ -42,7 +43,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 
 	// TLS configuration
 	if c.tlsConf == nil {
-		c.dialOpts = append(c.dialOpts, grpc.WithInsecure())
+		c.dialOpts = append(c.dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	} else {
 		c.dialOpts = append(c.dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(c.tlsConf)))
 	}

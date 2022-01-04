@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Invalid HTTP2 headers
@@ -68,7 +69,7 @@ func (gw *HTTPGateway) dialOption() (grpc.DialOption, error) {
 		return nil, errors.Wrap(err, "failed to acquire HTTP gateway's internal client instance")
 	}
 	if cl.tlsConf == nil {
-		return grpc.WithInsecure(), nil
+		return grpc.WithTransportCredentials(insecure.NewCredentials()), nil
 	}
 	return grpc.WithTransportCredentials(credentials.NewTLS(cl.tlsConf)), nil
 }
