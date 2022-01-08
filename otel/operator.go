@@ -184,7 +184,7 @@ func (op *Operator) setupProviders() error {
 	// Metrics provider.
 	op.metricProvider = controller.New(
 		processor.NewFactory(
-			simple.NewWithExactDistribution(),
+			simple.NewWithHistogramDistribution(),
 			op.metricExporter,
 		),
 		controller.WithExporter(op.metricExporter),
