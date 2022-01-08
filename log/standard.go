@@ -47,66 +47,80 @@ func (sl *stdLogger) WithField(key string, value interface{}) Logger {
 }
 
 func (sl *stdLogger) Debug(args ...interface{}) {
-	sl.Debugf(defaultFormat, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.Debugf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Debugf(format string, args ...interface{}) {
-	sl.print("DEBUG", format, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.print("DEBUG", format, args...)
 }
 
 func (sl *stdLogger) Info(args ...interface{}) {
-	sl.Infof(defaultFormat, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.Infof(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Infof(format string, args ...interface{}) {
-	sl.print("INFO", format, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.print("INFO", format, args...)
 }
 
 func (sl *stdLogger) Warning(args ...interface{}) {
-	sl.Warningf(defaultFormat, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.Warningf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Warningf(format string, args ...interface{}) {
-	sl.print("WARNING", format, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.print("WARNING", format, args...)
 }
 
 func (sl *stdLogger) Error(args ...interface{}) {
-	sl.Errorf(defaultFormat, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.Errorf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Errorf(format string, args ...interface{}) {
-	sl.print("ERROR", format, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.print("ERROR", format, args...)
 }
 
 func (sl *stdLogger) Panic(args ...interface{}) {
-	sl.Panicf(defaultFormat, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.Panicf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Panicf(format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	sl.print("PANIC", format, sanitize(args...)...)
-	panic(fmt.Sprintf(format, sanitize(args...)...))
+	args = sanitize(args...)
+	sl.print("PANIC", format, args...)
+	panic(fmt.Sprintf(format, args...))
 }
 
 func (sl *stdLogger) Fatal(args ...interface{}) {
-	sl.Fatalf(defaultFormat, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.Fatalf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Fatalf(format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	sl.print("FATAL", format, sanitize(args...)...)
+	args = sanitize(args...)
+	sl.print("FATAL", format, args...)
 	os.Exit(1)
 }
 
 func (sl *stdLogger) Print(level Level, args ...interface{}) {
+	args = sanitize(args...)
 	lprint(sl, level, args...)
 }
 
 func (sl *stdLogger) Printf(level Level, format string, args ...interface{}) {
+	args = sanitize(args...)
 	lprintf(sl, level, format, args...)
 }
 

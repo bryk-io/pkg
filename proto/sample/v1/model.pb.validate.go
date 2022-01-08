@@ -11,6 +11,7 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -31,19 +32,53 @@ var (
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
+	_ = sort.Sort
 )
 
 // Validate checks the field values on Pong with the rules defined in the proto
-// definition for this message. If any rules are violated, an error is returned.
+// definition for this message. If any rules are violated, the first error
+// encountered is returned, or nil if there are no violations.
 func (m *Pong) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Pong with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in PongMultiError, or nil if none found.
+func (m *Pong) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Pong) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Ok
 
+	if len(errors) > 0 {
+		return PongMultiError(errors)
+	}
 	return nil
 }
+
+// PongMultiError is an error wrapping multiple validation errors returned by
+// Pong.ValidateAll() if the designated constraints aren't met.
+type PongMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PongMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PongMultiError) AllErrors() []error { return m }
 
 // PongValidationError is the validation error returned by Pong.Validate if the
 // designated constraints aren't met.
@@ -100,17 +135,51 @@ var _ interface {
 } = PongValidationError{}
 
 // Validate checks the field values on HealthResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *HealthResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on HealthResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in HealthResponseMultiError,
+// or nil if none found.
+func (m *HealthResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *HealthResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Alive
 
+	if len(errors) > 0 {
+		return HealthResponseMultiError(errors)
+	}
 	return nil
 }
+
+// HealthResponseMultiError is an error wrapping multiple validation errors
+// returned by HealthResponse.ValidateAll() if the designated constraints
+// aren't met.
+type HealthResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HealthResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HealthResponseMultiError) AllErrors() []error { return m }
 
 // HealthResponseValidationError is the validation error returned by
 // HealthResponse.Validate if the designated constraints aren't met.
@@ -167,21 +236,59 @@ var _ interface {
 } = HealthResponseValidationError{}
 
 // Validate checks the field values on Response with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *Response) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Response with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ResponseMultiError, or nil
+// if none found.
+func (m *Response) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Response) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if l := utf8.RuneCountInString(m.GetName()); l < 2 || l > 5 {
-		return ResponseValidationError{
+		err := ResponseValidationError{
 			field:  "Name",
 			reason: "value length must be between 2 and 5 runes, inclusive",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return ResponseMultiError(errors)
+	}
 	return nil
 }
+
+// ResponseMultiError is an error wrapping multiple validation errors returned
+// by Response.ValidateAll() if the designated constraints aren't met.
+type ResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ResponseMultiError) AllErrors() []error { return m }
 
 // ResponseValidationError is the validation error returned by
 // Response.Validate if the designated constraints aren't met.
@@ -238,17 +345,51 @@ var _ interface {
 } = ResponseValidationError{}
 
 // Validate checks the field values on DummyResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *DummyResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DummyResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DummyResponseMultiError, or
+// nil if none found.
+func (m *DummyResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DummyResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Ok
 
+	if len(errors) > 0 {
+		return DummyResponseMultiError(errors)
+	}
 	return nil
 }
+
+// DummyResponseMultiError is an error wrapping multiple validation errors
+// returned by DummyResponse.ValidateAll() if the designated constraints
+// aren't met.
+type DummyResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DummyResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DummyResponseMultiError) AllErrors() []error { return m }
 
 // DummyResponseValidationError is the validation error returned by
 // DummyResponse.Validate if the designated constraints aren't met.

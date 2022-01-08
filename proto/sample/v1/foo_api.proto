@@ -3,12 +3,6 @@ syntax = "proto3";
 package sample.v1;
 
 option go_package = "sample/v1;samplev1";
-option java_multiple_files = true;
-option java_outer_classname = "FooApiProto";
-option java_package = "io.bryk.pkg.sample.v1";
-option optimize_for = SPEED;
-option php_namespace = "Bryk\\Pkg\\Sample\\V1";
-option ruby_package = "bryk.pkg.sample.v1";
 
 // Common types
 import "google/protobuf/empty.proto";

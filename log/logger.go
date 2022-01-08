@@ -119,34 +119,34 @@ type Logger interface {
 func lprint(ll SimpleLogger, lv Level, args ...interface{}) {
 	switch lv {
 	case Debug:
-		ll.Debug(sanitize(args...)...)
+		ll.Debug(args...)
 	case Info:
-		ll.Info(sanitize(args...)...)
+		ll.Info(args...)
 	case Warning:
-		ll.Warning(sanitize(args...)...)
+		ll.Warning(args...)
 	case Error:
-		ll.Error(sanitize(args...)...)
+		ll.Error(args...)
 	case Panic:
-		ll.Panic(sanitize(args...)...)
+		ll.Panic(args...)
 	case Fatal:
-		ll.Fatal(sanitize(args...)...)
+		ll.Fatal(args...)
 	}
 }
 
 func lprintf(ll SimpleLogger, lv Level, format string, args ...interface{}) {
 	switch lv {
 	case Debug:
-		ll.Debugf(format, sanitize(args...)...)
+		ll.Debugf(format, args...)
 	case Info:
-		ll.Infof(format, sanitize(args...)...)
+		ll.Infof(format, args...)
 	case Warning:
-		ll.Warningf(format, sanitize(args...)...)
+		ll.Warningf(format, args...)
 	case Error:
-		ll.Errorf(format, sanitize(args...)...)
+		ll.Errorf(format, args...)
 	case Panic:
-		ll.Panicf(format, sanitize(args...)...)
+		ll.Panicf(format, args...)
 	case Fatal:
-		ll.Fatalf(format, sanitize(args...)...)
+		ll.Fatalf(format, args...)
 	}
 }
 

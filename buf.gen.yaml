@@ -1,4 +1,10 @@
-version: v1beta1
+version: v1
+# https://docs.buf.build/generate/managed-mode
+managed:
+  enabled: true
+  optimize_for: SPEED
+  cc_enable_arenas: false
+  java_multiple_files: true
 # For each plugin:
 #   - name: buf generate will look for a binary named protoc-gen-NAME
 #   - out: path relative to the output directory
@@ -6,19 +12,26 @@ version: v1beta1
 plugins:
   - name: go
     out: .
-    opt: paths=source_relative
+    opt:
+      - paths=source_relative
   - name: go-grpc
     out: .
-    opt: paths=source_relative,require_unimplemented_servers=true
+    opt:
+      - paths=source_relative
+      - require_unimplemented_servers=true
   - name: grpc-gateway
     out: .
-    opt: logtostderr=true
+    opt:
+      - logtostderr=true
   - name: swagger
     out: .
-    opt: logtostderr=true
+    opt:
+      - logtostderr=true
   - name: validate
     out: .
-    opt: lang=go
+    opt:
+      - lang=go
   - name: go-drpc
     out: .
-    opt: paths=source_relative
+    opt:
+      - paths=source_relative

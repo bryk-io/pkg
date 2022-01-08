@@ -1,0 +1,14 @@
+version: v1
+breaking:
+  use:
+    - FILE
+lint:
+  service_suffix: API
+  rpc_allow_google_protobuf_empty_requests: true
+  ignore:
+    - third_party
+  use:
+    - DEFAULT
+  except:
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - RPC_RESPONSE_STANDARD_NAME

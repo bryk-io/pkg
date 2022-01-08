@@ -11,6 +11,7 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -31,22 +32,57 @@ var (
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
+	_ = sort.Sort
 )
 
 // Validate checks the field values on GenericStreamChunk with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *GenericStreamChunk) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenericStreamChunk with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenericStreamChunkMultiError, or nil if none found.
+func (m *GenericStreamChunk) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenericStreamChunk) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Sender
 
 	// no validation rules for Stamp
 
+	if len(errors) > 0 {
+		return GenericStreamChunkMultiError(errors)
+	}
 	return nil
 }
+
+// GenericStreamChunkMultiError is an error wrapping multiple validation errors
+// returned by GenericStreamChunk.ValidateAll() if the designated constraints
+// aren't met.
+type GenericStreamChunkMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenericStreamChunkMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenericStreamChunkMultiError) AllErrors() []error { return m }
 
 // GenericStreamChunkValidationError is the validation error returned by
 // GenericStreamChunk.Validate if the designated constraints aren't met.
@@ -106,18 +142,52 @@ var _ interface {
 
 // Validate checks the field values on OpenClientStreamRequest with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *OpenClientStreamRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on OpenClientStreamRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// OpenClientStreamRequestMultiError, or nil if none found.
+func (m *OpenClientStreamRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *OpenClientStreamRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
+
+	var errors []error
 
 	// no validation rules for Sender
 
 	// no validation rules for Stamp
 
+	if len(errors) > 0 {
+		return OpenClientStreamRequestMultiError(errors)
+	}
 	return nil
 }
+
+// OpenClientStreamRequestMultiError is an error wrapping multiple validation
+// errors returned by OpenClientStreamRequest.ValidateAll() if the designated
+// constraints aren't met.
+type OpenClientStreamRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m OpenClientStreamRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m OpenClientStreamRequestMultiError) AllErrors() []error { return m }
 
 // OpenClientStreamRequestValidationError is the validation error returned by
 // OpenClientStreamRequest.Validate if the designated constraints aren't met.
@@ -176,17 +246,50 @@ var _ interface {
 } = OpenClientStreamRequestValidationError{}
 
 // Validate checks the field values on StreamResult with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *StreamResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on StreamResult with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in StreamResultMultiError, or
+// nil if none found.
+func (m *StreamResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *StreamResult) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Received
 
+	if len(errors) > 0 {
+		return StreamResultMultiError(errors)
+	}
 	return nil
 }
+
+// StreamResultMultiError is an error wrapping multiple validation errors
+// returned by StreamResult.ValidateAll() if the designated constraints aren't met.
+type StreamResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m StreamResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m StreamResultMultiError) AllErrors() []error { return m }
 
 // StreamResultValidationError is the validation error returned by
 // StreamResult.Validate if the designated constraints aren't met.

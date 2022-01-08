@@ -11,6 +11,7 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -31,25 +32,63 @@ var (
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
+	_ = sort.Sort
 )
 
 // Validate checks the field values on EchoRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *EchoRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EchoRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in EchoRequestMultiError, or
+// nil if none found.
+func (m *EchoRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EchoRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetValue()) < 3 {
-		return EchoRequestValidationError{
+		err := EchoRequestValidationError{
 			field:  "Value",
 			reason: "value length must be at least 3 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return EchoRequestMultiError(errors)
+	}
 	return nil
 }
+
+// EchoRequestMultiError is an error wrapping multiple validation errors
+// returned by EchoRequest.ValidateAll() if the designated constraints aren't met.
+type EchoRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EchoRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EchoRequestMultiError) AllErrors() []error { return m }
 
 // EchoRequestValidationError is the validation error returned by
 // EchoRequest.Validate if the designated constraints aren't met.
@@ -106,17 +145,50 @@ var _ interface {
 } = EchoRequestValidationError{}
 
 // Validate checks the field values on EchoResponse with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *EchoResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EchoResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in EchoResponseMultiError, or
+// nil if none found.
+func (m *EchoResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EchoResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for Result
 
+	if len(errors) > 0 {
+		return EchoResponseMultiError(errors)
+	}
 	return nil
 }
+
+// EchoResponseMultiError is an error wrapping multiple validation errors
+// returned by EchoResponse.ValidateAll() if the designated constraints aren't met.
+type EchoResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EchoResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EchoResponseMultiError) AllErrors() []error { return m }
 
 // EchoResponseValidationError is the validation error returned by
 // EchoResponse.Validate if the designated constraints aren't met.
