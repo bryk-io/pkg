@@ -50,109 +50,109 @@ func (zh *zapHandler) WithField(key string, value interface{}) Logger {
 func (zh *zapHandler) Debug(args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Debug(args...)
+		zh.log.With(zh.getFields()...).Debug(sanitize(args...)...)
 		return
 	}
-	zh.log.Debug(args...)
+	zh.log.Debug(sanitize(args...)...)
 }
 
 func (zh *zapHandler) Debugf(format string, args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Debugf(format, args...)
+		zh.log.With(zh.getFields()...).Debugf(format, sanitize(args...)...)
 		return
 	}
-	zh.log.Debugf(format, args...)
+	zh.log.Debugf(format, sanitize(args...)...)
 }
 
 func (zh *zapHandler) Info(args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Info(args...)
+		zh.log.With(zh.getFields()...).Info(sanitize(args...)...)
 		return
 	}
-	zh.log.Info(args...)
+	zh.log.Info(sanitize(args...)...)
 }
 
 func (zh *zapHandler) Infof(format string, args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Infof(format, args...)
+		zh.log.With(zh.getFields()...).Infof(format, sanitize(args...)...)
 		return
 	}
-	zh.log.Infof(format, args...)
+	zh.log.Infof(format, sanitize(args...)...)
 }
 
 func (zh *zapHandler) Warning(args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Warn(args...)
+		zh.log.With(zh.getFields()...).Warn(sanitize(args...)...)
 		return
 	}
-	zh.log.Warn(args...)
+	zh.log.Warn(sanitize(args...)...)
 }
 
 func (zh *zapHandler) Warningf(format string, args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Warnf(format, args...)
+		zh.log.With(zh.getFields()...).Warnf(format, sanitize(args...)...)
 		return
 	}
-	zh.log.Warnf(format, args...)
+	zh.log.Warnf(format, sanitize(args...)...)
 }
 
 func (zh *zapHandler) Error(args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Error(args...)
+		zh.log.With(zh.getFields()...).Error(sanitize(args...)...)
 		return
 	}
-	zh.log.Error(args...)
+	zh.log.Error(sanitize(args...)...)
 }
 
 func (zh *zapHandler) Errorf(format string, args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Errorf(format, args...)
+		zh.log.With(zh.getFields()...).Errorf(format, sanitize(args...)...)
 		return
 	}
-	zh.log.Errorf(format, args...)
+	zh.log.Errorf(format, sanitize(args...)...)
 }
 
 func (zh *zapHandler) Panic(args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Panic(args...)
+		zh.log.With(zh.getFields()...).Panic(sanitize(args...)...)
 		return
 	}
-	zh.log.Panic(args...)
+	zh.log.Panic(sanitize(args...)...)
 }
 
 func (zh *zapHandler) Panicf(format string, args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Panicf(format, args...)
+		zh.log.With(zh.getFields()...).Panicf(format, sanitize(args...)...)
 		return
 	}
-	zh.log.Panicf(format, args...)
+	zh.log.Panicf(format, sanitize(args...)...)
 }
 
 func (zh *zapHandler) Fatal(args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Fatal(args...)
+		zh.log.With(zh.getFields()...).Fatal(sanitize(args...)...)
 		return
 	}
-	zh.log.Fatal(args...)
+	zh.log.Fatal(sanitize(args...)...)
 }
 
 func (zh *zapHandler) Fatalf(format string, args ...interface{}) {
 	if zh.hasFields() {
 		defer zh.clearFields()
-		zh.log.With(zh.getFields()...).Fatalf(format, args...)
+		zh.log.With(zh.getFields()...).Fatalf(format, sanitize(args...)...)
 		return
 	}
-	zh.log.Fatalf(format, args...)
+	zh.log.Fatalf(format, sanitize(args...)...)
 }
 
 func (zh *zapHandler) Print(level Level, args ...interface{}) {

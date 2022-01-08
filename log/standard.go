@@ -47,58 +47,58 @@ func (sl *stdLogger) WithField(key string, value interface{}) Logger {
 }
 
 func (sl *stdLogger) Debug(args ...interface{}) {
-	sl.Debugf(defaultFormat, args...)
+	sl.Debugf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Debugf(format string, args ...interface{}) {
-	sl.print("DEBUG", format, args...)
+	sl.print("DEBUG", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Info(args ...interface{}) {
-	sl.Infof(defaultFormat, args...)
+	sl.Infof(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Infof(format string, args ...interface{}) {
-	sl.print("INFO", format, args...)
+	sl.print("INFO", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Warning(args ...interface{}) {
-	sl.Warningf(defaultFormat, args...)
+	sl.Warningf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Warningf(format string, args ...interface{}) {
-	sl.print("WARNING", format, args...)
+	sl.print("WARNING", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Error(args ...interface{}) {
-	sl.Errorf(defaultFormat, args...)
+	sl.Errorf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Errorf(format string, args ...interface{}) {
-	sl.print("ERROR", format, args...)
+	sl.print("ERROR", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Panic(args ...interface{}) {
-	sl.Panicf(defaultFormat, args...)
+	sl.Panicf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Panicf(format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	sl.print("PANIC", format, args...)
-	panic(fmt.Sprintf(format, args...))
+	sl.print("PANIC", format, sanitize(args...)...)
+	panic(fmt.Sprintf(format, sanitize(args...)...))
 }
 
 func (sl *stdLogger) Fatal(args ...interface{}) {
-	sl.Fatalf(defaultFormat, args...)
+	sl.Fatalf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Fatalf(format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	sl.print("FATAL", format, args...)
+	sl.print("FATAL", format, sanitize(args...)...)
 	os.Exit(1)
 }
 

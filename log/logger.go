@@ -1,5 +1,7 @@
 package log
 
+import "strings"
+
 // Fields allow to provide additional information to logged messages.
 // Particularly useful when supporting structured logging.
 type Fields map[string]interface{}
@@ -117,33 +119,48 @@ type Logger interface {
 func lprint(ll SimpleLogger, lv Level, args ...interface{}) {
 	switch lv {
 	case Debug:
-		ll.Debug(args...)
+		ll.Debug(sanitize(args...)...)
 	case Info:
-		ll.Info(args...)
+		ll.Info(sanitize(args...)...)
 	case Warning:
-		ll.Warning(args...)
+		ll.Warning(sanitize(args...)...)
 	case Error:
-		ll.Error(args...)
+		ll.Error(sanitize(args...)...)
 	case Panic:
-		ll.Panic(args...)
+		ll.Panic(sanitize(args...)...)
 	case Fatal:
-		ll.Fatal(args...)
+		ll.Fatal(sanitize(args...)...)
 	}
 }
 
 func lprintf(ll SimpleLogger, lv Level, format string, args ...interface{}) {
 	switch lv {
 	case Debug:
-		ll.Debugf(format, args...)
+		ll.Debugf(format, sanitize(args...)...)
 	case Info:
-		ll.Infof(format, args...)
+		ll.Infof(format, sanitize(args...)...)
 	case Warning:
-		ll.Warningf(format, args...)
+		ll.Warningf(format, sanitize(args...)...)
 	case Error:
-		ll.Errorf(format, args...)
+		ll.Errorf(format, sanitize(args...)...)
 	case Panic:
-		ll.Panicf(format, args...)
+		ll.Panicf(format, sanitize(args...)...)
 	case Fatal:
-		ll.Fatalf(format, args...)
+		ll.Fatalf(format, sanitize(args...)...)
 	}
+}
+
+func sanitize(args ...interface{}) []interface{} {
+	var (
+		vs string
+		ok bool
+		sv = make([]interface{}, len(args))
+	)
+	for i, v := range args {
+		if vs, ok = v.(string); ok {
+			v = strings.Replace(strings.Replace(vs, "\n", "", -1), "\r", "", -1)
+		}
+		sv[i] = v
+	}
+	return sv
 }

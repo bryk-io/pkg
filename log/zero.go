@@ -88,51 +88,51 @@ func (zh *zeroHandler) WithField(key string, value interface{}) Logger {
 }
 
 func (zh *zeroHandler) Debug(args ...interface{}) {
-	zh.setFields(zh.log.Debug()).Msg(fmt.Sprint(args...))
+	zh.setFields(zh.log.Debug()).Msg(fmt.Sprint(sanitize(args...)...))
 }
 
 func (zh *zeroHandler) Debugf(format string, args ...interface{}) {
-	zh.setFields(zh.log.Debug()).Msgf(format, args...)
+	zh.setFields(zh.log.Debug()).Msgf(format, sanitize(args...)...)
 }
 
 func (zh *zeroHandler) Info(args ...interface{}) {
-	zh.setFields(zh.log.Info()).Msg(fmt.Sprint(args...))
+	zh.setFields(zh.log.Info()).Msg(fmt.Sprint(sanitize(args...)...))
 }
 
 func (zh *zeroHandler) Infof(format string, args ...interface{}) {
-	zh.setFields(zh.log.Info()).Msgf(format, args...)
+	zh.setFields(zh.log.Info()).Msgf(format, sanitize(args...)...)
 }
 
 func (zh *zeroHandler) Warning(args ...interface{}) {
-	zh.setFields(zh.log.Warn()).Msg(fmt.Sprint(args...))
+	zh.setFields(zh.log.Warn()).Msg(fmt.Sprint(sanitize(args...)...))
 }
 
 func (zh *zeroHandler) Warningf(format string, args ...interface{}) {
-	zh.setFields(zh.log.Warn()).Msgf(format, args...)
+	zh.setFields(zh.log.Warn()).Msgf(format, sanitize(args...)...)
 }
 
 func (zh *zeroHandler) Error(args ...interface{}) {
-	zh.setFields(zh.log.Error()).Msg(fmt.Sprint(args...))
+	zh.setFields(zh.log.Error()).Msg(fmt.Sprint(sanitize(args...)...))
 }
 
 func (zh *zeroHandler) Errorf(format string, args ...interface{}) {
-	zh.setFields(zh.log.Error()).Msgf(format, args...)
+	zh.setFields(zh.log.Error()).Msgf(format, sanitize(args...)...)
 }
 
 func (zh *zeroHandler) Panic(args ...interface{}) {
-	zh.setFields(zh.log.Panic()).Msg(fmt.Sprint(args...))
+	zh.setFields(zh.log.Panic()).Msg(fmt.Sprint(sanitize(args...)...))
 }
 
 func (zh *zeroHandler) Panicf(format string, args ...interface{}) {
-	zh.setFields(zh.log.Panic()).Msgf(format, args...)
+	zh.setFields(zh.log.Panic()).Msgf(format, sanitize(args...)...)
 }
 
 func (zh *zeroHandler) Fatal(args ...interface{}) {
-	zh.setFields(zh.log.Fatal()).Msg(fmt.Sprint(args...))
+	zh.setFields(zh.log.Fatal()).Msg(fmt.Sprint(sanitize(args...)...))
 }
 
 func (zh *zeroHandler) Fatalf(format string, args ...interface{}) {
-	zh.setFields(zh.log.Fatal()).Msgf(format, args...)
+	zh.setFields(zh.log.Fatal()).Msgf(format, sanitize(args...)...)
 }
 
 func (zh *zeroHandler) Print(level Level, args ...interface{}) {
