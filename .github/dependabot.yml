@@ -30,7 +30,7 @@ updates:
         versions: ["v2.x"]
       # Avoid breaking changes with unstable OTEL packages
       - dependency-name: "go.opentelemetry.io/*"
-        versions: ["v0.x"]
+        versions: ["v1.x"]
     # Configure commit messages
     commit-message:
       # Prefix all commit messages with "dependencies"

@@ -3,7 +3,8 @@ package rpc
 import (
 	"net/http"
 
-	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // HTTPGatewayOption allows adjusting gateway settings following a functional pattern.
@@ -107,11 +108,15 @@ func WithFilter(f ...HTTPGatewayFilter) HTTPGatewayOption {
 func WithPrettyJSON(mime string) HTTPGatewayOption {
 	return func(gw *HTTPGateway) error {
 		jm := &gwruntime.JSONPb{
-			OrigName:     true,
-			EnumsAsInts:  false,
-			EmitDefaults: false,
-			Indent:       "  ",
-			AnyResolver:  nil,
+			MarshalOptions: protojson.MarshalOptions{
+				UseProtoNames:   true,
+				UseEnumNumbers:  true,
+				EmitUnpopulated: false,
+				Indent:          "  ",
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
 		}
 		gw.mu.Lock()
 		defer gw.mu.Unlock()

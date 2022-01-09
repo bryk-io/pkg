@@ -22,8 +22,9 @@ plugins:
   - name: grpc-gateway
     out: .
     opt:
+      - paths=source_relative
       - logtostderr=true
-  - name: swagger
+  - name: openapiv2
     out: .
     opt:
       - logtostderr=true

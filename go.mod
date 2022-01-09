@@ -7,12 +7,11 @@ require (
 	github.com/briandowns/spinner v1.18.0
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
-	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.2
 	github.com/mr-tron/base58 v1.2.0
 	github.com/piprate/json-gold v0.4.1
 	github.com/pkg/errors v0.9.1

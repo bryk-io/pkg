@@ -14,7 +14,7 @@ import (
 	mwAuth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	mwRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	mwValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"github.com/soheilhy/cmux"
 	"go.bryk.io/pkg/net/rpc/ws"
