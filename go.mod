@@ -23,7 +23,7 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.0
-	go.bryk.io/miracl v0.4.0
+	go.bryk.io/miracl v0.4.1
 	go.mongodb.org/mongo-driver v1.8.2
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.28.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0
@@ -45,12 +45,12 @@ require (
 	go.opentelemetry.io/otel/trace v1.3.0
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.20.0
-	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d
+	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
+	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
-	google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368
+	google.golang.org/genproto v0.0.0-20220114172242-44263ffb69e1
 	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1
 	storj.io/drpc v0.0.26
