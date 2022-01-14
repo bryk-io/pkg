@@ -2,6 +2,7 @@ package ws
 
 import (
 	"errors"
+	"html"
 	"net/http"
 	"strings"
 
@@ -101,8 +102,14 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) *proxyErr {
 
 	// Handle the incoming RPC request
 	go req.process()
-	if err := p.handler.HandleRPC(req, r.URL.Path); err != nil {
+	if err := p.handler.HandleRPC(req, sanitize(r.URL.Path)); err != nil {
 		return wrapErr(http.StatusInternalServerError, err)
 	}
 	return nil
+}
+
+func sanitize(src string) string {
+	res := strings.Replace(strings.Replace(src, "\n", "", -1), "\r", "", -1)
+	res = html.EscapeString(res)
+	return res
 }

@@ -28,6 +28,13 @@ bench:
 build:
 	go build -v -ldflags '$(LD_FLAGS)'
 
+## codeql: Run a CodeQL scan operation locally
+# https://codeql.github.com/docs/
+codeql:
+	@-rm codeql-results.csv
+	codeql database create --overwrite --language go codeql-db
+	codeql database analyze codeql-db --format csv --output codeql-results.csv
+
 ## deps: Verify dependencies and remove intermediary products
 deps:
 	@-rm -rf vendor

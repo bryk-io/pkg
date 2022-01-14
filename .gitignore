@@ -24,3 +24,8 @@ build
 
 # Code coverage reports
 coverage.*
+
+# CodeQL
+codeql-db
+codeql-db.zip
+codeql-results.csv
