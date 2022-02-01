@@ -11,7 +11,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.2
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.3
 	github.com/mr-tron/base58 v1.2.0
 	github.com/piprate/json-gold v0.4.1
 	github.com/pkg/errors v0.9.1
@@ -50,7 +50,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
-	google.golang.org/genproto v0.0.0-20220114172242-44263ffb69e1
+	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5
 	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1
 	storj.io/drpc v0.0.26
