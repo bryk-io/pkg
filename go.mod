@@ -53,5 +53,5 @@ require (
 	google.golang.org/genproto v0.0.0-20220114172242-44263ffb69e1
 	google.golang.org/grpc v1.43.0
 	google.golang.org/protobuf v1.27.1
-	storj.io/drpc v0.0.26
+	storj.io/drpc v0.0.29
 )
