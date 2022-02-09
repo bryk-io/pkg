@@ -3,6 +3,7 @@ package did
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/piprate/json-gold/ld"
@@ -362,7 +363,11 @@ func normalize(v interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []byte(n.(string)), nil
+	nd, ok := n.(string)
+	if !ok {
+		return nil, errors.New("invalid normalized document")
+	}
+	return []byte(nd), nil
 }
 
 // Returns an expanded JSON-LD document.

@@ -105,12 +105,10 @@ func (d *Identifier) RemoveVerificationRelationship(reference string, vm Verific
 	}
 
 	// Remove verification method
-	check := false
 	switch vm {
 	case AuthenticationVM:
 		for i, k := range d.data.AuthenticationMethod {
 			if k == reference {
-				check = true
 				d.data.AuthenticationMethod = append(d.data.AuthenticationMethod[:i], d.data.AuthenticationMethod[i+1:]...)
 				break
 			}
@@ -118,7 +116,6 @@ func (d *Identifier) RemoveVerificationRelationship(reference string, vm Verific
 	case AssertionVM:
 		for i, k := range d.data.AssertionMethod {
 			if k == reference {
-				check = true
 				d.data.AssertionMethod = append(d.data.AssertionMethod[:i], d.data.AssertionMethod[i+1:]...)
 				break
 			}
@@ -126,7 +123,6 @@ func (d *Identifier) RemoveVerificationRelationship(reference string, vm Verific
 	case KeyAgreementVM:
 		for i, k := range d.data.KeyAgreement {
 			if k == reference {
-				check = true
 				d.data.KeyAgreement = append(d.data.KeyAgreement[:i], d.data.KeyAgreement[i+1:]...)
 				break
 			}
@@ -134,7 +130,6 @@ func (d *Identifier) RemoveVerificationRelationship(reference string, vm Verific
 	case CapabilityInvocationVM:
 		for i, k := range d.data.CapabilityInvocation {
 			if k == reference {
-				check = true
 				d.data.CapabilityInvocation = append(d.data.CapabilityInvocation[:i], d.data.CapabilityInvocation[i+1:]...)
 				break
 			}
@@ -142,7 +137,6 @@ func (d *Identifier) RemoveVerificationRelationship(reference string, vm Verific
 	case CapabilityDelegationVM:
 		for i, k := range d.data.CapabilityDelegation {
 			if k == reference {
-				check = true
 				d.data.CapabilityDelegation = append(d.data.CapabilityDelegation[:i], d.data.CapabilityDelegation[i+1:]...)
 				break
 			}
@@ -150,9 +144,6 @@ func (d *Identifier) RemoveVerificationRelationship(reference string, vm Verific
 	}
 
 	// Register update
-	if !check {
-		return errors.New("not registered verification method")
-	}
 	d.update()
 	return nil
 }

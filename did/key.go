@@ -250,7 +250,11 @@ func (k *PublicKey) verify(data, signature []byte) bool {
 		if err != nil {
 			return false
 		}
-		return rsaVerify(pub.(*rsa.PublicKey), data, signature) == nil
+		pk, ok := pub.(*rsa.PublicKey)
+		if !ok {
+			return false
+		}
+		return rsaVerify(pk, data, signature) == nil
 	case KeyTypeSecp256k1:
 		pub, err := btcec.ParsePubKey(pubBytes, btcec.S256())
 		if err != nil {
@@ -323,71 +327,26 @@ func loadExistingKey(private []byte, kt KeyType) (*PublicKey, error) {
 	}
 
 	// Decode private key
-	var pub []byte
+	var (
+		pub []byte
+		err error
+	)
 	switch kt {
 	case KeyTypeEd:
-		// Validate private key length
-		if len(private) != e.PrivateKeySize {
-			return nil, errors.New("invalid Ed25519 private key")
+		pub, err = validateKeyEd(private, challenge)
+		if err != nil {
+			return nil, err
 		}
-
-		// Validate provided key
-		pvt := e.PrivateKey(private)
-		s := e.Sign(pvt, challenge)
-		if !e.Verify(pvt.Public().(e.PublicKey), challenge, s) {
-			return nil, errors.New("invalid Ed25519 private key")
-		}
-
-		// Load public key contents
-		pub = make([]byte, 32)
-		copy(pub[:], pvt[32:])
 	case KeyTypeSecp256k1:
-		pvt, pp := btcec.PrivKeyFromBytes(btcec.S256(), private)
-		if pvt == nil {
-			return nil, errors.New("invalid secp256k1 private key")
-		}
-		ss, err := pvt.Sign(challenge)
+		pub, err = validateKeySecp256k1(private, challenge)
 		if err != nil {
-			return nil, errors.New("invalid secp256k1 private key")
+			return nil, err
 		}
-		if !ss.Verify(challenge, pp) {
-			return nil, errors.New("invalid secp256k1 private key")
-		}
-		pub = pp.SerializeCompressed()
 	case KeyTypeRSA:
-		// Load private key
-		block, _ := pem.Decode(private)
-		if block == nil {
-			return nil, errors.New("failed to decode RSA private key")
-		}
-		pvt, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-		if err != nil {
-			return nil, wrap(err, "failed to parse RSA private key")
-		}
-
-		// Validate provided key
-		s, err := rsaSign(pvt, challenge)
+		pub, err = validateKeyRSA(private, challenge)
 		if err != nil {
 			return nil, err
 		}
-		if err = rsaVerify(pvt.Public().(*rsa.PublicKey), challenge, s); err != nil {
-			return nil, err
-		}
-
-		// Load public key contents
-		pubBuf := bytes.NewBuffer(nil)
-		pubBytes, err := x509.MarshalPKIXPublicKey(&pvt.PublicKey)
-		if err != nil {
-			return nil, wrap(err, "failed to parse public key")
-		}
-		pubPem := &pem.Block{
-			Type:  "PUBLIC KEY",
-			Bytes: pubBytes,
-		}
-		if err = pem.Encode(pubBuf, pubPem); err != nil {
-			return nil, err
-		}
-		pub = pubBuf.Bytes()
 	}
 
 	// Set encoded value
@@ -479,4 +438,88 @@ func multibaseDecode(src string) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("unsupported base identifier: %s", base)
 	}
+}
+
+// Validate the provided 'private' key is Ed25519. Return
+// the corresponding public key.
+func validateKeyEd(private, challenge []byte) ([]byte, error) {
+	// Validate private key length
+	if len(private) != e.PrivateKeySize {
+		return nil, errors.New("invalid Ed25519 private key")
+	}
+
+	// Validate provided key
+	pvt := e.PrivateKey(private)
+	s := e.Sign(pvt, challenge)
+	pk, ok := pvt.Public().(e.PublicKey)
+	if !ok {
+		return nil, errors.New("invalid Ed25519 public key")
+	}
+	if !e.Verify(pk, challenge, s) {
+		return nil, errors.New("invalid Ed25519 private key")
+	}
+
+	// Load public key contents
+	pub := make([]byte, 32)
+	copy(pub[:], pvt[32:])
+	return pub, nil
+}
+
+// Validate the provided 'private' key is Secp256k1. Return
+// the corresponding public key (compressed).
+func validateKeySecp256k1(private, challenge []byte) ([]byte, error) {
+	pvt, pp := btcec.PrivKeyFromBytes(btcec.S256(), private)
+	if pvt == nil {
+		return nil, errors.New("invalid secp256k1 private key")
+	}
+	ss, err := pvt.Sign(challenge)
+	if err != nil {
+		return nil, errors.New("invalid secp256k1 private key")
+	}
+	if !ss.Verify(challenge, pp) {
+		return nil, errors.New("invalid secp256k1 private key")
+	}
+	return pp.SerializeCompressed(), nil
+}
+
+// Validate the provided 'private' key is RSA. Return
+// the corresponding public key (properly PEM encoded).
+func validateKeyRSA(private, challenge []byte) ([]byte, error) {
+	// Load private key
+	block, _ := pem.Decode(private)
+	if block == nil {
+		return nil, errors.New("failed to decode RSA private key")
+	}
+	pvt, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, wrap(err, "failed to parse RSA private key")
+	}
+
+	// Validate provided key
+	s, err := rsaSign(pvt, challenge)
+	if err != nil {
+		return nil, err
+	}
+	pk, ok := pvt.Public().(*rsa.PublicKey)
+	if !ok {
+		return nil, errors.New("failed to parse RSA public key")
+	}
+	if err = rsaVerify(pk, challenge, s); err != nil {
+		return nil, err
+	}
+
+	// Load public key contents
+	pubBuf := bytes.NewBuffer(nil)
+	pubBytes, err := x509.MarshalPKIXPublicKey(&pvt.PublicKey)
+	if err != nil {
+		return nil, wrap(err, "failed to parse public key")
+	}
+	pubPem := &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubBytes,
+	}
+	if err = pem.Encode(pubBuf, pubPem); err != nil {
+		return nil, err
+	}
+	return pubBuf.Bytes(), nil
 }

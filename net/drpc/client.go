@@ -3,6 +3,7 @@ package drpc
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"sync"
 
@@ -12,6 +13,8 @@ import (
 	"storj.io/drpc/drpcconn"
 	"storj.io/drpc/drpcmigrate"
 )
+
+const invalidConnectionErr = "invalid connection type"
 
 // Client represents an instance used to consume DRPC services offered
 // by other entities in the network.
@@ -49,7 +52,11 @@ func NewClient(network, address string, options ...ClientOption) (*Client, error
 	cl.cache = &pool{
 		limit: cl.capacity,
 		free: func(el interface{}) error {
-			return el.(*drpcconn.Conn).Close()
+			conn, ok := el.(*drpcconn.Conn)
+			if !ok {
+				return errors.New(invalidConnectionErr)
+			}
+			return conn.Close()
 		},
 		new: func() (interface{}, error) {
 			nc, err := cl.dial()
@@ -121,7 +128,11 @@ func (cl *Client) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in,
 	defer cl.cache.Put(conn)
 
 	// Apply middleware
-	var handler clmw.Interceptor = conn.(*drpcconn.Conn)
+	tc, ok := conn.(*drpcconn.Conn)
+	if !ok {
+		return errors.New(invalidConnectionErr)
+	}
+	var handler clmw.Interceptor = tc
 	for _, mw := range cl.mdw {
 		handler = mw(handler)
 	}
@@ -140,7 +151,11 @@ func (cl *Client) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) 
 	defer cl.cache.Put(conn)
 
 	// Apply middleware
-	var handler clmw.Interceptor = conn.(*drpcconn.Conn)
+	tc, ok := conn.(*drpcconn.Conn)
+	if !ok {
+		return nil, errors.New(invalidConnectionErr)
+	}
+	var handler clmw.Interceptor = tc
 	for _, mw := range cl.mdw {
 		handler = mw(handler)
 	}

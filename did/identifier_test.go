@@ -254,9 +254,9 @@ func TestDocument(t *testing.T) {
 		// Authentication keys
 		assert.Nil(id.AddVerificationRelationship(id.GetReference("key-1"), AuthenticationVM), "add valid key")
 		assert.Nil(id.AddVerificationRelationship(id.GetReference("key-2"), AuthenticationVM), "add valid key")
-		assert.NotNil(id.AddVerificationRelationship(id.GetReference("key-1"), AuthenticationVM), "duplicate key")
-		assert.NotNil(id.RemoveVerificationRelationship(id.GetReference("key-3"), AuthenticationVM), "invalid key")
+		assert.Nil(id.RemoveVerificationRelationship(id.GetReference("key-3"), AuthenticationVM), "invalid key (no-op)")
 		assert.Nil(id.RemoveVerificationRelationship(id.GetReference("key-2"), AuthenticationVM), "remove key")
+		assert.NotNil(id.AddVerificationRelationship(id.GetReference("key-1"), AuthenticationVM), "duplicate key")
 	})
 
 	t.Run("ServiceEndpoints", func(t *testing.T) {

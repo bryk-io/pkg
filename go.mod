@@ -4,18 +4,18 @@ go 1.16
 
 require (
 	github.com/awnumar/memguard v0.22.2
-	github.com/briandowns/spinner v1.18.0
+	github.com/briandowns/spinner v1.18.1
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.2
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.3
 	github.com/mr-tron/base58 v1.2.0
 	github.com/piprate/json-gold v0.4.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/rs/zerolog v1.26.1
 	github.com/sirupsen/logrus v1.8.1
@@ -24,7 +24,7 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.0
 	go.bryk.io/miracl v0.4.1
-	go.mongodb.org/mongo-driver v1.8.2
+	go.mongodb.org/mongo-driver v1.8.3
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.28.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.28.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.27.0
@@ -44,14 +44,14 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.26.0
 	go.opentelemetry.io/otel/trace v1.3.0
 	go.uber.org/goleak v1.1.12
-	go.uber.org/zap v1.20.0
-	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
-	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
+	go.uber.org/zap v1.21.0
+	golang.org/x/crypto v0.0.0-20220209155544-dad33157f4bf
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/time v0.0.0-20211116232009-f0f3c7e86c11
-	google.golang.org/genproto v0.0.0-20220114172242-44263ffb69e1
-	google.golang.org/grpc v1.43.0
+	google.golang.org/genproto v0.0.0-20220208230804-65c12eb4c068
+	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
-	storj.io/drpc v0.0.26
+	storj.io/drpc v0.0.29
 )

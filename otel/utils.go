@@ -182,6 +182,7 @@ func kvAny(k string, value interface{}) attribute.KeyValue {
 
 	rv := reflect.ValueOf(value)
 
+	// nolint:forcetypeassert
 	switch rv.Kind() {
 	case reflect.Array:
 		rv = rv.Slice(0, rv.Len())

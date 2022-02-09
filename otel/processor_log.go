@@ -41,7 +41,9 @@ func (f logSpans) OnEnd(s sdktrace.ReadOnlySpan) {
 
 // OnStart is used to log a message when a new span is created.
 func (f logSpans) OnStart(parent context.Context, s sdktrace.ReadWriteSpan) {
-	f.log.WithFields(f.fields(s.(sdktrace.ReadOnlySpan), false)).Info(s.Name())
+	if rs, ok := s.(sdktrace.ReadOnlySpan); ok {
+		f.log.WithFields(f.fields(rs, false)).Info(s.Name())
+	}
 	f.Next.OnStart(parent, s)
 }
 
