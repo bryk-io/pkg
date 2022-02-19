@@ -71,6 +71,7 @@ func (m *EchoRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return EchoRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -171,6 +172,7 @@ func (m *EchoResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return EchoResponseMultiError(errors)
 	}
+
 	return nil
 }
 

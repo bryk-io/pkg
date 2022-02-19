@@ -6,7 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	xlog "go.bryk.io/pkg/log"
-	sdkmetric "go.opentelemetry.io/otel/sdk/export/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 

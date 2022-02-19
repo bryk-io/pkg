@@ -13,7 +13,7 @@ import (
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
 	otelcodes "go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/sdk/export/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric/export"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -89,7 +89,7 @@ func TestNewOperator(t *testing.T) {
 	// Exporters
 	var (
 		traceExp  trace.SpanExporter
-		metricExp metric.Exporter
+		metricExp sdkmetric.Exporter
 		err       error
 	)
 	if isCollectorAvailable() {

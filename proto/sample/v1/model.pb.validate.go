@@ -61,6 +61,7 @@ func (m *Pong) validate(all bool) error {
 	if len(errors) > 0 {
 		return PongMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -161,6 +162,7 @@ func (m *HealthResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return HealthResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -271,6 +273,7 @@ func (m *Response) validate(all bool) error {
 	if len(errors) > 0 {
 		return ResponseMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -371,6 +374,7 @@ func (m *DummyResponse) validate(all bool) error {
 	if len(errors) > 0 {
 		return DummyResponseMultiError(errors)
 	}
+
 	return nil
 }
 

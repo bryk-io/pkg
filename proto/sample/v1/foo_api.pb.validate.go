@@ -64,6 +64,7 @@ func (m *GenericStreamChunk) validate(all bool) error {
 	if len(errors) > 0 {
 		return GenericStreamChunkMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -169,6 +170,7 @@ func (m *OpenClientStreamRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return OpenClientStreamRequestMultiError(errors)
 	}
+
 	return nil
 }
 
@@ -272,6 +274,7 @@ func (m *StreamResult) validate(all bool) error {
 	if len(errors) > 0 {
 		return StreamResultMultiError(errors)
 	}
+
 	return nil
 }
 
