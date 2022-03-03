@@ -70,12 +70,11 @@ test:
 updates:
 	@go list -u -f '{{if (and (not (or .Main .Indirect)) .Update)}}{{.Path}}: {{.Version}} -> {{.Update.Version}}{{end}}' -mod=mod -m all 2> /dev/null
 
-## protos: Compile all PB definitions and RPC services
+## protos: Compile all protobuf definitions and RPC services
 protos:
 	# Generate package images and code
 	make proto-build pkg=sample/v1
 
-## proto-test: Verify PB definitions on 'pkg'
 proto-test:
 	# Verify style and consistency
 	$(buf) lint --path proto/$(pkg)
@@ -84,7 +83,6 @@ proto-test:
 	# use `buf build --o proto/$(pkg)/image.bin --path proto/$(pkg)` to generate it.
 	$(buf) breaking --against proto/$(pkg)/image.bin
 
-## proto-build: Build PB definitions on 'pkg'
 proto-build:
 	# Verify PB definitions
 	make proto-test pkg=$(pkg)

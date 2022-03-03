@@ -21,7 +21,7 @@ jobs:
 
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Configure runner environment
       - name: Set up runner environment
@@ -54,7 +54,7 @@ jobs:
 
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Configure runner environment
       - name: Set up runner environment
@@ -115,7 +115,7 @@ jobs:
 
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Configure runner environment
       - name: Set up runner environment
@@ -139,7 +139,7 @@ jobs:
       # Style consistency and static analysis using 'golangci-lint'
       # https://github.com/marketplace/actions/run-golangci-lint
       - name: Static analysis
-        uses: golangci/golangci-lint-action@v2.5.2
+        uses: golangci/golangci-lint-action@v3.1.0
         with:
           version: latest
 
