@@ -5,6 +5,7 @@ package did
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"text/template"
@@ -28,7 +29,8 @@ func (p *Provider) resolve(id *Identifier) ([]byte, error) {
 	}
 
 	// Submit request
-	res, err := http.Get(buf.String())
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, buf.String(), nil)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

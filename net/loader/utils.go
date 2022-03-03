@@ -1,9 +1,7 @@
-//go:build !go1.16
-// +build !go1.16
-
 package loader
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"io/ioutil"
 	"path"
