@@ -9,7 +9,7 @@ LD_FLAGS += -s -w
 # locally (on a dev container) or using a builder image.
 buf:=buf
 ifndef REMOTE_CONTAINERS_SOCKETS
-	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.0.0 buf
+	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.1.0 buf
 endif
 
 # For commands that require a specific package path, default to all local
@@ -97,9 +97,13 @@ proto-build:
 	# the package documentation.
 	@-sed -i.bak '/\/\*/,/*\//d' proto/$(pkg)/*.pb.gw.go
 
-	# Remove non-required dependencies. "protoc-gen-validate" don't have runtime
-	# dependencies but the generated code includes the package by the default =/.
+	# "protoc-gen-validate" don't have runtime dependencies but the generated
+	# code includes the package by the default =/
 	@-sed -i.bak '/protoc-gen-validate/d' proto/$(pkg)/*.pb.go
+
+	# "protoc-gen-openapiv2" don't have runtime dependencies but the generated
+	# code includes the package by the default =/
+	@-sed -i.bak '/protoc-gen-openapiv2/d' proto/$(pkg)/*.pb.go
 
 	# Remove in-place edit backup files
 	@-rm proto/$(pkg)/*.bak

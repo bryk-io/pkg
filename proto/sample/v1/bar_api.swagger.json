@@ -1,19 +1,30 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "sample/v1/bar_api.proto",
-    "version": "version not set"
+    "title": "Bar API",
+    "version": "0.1.0",
+    "contact": {
+      "name": "John Doe",
+      "email": "john.dow@example.com"
+    }
   },
   "tags": [
     {
       "name": "BarAPI"
     }
   ],
+  "schemes": [
+    "http",
+    "https",
+    "wss"
+  ],
   "consumes": [
-    "application/json"
+    "application/json",
+    "application/protobuf"
   ],
   "produces": [
-    "application/json"
+    "application/json",
+    "application/protobuf"
   ],
   "paths": {
     "/bar/health": {
@@ -70,7 +81,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1Response"
+              "$ref": "#/definitions/samplev1Response"
             }
           },
           "default": {
@@ -114,6 +125,16 @@
         }
       }
     },
+    "samplev1Response": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "A key on the entity"
+        }
+      },
+      "description": "Generic request response."
+    },
     "v1HealthResponse": {
       "type": "object",
       "properties": {
@@ -133,16 +154,6 @@
         }
       },
       "description": "Reachability test response."
-    },
-    "v1Response": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "title": "A key on the entity"
-        }
-      },
-      "description": "Generic request response."
     }
   }
 }

@@ -10,6 +10,26 @@ import "google/protobuf/empty.proto";
 // Local dependencies
 import "sample/v1/model.proto";
 import "third_party/google/api/annotations.proto";
+import "third_party/openapiv2/annotations.proto";
+
+// OpenAPI settings.
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Bar API";
+    version: "0.1.0";
+    contact: {
+      name: "John Doe";
+      email: "john.dow@example.com";
+    };
+  };
+  schemes: HTTP;
+	schemes: HTTPS;
+	schemes: WSS;
+	consumes: "application/json";
+	consumes: "application/protobuf";
+	produces: "application/json";
+	produces: "application/protobuf";
+};
 
 // Sample "bar" service server.
 service BarAPI {
