@@ -53,10 +53,19 @@ lint:
 	# Go code
 	golangci-lint run -v ./$(pkg)
 
-## scan: Look for known vulnerabilities in the project dependencies
+## scan-deps: Look for known vulnerabilities in the project dependencies
 # https://github.com/sonatype-nexus-community/nancy
-scan:
+scan-deps:
 	@go list -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' -m all | nancy sleuth --skip-update-check
+
+## scan-secrets: Scan project code for accidentally leaked secrets
+scan-secrets:
+	@docker run --platform linux/amd64 --rm \
+	-v $(shell pwd):/proj \
+	dxa4481/trufflehog file:///proj \
+	-x .exclude-secrets-scan.txt \
+	--regex \
+	--entropy false
 
 ## test: Run all unitary tests
 test:

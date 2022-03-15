@@ -19,8 +19,8 @@ build
 !**/testdata/*.cer
 !**/testdata/*.pem
 
-# Secre files
-**/*secret*
+# Secret files
+**/*secret_*
 
 # Code coverage reports
 coverage.*
