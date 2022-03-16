@@ -100,6 +100,9 @@ type identifierData struct {
 
 	// Time of the latest update normalized to UTC 00:00.
 	Updated *time.Time
+
+	// Indicates if an identifier is deactivated
+	Deactivated bool
 }
 
 // NewIdentifier provides a helper factory method to generate a free-form identifier
@@ -582,4 +585,54 @@ func (d *Identifier) params() string {
 func (d *Identifier) update() {
 	t := time.Now().UTC()
 	d.data.Updated = &t
+}
+
+// AddMetadata updates the identifier Created, Updated, and Deactivated
+// properties based on a document metadata input
+func (d *Identifier) AddMetadata(metadata *DocumentMetadata) error {
+	if d.data == nil {
+		d.data = &identifierData{}
+	}
+
+	d.data.Deactivated = metadata.Deactivated
+
+	if metadata.Created != "" {
+		created, err := time.ParseInLocation(time.RFC3339, metadata.Created, time.UTC)
+		if err != nil {
+			return err
+		}
+		d.data.Created = &created
+	}
+
+	if metadata.Updated != "" {
+		updated, err := time.ParseInLocation(time.RFC3339, metadata.Created, time.UTC)
+		if err != nil {
+			return err
+		}
+		d.data.Updated = &updated
+	}
+
+	return nil
+}
+
+// GetMetadata returns the DocumentMetadata for the identifier instance
+func (d *Identifier) GetMetadata() *DocumentMetadata {
+	metadata := &DocumentMetadata{
+		Deactivated: d.data.Deactivated,
+	}
+
+	if d.data.Created != nil {
+		metadata.Created = d.data.Created.UTC().Format(time.RFC3339)
+	}
+
+	if d.data.Updated != nil {
+		metadata.Updated = d.data.Updated.UTC().Format(time.RFC3339)
+	}
+
+	return metadata
+}
+
+// Deactivated returns a bool value indicating if the identifier is deactivated
+func (d *Identifier) Deactivated() bool {
+	return d.data.Deactivated
 }

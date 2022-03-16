@@ -480,6 +480,91 @@ func TestFromDocument(t *testing.T) {
 	assert.NotNil(err, "signing without private key present")
 }
 
+func TestIdentifier_AddMetadata(t *testing.T) {
+	assert := tdd.New(t)
+	now := time.Now().UTC()
+	tt := []struct {
+		name          string
+		metadata      *DocumentMetadata
+		expectedError bool
+	}{
+		{
+			name: "invalid created value",
+			metadata: &DocumentMetadata{
+				Created:     "test",
+				Updated:     "",
+				Deactivated: false,
+			},
+			expectedError: true,
+		}, {
+			name: "invalid updated value",
+			metadata: &DocumentMetadata{
+				Created:     "",
+				Updated:     "test",
+				Deactivated: false,
+			},
+			expectedError: true,
+		},
+		{
+			name: "valid active metadata",
+			metadata: &DocumentMetadata{
+				Created:     now.Format(time.RFC3339),
+				Updated:     now.Format(time.RFC3339),
+				Deactivated: false,
+			},
+			expectedError: false,
+		}, {
+			name: "valid deactivated metadata",
+			metadata: &DocumentMetadata{
+				Created:     now.Format(time.RFC3339),
+				Updated:     now.Format(time.RFC3339),
+				Deactivated: true,
+			},
+			expectedError: false,
+		},
+	}
+
+	for _, test := range tt {
+		d := Identifier{}
+		err := d.AddMetadata(test.metadata)
+		if test.expectedError {
+			assert.Error(err, "expected error")
+		} else {
+			assert.Nil(err, "error adding metadata")
+			assert.Equal(d.Deactivated(), test.metadata.Deactivated, "error parsing metadata")
+			if test.metadata.Created != "" {
+				created, err := time.ParseInLocation(time.RFC3339, test.metadata.Created, time.UTC)
+				assert.Nil(err, "error parsing time")
+				dCreated, err := d.Created()
+				assert.Nil(err, "error parsing time")
+				assert.Equal(dCreated, created, "error parsing metadata")
+			}
+			if test.metadata.Updated != "" {
+				updated, err := time.ParseInLocation(time.RFC3339, test.metadata.Updated, time.UTC)
+				assert.Nil(err, "error parsing time")
+				dUpdated, err := d.Updated()
+				assert.Nil(err, "error parsing time")
+				assert.Equal(dUpdated, updated, "error parsing metadata")
+			}
+		}
+	}
+}
+
+func TestIdentifier_GetMetadata(t *testing.T) {
+	assert := tdd.New(t)
+	now := time.Now().UTC()
+	metadata := &DocumentMetadata{
+		Created:     now.Format(time.RFC3339),
+		Updated:     now.Format(time.RFC3339),
+		Deactivated: true,
+	}
+
+	d := Identifier{}
+	err := d.AddMetadata(metadata)
+	assert.Nil(err, "error adding metadata")
+	assert.Equal(d.GetMetadata(), metadata, "error parsing metadata")
+}
+
 // Basic identifier generation.
 func ExampleNewIdentifier() {
 	id, err := NewIdentifier("sample", "foo-bar")
