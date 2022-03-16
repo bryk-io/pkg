@@ -588,7 +588,7 @@ func (d *Identifier) update() {
 }
 
 // AddMetadata updates the identifier Created, Updated, and Deactivated
-// properties based on a document metadata input
+// properties based on a document metadata input.
 func (d *Identifier) AddMetadata(metadata *DocumentMetadata) error {
 	if d.data == nil {
 		d.data = &identifierData{}
@@ -615,7 +615,7 @@ func (d *Identifier) AddMetadata(metadata *DocumentMetadata) error {
 	return nil
 }
 
-// GetMetadata returns the DocumentMetadata for the identifier instance
+// GetMetadata returns the DocumentMetadata for the identifier instance.
 func (d *Identifier) GetMetadata() *DocumentMetadata {
 	metadata := &DocumentMetadata{
 		Deactivated: d.data.Deactivated,
@@ -632,7 +632,7 @@ func (d *Identifier) GetMetadata() *DocumentMetadata {
 	return metadata
 }
 
-// Deactivated returns a bool value indicating if the identifier is deactivated
+// Deactivated returns a bool value indicating if the identifier is deactivated.
 func (d *Identifier) Deactivated() bool {
 	return d.data.Deactivated
 }
