@@ -605,7 +605,7 @@ func (d *Identifier) AddMetadata(metadata *DocumentMetadata) error {
 	}
 
 	if metadata.Updated != "" {
-		updated, err := time.ParseInLocation(time.RFC3339, metadata.Created, time.UTC)
+		updated, err := time.ParseInLocation(time.RFC3339, metadata.Updated, time.UTC)
 		if err != nil {
 			return err
 		}

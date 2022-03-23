@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/websocket v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.8.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.9.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/piprate/json-gold v0.4.1
 	github.com/pkg/errors v0.9.1
@@ -45,14 +45,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.4.1
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd
+	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
-	google.golang.org/genproto v0.0.0-20220302033224-9aa15565e42a
+	google.golang.org/genproto v0.0.0-20220314164441-57ef72a4c106
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
-	storj.io/drpc v0.0.29
+	storj.io/drpc v0.0.30
 )
