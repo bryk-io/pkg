@@ -6,8 +6,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	xlog "go.bryk.io/pkg/log"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric/export"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // OperatorOption provide a functional style configuration mechanism
@@ -31,7 +31,7 @@ func WithServiceVersion(version string) OperatorOption {
 	}
 }
 
-// WithResourceAttributes allows to extend (or override) the core attributes used
+// WithResourceAttributes allows extending (or overriding) the core attributes used
 // globally by the operator. The core attributes must provide information
 // at the resource level. These attributes are used to configure the
 // operator's tracer and logger instances; are inherited by all spans created
@@ -53,7 +53,7 @@ func WithLogger(ll xlog.Logger) OperatorOption {
 
 // WithExporter enables a trace (i.e. span) exporter as data sink for the operator.
 // If no exporter is set, all traces are discarded by default.
-func WithExporter(exp sdktrace.SpanExporter) OperatorOption {
+func WithExporter(exp sdkTrace.SpanExporter) OperatorOption {
 	return func(op *Operator) error {
 		op.exporter = exp
 		return nil
@@ -62,7 +62,7 @@ func WithExporter(exp sdktrace.SpanExporter) OperatorOption {
 
 // WithMetricExporter enables a metric exporter as data sink for the operator.
 // If no exporter is set, all metrics are discarded by default.
-func WithMetricExporter(exp sdkmetric.Exporter) OperatorOption {
+func WithMetricExporter(exp sdkMetric.Exporter) OperatorOption {
 	return func(op *Operator) error {
 		op.metricExporter = exp
 		return nil
@@ -70,9 +70,9 @@ func WithMetricExporter(exp sdkmetric.Exporter) OperatorOption {
 }
 
 // WithHostMetrics enables the operator to capture the conventional host metric instruments
-// specified by OpenTelemetry. Host metric events are sometimes collected through the OpenTelemetry
-//Collector "hostmetrics" receiver running as an agent; this instrumentation is an alternative
-//for processes that want to record the same information without an agent.
+// specified by OpenTelemetry. Host metric events are sometimes collected through the
+// OpenTelemetry Collector `host metrics` receiver running as an agent; this instrumentation
+// is an alternative for processes that want to record the same information without an agent.
 func WithHostMetrics(capture bool) OperatorOption {
 	return func(op *Operator) error {
 		op.hostMetrics = capture
@@ -80,10 +80,11 @@ func WithHostMetrics(capture bool) OperatorOption {
 	}
 }
 
-// WithRuntimeMetricsPeriod enables the operator to capture the conventional runtime metrics
-// specified by OpenTelemetry. The provided `memoryInterval` values sets the minimum interval
-// between calls to runtime.ReadMemStats(), which is a relatively expensive call to make frequently.
-// The default interval value is 10 seconds, passing a value of 0 uses the default.
+// WithRuntimeMetricsPeriod enables the operator to capture the conventional runtime
+// metrics specified by OpenTelemetry. The provided `memoryInterval` values sets the
+// minimum interval between calls to runtime.ReadMemStats(), which is a relatively
+// expensive call to make frequently. The default interval value is 10 seconds, passing
+// a value of 0 uses the default.
 func WithRuntimeMetricsPeriod(value time.Duration) OperatorOption {
 	return func(op *Operator) error {
 		if value.Seconds() < 0 {
@@ -110,8 +111,8 @@ func WithPrometheusSupport(extras ...prometheus.Collector) OperatorOption {
 	}
 }
 
-// WithMetricPushPeriod sets the time interval between each push operation for collected metrics.
-// If no value is provided (i.e., 0) the default period is set to 5 seconds.
+// WithMetricPushPeriod sets the time interval between each push operation for collected
+// metrics. If no value is provided (i.e., 0) the default period is set to 5 seconds.
 func WithMetricPushPeriod(value time.Duration) OperatorOption {
 	return func(op *Operator) error {
 		if value.Seconds() < 0 {

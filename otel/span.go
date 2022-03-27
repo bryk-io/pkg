@@ -8,14 +8,14 @@ import (
 
 	xlog "go.bryk.io/pkg/log"
 	"go.opentelemetry.io/otel/baggage"
-	otelcodes "go.opentelemetry.io/otel/codes"
+	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
-	apitrace "go.opentelemetry.io/otel/trace"
+	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
 // Span represents a unit of work, performed over a certain period of time.
 // A span supports 2 independent data mechanisms that need to be properly
-// propagated across service boundaries to the spans to be captured correctly.
+// propagated across service boundaries for the spans to be captured correctly.
 //
 // The trace context provides trace information (trace IDs, span IDs, etc.),
 // which ensure that all spans for a single request are part of the same trace.
@@ -27,8 +27,8 @@ type Span struct {
 	name  string
 	kind  SpanKind
 	attrs Attributes
-	opts  []apitrace.SpanStartOption
-	span  apitrace.Span
+	opts  []apiTrace.SpanStartOption
+	span  apiTrace.Span
 	ctx   context.Context
 	cp    propagation.TextMapPropagator
 	mu    sync.Mutex
@@ -56,7 +56,7 @@ func (s *Span) End() {
 }
 
 // SetStatus will update the status of the span.
-func (s *Span) SetStatus(code otelcodes.Code, msg string) {
+func (s *Span) SetStatus(code otelCodes.Code, msg string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.span.SetStatus(code, msg)
@@ -70,10 +70,15 @@ func (s *Span) Context() context.Context {
 	return s.ctx
 }
 
-// Event produces a log marker during the execution of the span. The attributes provided
-// here will be merged with those provided when creating the span.
+// IsSampled returns if the sampling bit is set in the span context's.
+func (s *Span) IsSampled() bool {
+	return s.span.SpanContext().IsSampled()
+}
+
+// Event produces a log marker during the execution of the span. The attributes
+// provided here will be merged with those provided when creating the span.
 func (s *Span) Event(message string, attributes Attributes) {
-	s.span.AddEvent(message, apitrace.WithAttributes(attributes.Expand()...))
+	s.span.AddEvent(message, apiTrace.WithAttributes(attributes.Expand()...))
 }
 
 // Error adds an annotation to the span with an error event.
@@ -99,6 +104,14 @@ func (s *Span) Error(level xlog.Level, err error, attributes Attributes) {
 	s.span.RecordError(err)
 }
 
+// SetAttribute allows adding or adjusting a single key/value pair on the span metadata.
+func (s *Span) SetAttribute(key string, value interface{}) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.attrs.Set(key, value)
+	s.span.SetAttributes(s.attrs.Expand()...)
+}
+
 // SetAttributes allows adding values that are applied as metadata to the span and
 // are useful for aggregating, filtering, and grouping traces. If a key from the provided
 // `attributes` already exists for an attribute of the Span, it will be overwritten
@@ -107,14 +120,6 @@ func (s *Span) SetAttributes(attributes Attributes) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.attrs = join(s.attrs, attributes)
-	s.span.SetAttributes(s.attrs.Expand()...)
-}
-
-// SetAttribute allows adding or adjusting a single key/value pair on the span metadata.
-func (s *Span) SetAttribute(key string, value interface{}) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.attrs.Set(key, value)
 	s.span.SetAttributes(s.attrs.Expand()...)
 }
 

@@ -1,7 +1,7 @@
 package otel
 
 import (
-	apitrace "go.opentelemetry.io/otel/trace"
+	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
 // SpanOption allow adjusting span settings at the moment of creation.
@@ -24,6 +24,6 @@ func WithSpanKind(sk SpanKind) SpanOption {
 func WithSpanAttributes(attrs Attributes) SpanOption {
 	return func(s *Span) {
 		s.attrs = attrs
-		s.opts = append(s.opts, apitrace.WithAttributes(attrs.Expand()...))
+		s.opts = append(s.opts, apiTrace.WithAttributes(attrs.Expand()...))
 	}
 }

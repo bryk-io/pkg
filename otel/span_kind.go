@@ -1,7 +1,7 @@
 package otel
 
 import (
-	apitrace "go.opentelemetry.io/otel/trace"
+	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
 // SpanKind indicates the nature and/or owner of the traced operation.
@@ -30,22 +30,22 @@ const (
 	SpanKindProducer SpanKind = "producer"
 )
 
-func (sk SpanKind) option() apitrace.SpanStartOption {
+func (sk SpanKind) option() apiTrace.SpanStartOption {
 	switch sk {
 	case SpanKindInternal:
-		return apitrace.WithSpanKind(apitrace.SpanKindInternal)
+		return apiTrace.WithSpanKind(apiTrace.SpanKindInternal)
 	case SpanKindServer:
-		return apitrace.WithSpanKind(apitrace.SpanKindServer)
+		return apiTrace.WithSpanKind(apiTrace.SpanKindServer)
 	case SpanKindClient:
-		return apitrace.WithSpanKind(apitrace.SpanKindClient)
+		return apiTrace.WithSpanKind(apiTrace.SpanKindClient)
 	case SpanKindConsumer:
-		return apitrace.WithSpanKind(apitrace.SpanKindConsumer)
+		return apiTrace.WithSpanKind(apiTrace.SpanKindConsumer)
 	case SpanKindProducer:
-		return apitrace.WithSpanKind(apitrace.SpanKindProducer)
+		return apiTrace.WithSpanKind(apiTrace.SpanKindProducer)
 	case SpanKindUnspecified:
-		return apitrace.WithSpanKind(apitrace.SpanKindUnspecified)
+		return apiTrace.WithSpanKind(apiTrace.SpanKindUnspecified)
 	default:
-		return apitrace.WithSpanKind(apitrace.SpanKindUnspecified)
+		return apiTrace.WithSpanKind(apiTrace.SpanKindUnspecified)
 	}
 }
 

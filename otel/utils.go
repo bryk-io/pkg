@@ -20,7 +20,7 @@ import (
 	xlog "go.bryk.io/pkg/log"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	rpccodes "google.golang.org/grpc/codes"
+	rpcCodes "google.golang.org/grpc/codes"
 )
 
 const (
@@ -124,44 +124,44 @@ func coreAttributes() Attributes {
 
 // Map an OTEL code value to a valid logging level.
 // nolint:gocyclo,deadcode,unused
-func codeToLevel(code rpccodes.Code) xlog.Level {
+func codeToLevel(code rpcCodes.Code) xlog.Level {
 	switch code {
 	// Info
-	case rpccodes.OK:
+	case rpcCodes.OK:
 		return xlog.Info
-	case rpccodes.Canceled:
+	case rpcCodes.Canceled:
 		return xlog.Info
-	case rpccodes.NotFound:
+	case rpcCodes.NotFound:
 		return xlog.Info
-	case rpccodes.AlreadyExists:
+	case rpcCodes.AlreadyExists:
 		return xlog.Info
 	// Warning
-	case rpccodes.Unavailable:
+	case rpcCodes.Unavailable:
 		return xlog.Warning
-	case rpccodes.InvalidArgument:
+	case rpcCodes.InvalidArgument:
 		return xlog.Warning
-	case rpccodes.DeadlineExceeded:
+	case rpcCodes.DeadlineExceeded:
 		return xlog.Warning
-	case rpccodes.PermissionDenied:
+	case rpcCodes.PermissionDenied:
 		return xlog.Warning
-	case rpccodes.Unauthenticated:
+	case rpcCodes.Unauthenticated:
 		return xlog.Warning
-	case rpccodes.ResourceExhausted:
+	case rpcCodes.ResourceExhausted:
 		return xlog.Warning
-	case rpccodes.FailedPrecondition:
+	case rpcCodes.FailedPrecondition:
 		return xlog.Warning
-	case rpccodes.Aborted:
+	case rpcCodes.Aborted:
 		return xlog.Warning
-	case rpccodes.OutOfRange:
+	case rpcCodes.OutOfRange:
 		return xlog.Warning
 	// Errors
-	case rpccodes.Unknown:
+	case rpcCodes.Unknown:
 		return xlog.Error
-	case rpccodes.Unimplemented:
+	case rpcCodes.Unimplemented:
 		return xlog.Error
-	case rpccodes.Internal:
+	case rpcCodes.Internal:
 		return xlog.Error
-	case rpccodes.DataLoss:
+	case rpcCodes.DataLoss:
 		return xlog.Error
 	// Non-matched codes are identified as errors
 	default:

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	xlog "go.bryk.io/pkg/log"
-	otelcodes "go.opentelemetry.io/otel/codes"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // Fields to remove when logging messages.
@@ -17,18 +17,18 @@ var noLogFields = []string{
 	"exception.stacktrace",
 }
 
-// Custom `sdktrace.SpanProcessor` that logs all spans as they are completed.
+// Custom `sdkTrace.SpanProcessor` that logs all spans as they are completed.
 type logSpans struct {
 	log xlog.Logger
 
 	// Next is the next SpanProcessor in the chain.
-	Next sdktrace.SpanProcessor
+	Next sdkTrace.SpanProcessor
 }
 
 // OnEnd is used to log a message once each span has ended.
-func (f logSpans) OnEnd(s sdktrace.ReadOnlySpan) {
+func (f logSpans) OnEnd(s sdkTrace.ReadOnlySpan) {
 	level := xlog.Info
-	if s.Status().Code == otelcodes.Error {
+	if s.Status().Code == otelCodes.Error {
 		level = xlog.Error
 	}
 	for _, event := range s.Events() {
@@ -40,8 +40,8 @@ func (f logSpans) OnEnd(s sdktrace.ReadOnlySpan) {
 }
 
 // OnStart is used to log a message when a new span is created.
-func (f logSpans) OnStart(parent context.Context, s sdktrace.ReadWriteSpan) {
-	if rs, ok := s.(sdktrace.ReadOnlySpan); ok {
+func (f logSpans) OnStart(parent context.Context, s sdkTrace.ReadWriteSpan) {
+	if rs, ok := s.(sdkTrace.ReadOnlySpan); ok {
 		f.log.WithFields(f.fields(rs, false)).Info(s.Name())
 	}
 	f.Next.OnStart(parent, s)
@@ -55,7 +55,7 @@ func (f logSpans) ForceFlush(ctx context.Context) error {
 	return f.Next.ForceFlush(ctx)
 }
 
-func (f logSpans) fields(s sdktrace.ReadOnlySpan, end bool) xlog.Fields {
+func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) xlog.Fields {
 	// Get span attributes
 	fields := Attributes{}
 	fields.load(s.Attributes())
@@ -80,7 +80,7 @@ func (f logSpans) fields(s sdktrace.ReadOnlySpan, end bool) xlog.Fields {
 	return xlog.Fields(fields)
 }
 
-func (f logSpans) event(event sdktrace.Event, fields xlog.Fields) (xlog.Level, xlog.Fields) {
+func (f logSpans) event(event sdkTrace.Event, fields xlog.Fields) (xlog.Level, xlog.Fields) {
 	eventLvl := xlog.Debug
 	attrs := Attributes{}
 	attrs.Set("time", event.Time)

@@ -4,21 +4,22 @@ import (
 	"context"
 
 	xlog "go.bryk.io/pkg/log"
-	otelcodes "go.opentelemetry.io/otel/codes"
-	apimetric "go.opentelemetry.io/otel/metric"
+	otelCodes "go.opentelemetry.io/otel/codes"
+	apiMetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	apitrace "go.opentelemetry.io/otel/trace"
+	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
-// Component elements provide an abstraction to support all the main primitives
+// Component instances provide an abstraction to support all the main primitives
 // required to instrument an application (or individual portion of one): logs,
-// traces and metrics.
+// traces and metrics. Component attributes are attached by default to all spans
+// started from it.
 type Component struct {
-	ot                      apitrace.Tracer               // underlying OTEL tracer
+	ot                      apiTrace.Tracer               // underlying OTEL tracer
 	propagator              propagation.TextMapPropagator // context propagation mechanism
 	attrs                   Attributes                    // base component attributes
 	xlog.Logger                                           // embedded main logger instance
-	apimetric.MeterProvider                               // embedded metric provider
+	apiMetric.MeterProvider                               // embedded metric provider
 }
 
 // Start a new span with the provided details. Remember to call "End" to properly
@@ -34,7 +35,7 @@ func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOpt
 		opt(sp)
 	}
 	sp.ctx, sp.span = cmp.ot.Start(ctx, name, sp.opts...)
-	sp.span.SetStatus(otelcodes.Ok, "ok")
+	sp.span.SetStatus(otelCodes.Ok, "ok")
 	return sp
 }
 
@@ -43,7 +44,7 @@ func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOpt
 func (cmp *Component) SpanFromContext(ctx context.Context) *Span {
 	sp := &Span{
 		ctx:   ctx,                           // provided context
-		span:  apitrace.SpanFromContext(ctx), // restored span from provided context
+		span:  apiTrace.SpanFromContext(ctx), // restored span from provided context
 		cp:    cmp.propagator,                // context propagation mechanism
 		attrs: Attributes{},                  // empty attributes set
 	}
@@ -57,6 +58,6 @@ func (cmp *Component) newSpan(name string) *Span {
 		kind:  SpanKindUnspecified, // default kind
 		cp:    cmp.propagator,      // inherit context propagation mechanism
 		attrs: cmp.attrs,           // inherit base component attributes
-		opts:  []apitrace.SpanStartOption{},
+		opts:  []apiTrace.SpanStartOption{},
 	}
 }

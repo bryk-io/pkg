@@ -10,15 +10,15 @@ import (
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/contrib/propagators/ot"
 	"go.opentelemetry.io/otel"
-	metricglobal "go.opentelemetry.io/otel/metric/global"
+	metricGlobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric/export"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	apitrace "go.opentelemetry.io/otel/trace"
+	metricController "go.opentelemetry.io/otel/sdk/metric/controller/basic"
+	metricExport "go.opentelemetry.io/otel/sdk/metric/export"
+	metricProcessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	metricSelector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	sdkResource "go.opentelemetry.io/otel/sdk/resource"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
+	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
 // Operator instances provide a single point-of-control for observability
@@ -28,14 +28,14 @@ type Operator struct {
 	log               xlog.Logger                   // Logger instance
 	coreAttributes    Attributes                    // Resource attributes
 	userAttributes    Attributes                    // User-provided additional attributes
-	resource          *sdkresource.Resource         // OTEL resource definition
-	exporter          sdktrace.SpanExporter         // Trace sync components
-	metricExporter    sdkmetric.Exporter            // Metric sync components
-	traceProvider     *sdktrace.TracerProvider      // Main traces provider
-	metricProvider    *controller.Controller        // Main metrics provider
+	resource          *sdkResource.Resource         // OTEL resource definition
+	exporter          sdkTrace.SpanExporter         // Trace sync components
+	metricExporter    metricExport.Exporter         // Metric sync components
+	traceProvider     *sdkTrace.TracerProvider      // Main traces provider
+	metricProvider    *metricController.Controller  // Main metrics provider
 	propagator        propagation.TextMapPropagator // Default composite propagator
 	tracerName        string                        // Name for the internal default tracer
-	tracer            apitrace.Tracer               // Default internal tracer
+	tracer            apiTrace.Tracer               // Default internal tracer
 	hostMetrics       bool                          // Capture standard host metrics
 	runtimeMetrics    bool                          // Capture standard runtime metrics
 	runtimeMetricsInt time.Duration                 // Runtime memory capture interval
@@ -69,7 +69,7 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	// by all spans by adjusting the OTEL resource definition.
 	attrs := join(op.coreAttributes, op.userAttributes)
 	op.log = op.log.Sub(xlog.Fields(attrs))
-	op.resource = sdkresource.NewSchemaless(attrs.Expand()...)
+	op.resource = sdkResource.NewSchemaless(attrs.Expand()...)
 
 	// Initialize prometheus handler
 	if op.prom != nil && op.prom.enabled {
@@ -107,7 +107,7 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	otel.SetTextMapPropagator(op.propagator) // propagator(s)
 	otel.SetTracerProvider(op.traceProvider) // trace provider
 	if op.metricProvider != nil {            // meter provider
-		metricglobal.SetMeterProvider(op.metricProvider)
+		metricGlobal.SetMeterProvider(op.metricProvider)
 		op.captureStandardMetrics() // start collecting common metrics
 	}
 	return op, nil
@@ -162,18 +162,18 @@ func (op *Operator) setupPropagators() {
 func (op *Operator) setupProviders() error {
 	// Build a span processing chain.
 	spc := logSpans{
-		log:  op.log,                                      // custom processor to generate logs
-		Next: sdktrace.NewBatchSpanProcessor(op.exporter), // submit completed spans to the exporter
+		log:  op.log,                                      // custom metricProcessor to generate logs
+		Next: sdkTrace.NewBatchSpanProcessor(op.exporter), // submit completed spans to the exporter
 	}
 
 	// Trace provider.
 	// A trace provider is used to generate a tracer, and a tracer to create spans.
 	// trace provider -> tracer -> span
-	op.traceProvider = sdktrace.NewTracerProvider(
-		sdktrace.WithResource(op.resource),             // adjust monitored resource
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),  // track all traces produced
-		sdktrace.WithSpanLimits(sdktrace.SpanLimits{}), // use default span limits
-		sdktrace.WithSpanProcessor(spc),                // set the span processing chain
+	op.traceProvider = sdkTrace.NewTracerProvider(
+		sdkTrace.WithResource(op.resource),                // adjust monitored resource
+		sdkTrace.WithSampler(sdkTrace.AlwaysSample()),     // track all traces produced
+		sdkTrace.WithRawSpanLimits(sdkTrace.SpanLimits{}), // use default span limits
+		sdkTrace.WithSpanProcessor(spc),                   // set the span processing chain
 	)
 
 	// No metrics exporter was provided. Skip provider setup.
@@ -182,13 +182,13 @@ func (op *Operator) setupProviders() error {
 	}
 
 	// Metrics provider.
-	op.metricProvider = controller.New(
-		processor.NewFactory(
-			simple.NewWithHistogramDistribution(),
+	op.metricProvider = metricController.New(
+		metricProcessor.NewFactory(
+			metricSelector.NewWithHistogramDistribution(),
 			op.metricExporter,
 		),
-		controller.WithExporter(op.metricExporter),
-		controller.WithCollectPeriod(op.metricsPushInt),
+		metricController.WithExporter(op.metricExporter),
+		metricController.WithCollectPeriod(op.metricsPushInt),
 	)
 
 	// Since we are using a push metrics controller, start the provider
