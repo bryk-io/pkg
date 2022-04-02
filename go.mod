@@ -26,27 +26,27 @@ require (
 	github.com/stretchr/testify v1.7.1
 	go.bryk.io/miracl v0.4.1
 	go.mongodb.org/mongo-driver v1.8.4
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.30.0
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.30.0
-	go.opentelemetry.io/contrib/instrumentation/host v0.30.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.30.0
-	go.opentelemetry.io/contrib/instrumentation/runtime v0.30.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.31.0
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.31.0
+	go.opentelemetry.io/contrib/instrumentation/host v0.31.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
+	go.opentelemetry.io/contrib/instrumentation/runtime v0.31.0
 	go.opentelemetry.io/contrib/propagators v0.22.0
-	go.opentelemetry.io/otel v1.6.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.27.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.27.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.0
-	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.27.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.0
-	go.opentelemetry.io/otel/metric v0.27.0
-	go.opentelemetry.io/otel/sdk v1.6.0
-	go.opentelemetry.io/otel/sdk/metric v0.27.0
-	go.opentelemetry.io/otel/trace v1.6.0
+	go.opentelemetry.io/otel v1.6.1
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.28.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.28.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.1
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.1
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.28.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.1
+	go.opentelemetry.io/otel/metric v0.28.0
+	go.opentelemetry.io/otel/sdk v1.6.1
+	go.opentelemetry.io/otel/sdk/metric v0.28.0
+	go.opentelemetry.io/otel/trace v1.6.1
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064
-	golang.org/x/net v0.0.0-20220325170049-de3da57026de
+	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29
+	golang.org/x/net v0.0.0-20220401154927-543a649e0bdd
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65

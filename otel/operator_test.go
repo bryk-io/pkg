@@ -9,18 +9,22 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/contrib/propagators/b3"
+
 	"github.com/google/uuid"
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
-	otelcodes "go.opentelemetry.io/otel/codes"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric/export"
-	"go.opentelemetry.io/otel/sdk/trace"
+	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-// Verify a local collector instance is available using its `healthcheck`
+// Verify a local collector instance is available using its `health check`
 // endpoint.
 func isCollectorAvailable() bool {
-	res, err := http.Get("http://localhost:13133/")
+	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
+	res, err := http.DefaultClient.Do(req)
 	if res != nil {
 		_ = res.Body.Close()
 	}
@@ -88,12 +92,12 @@ func TestNewOperator(t *testing.T) {
 
 	// Exporters
 	var (
-		traceExp  trace.SpanExporter
-		metricExp sdkmetric.Exporter
+		traceExp  sdkTrace.SpanExporter
+		metricExp sdkMetric.Exporter
 		err       error
 	)
 	if isCollectorAvailable() {
-		traceExp, metricExp, err = ExporterOTLP("localhost:55680", true, nil)
+		traceExp, metricExp, err = ExporterOTLP("localhost:4317", true, nil)
 	} else {
 		traceExp, metricExp, err = ExporterStdout(true)
 	}
@@ -103,19 +107,21 @@ func TestNewOperator(t *testing.T) {
 	settings := []OperatorOption{
 		WithServiceName("my-service"),
 		WithServiceVersion("0.1.0"),
+		WithTracerName("go.bryk.io/pkg/otel/testing"),
+		WithSpanLimits(sdkTrace.NewSpanLimits()),
+		WithSampler(sdkTrace.ParentBased(sdkTrace.TraceIDRatioBased(0.9))),
+		WithPropagator(b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))),
+		WithExporter(traceExp),
+		WithMetricExporter(metricExp),
+		WithHostMetrics(),
+		WithRuntimeMetrics(time.Duration(10) * time.Second),
+		WithMetricPushPeriod(time.Duration(10) * time.Second),
+		WithPrometheusSupport(),
+		WithResourceAttributes(Attributes{"resource.level.field": "bar"}),
 		WithLogger(xlog.WithZero(xlog.ZeroOptions{
 			PrettyPrint: true,
 			ErrorField:  "error.message",
 		})),
-		WithExporter(traceExp),
-		WithMetricExporter(metricExp),
-		WithHostMetrics(true),
-		WithRuntimeMetricsPeriod(time.Duration(10) * time.Second),
-		WithMetricPushPeriod(time.Duration(10) * time.Second),
-		WithPrometheusSupport(),
-		WithResourceAttributes(Attributes{
-			"resource.level.field": "bar",
-		}),
 	}
 	op, err := NewOperator(settings...)
 	assert.Nil(err, "new operator")
@@ -135,8 +141,15 @@ func TestNewOperator(t *testing.T) {
 
 	t.Run("Basic", func(t *testing.T) {
 		// Root span
-		rootSpan := op.Start(context.Background(), "basic-test", WithSpanKind(SpanKindClient), WithSpanAttributes(fields))
-		rootSpan.SetBaggage(Attributes{"baggage.request.id": uuid.New().String(), "baggage.user": "rick"})
+		opts := []SpanOption{
+			WithSpanKind(SpanKindClient),
+			WithSpanAttributes(fields),
+			WithSpanBaggage(Attributes{
+				"baggage.user":       "rick",
+				"baggage.request.id": uuid.New().String(),
+			}, true),
+		}
+		rootSpan := op.Start(context.Background(), "basic-test", opts...)
 		rootSpan.Event("an event", Attributes{"event.tag": "bar"})
 
 		// Simulate wait for external response and complete root span
@@ -184,8 +197,7 @@ func TestNewOperator(t *testing.T) {
 
 			// Annotate span with error details
 			err := errors.New("RANDOM_ERROR")
-			task.Error(xlog.Warning, err, Attributes{"value.n": n})
-			task.SetStatus(otelcodes.Error, err.Error())
+			task.Error(xlog.Warning, err, Attributes{"value.n": n}, true)
 
 			// Return error code
 			res.WriteHeader(417)
@@ -210,8 +222,7 @@ func TestNewOperator(t *testing.T) {
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodGet, "http://localhost:8080/ping", nil)
 			res, err := cl.Do(req)
 			if err != nil {
-				task.Error(xlog.Error, err, nil)
-				task.SetStatus(otelcodes.Error, err.Error())
+				task.Error(xlog.Error, err, nil, true)
 				t.Error(err)
 			}
 			_ = res.Body.Close()
@@ -219,11 +230,13 @@ func TestNewOperator(t *testing.T) {
 
 		t.Run("Expensive", func(t *testing.T) {
 			// Start span
-			task := op.Start(context.TODO(), "http expensive", WithSpanKind(SpanKindClient))
-			task.SetBaggage(Attributes{
-				"baggage.request.id":    uuid.New().String(),
-				"baggage.request.space": "foo-bar",
-			})
+			task := op.Start(context.TODO(), "http expensive",
+				WithSpanKind(SpanKindClient),
+				WithSpanBaggage(Attributes{
+					"baggage.request.id":    uuid.New().String(),
+					"baggage.request.space": "foo-bar",
+				}, true),
+			)
 			clientBaggage = task.GetBaggage()
 			defer task.End()
 
@@ -238,28 +251,30 @@ func TestNewOperator(t *testing.T) {
 	})
 
 	t.Run("AMQP", func(t *testing.T) {
-		// Custom span propagator
-		jp := &Propagator{}
-
 		// To properly trace operations involving exchange of AMQP messages
 		// the span context must be manually propagated as part of the message
 		// data.
 		//
 		// 1. The producer creates a span. For async operations it can then close it
 		//    right away or wait for a response (when using RPC for example).
-		rootSpan := op.Start(context.Background(), "amqp-producer", WithSpanKind(SpanKindProducer), WithSpanAttributes(fields))
-		rootSpan.SetBaggage(Attributes{
-			"baggage.request.id":    uuid.New().String(),
-			"baggage.request.space": "foo-bar",
-		})
+		rootSpan := op.Start(context.Background(), "amqp-producer",
+			WithSpanKind(SpanKindProducer),
+			WithSpanAttributes(fields),
+			WithSpanBaggage(Attributes{
+				"baggage.request.id":    uuid.New().String(),
+				"baggage.request.space": "foo-bar",
+			}, true),
+		)
 		rootSpan.Event("an event", Attributes{"sample": "event"})
 		defer rootSpan.End()
 
 		// 2. Manually extract data from span and attach it to the AMQP event.
-		data, _ := jp.Export(rootSpan.Context())
+		data, err := op.Export(rootSpan.Context())
+		assert.Nil(err, "failed to export span context")
 
 		// 3. On the consumer side, restore the exported context and create tasks as required.
-		restoredCtx, _ := jp.Restore(data)
+		restoredCtx, err := op.Restore(data)
+		assert.Nil(err, "failed to restore span context")
 		childSpan := op.Start(restoredCtx, "amqp-consumer", WithSpanKind(SpanKindConsumer))
 		childSpan.Event("event on child span", nil)
 

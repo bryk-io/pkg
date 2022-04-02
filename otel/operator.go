@@ -7,8 +7,6 @@ import (
 	xlog "go.bryk.io/pkg/log"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
-	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/contrib/propagators/ot"
 	"go.opentelemetry.io/otel"
 	metricGlobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
@@ -18,60 +16,68 @@ import (
 	metricSelector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	sdkResource "go.opentelemetry.io/otel/sdk/resource"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
+	semConv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
-// Operator instances provide a single point-of-control for observability
+// Operator provides a single point-of-control for observability
 // requirements on a system, including: logs, metrics and traces.
 type Operator struct {
-	*Component                                      // Main component embedded
-	log               xlog.Logger                   // Logger instance
-	coreAttributes    Attributes                    // Resource attributes
-	userAttributes    Attributes                    // User-provided additional attributes
-	resource          *sdkResource.Resource         // OTEL resource definition
-	exporter          sdkTrace.SpanExporter         // Trace sync components
-	metricExporter    metricExport.Exporter         // Metric sync components
-	traceProvider     *sdkTrace.TracerProvider      // Main traces provider
-	metricProvider    *metricController.Controller  // Main metrics provider
-	propagator        propagation.TextMapPropagator // Default composite propagator
-	tracerName        string                        // Name for the internal default tracer
-	tracer            apiTrace.Tracer               // Default internal tracer
-	hostMetrics       bool                          // Capture standard host metrics
-	runtimeMetrics    bool                          // Capture standard runtime metrics
-	runtimeMetricsInt time.Duration                 // Runtime memory capture interval
-	metricsPushInt    time.Duration                 // Push metrics interval
-	prom              *prometheusSupport            // Prometheus support capabilities
+	*Component                                        // main embedded component
+	log               xlog.Logger                     // logger instance
+	coreAttributes    Attributes                      // resource attributes
+	userAttributes    Attributes                      // user-provided additional attributes
+	resource          *sdkResource.Resource           // OTEL resource definition
+	exporter          sdkTrace.SpanExporter           // trace sync components
+	metricExporter    metricExport.Exporter           // metric sync components
+	traceProvider     *sdkTrace.TracerProvider        // main traces provider
+	metricProvider    *metricController.Controller    // main metrics provider
+	propagator        propagation.TextMapPropagator   // default composite propagator
+	tracerName        string                          // name for the internal default tracer
+	tracer            apiTrace.Tracer                 // default internal tracer
+	hostMetrics       bool                            // capture standard host metrics
+	runtimeMetrics    bool                            // capture standard runtime metrics
+	runtimeMetricsInt time.Duration                   // runtime memory capture interval
+	metricsPushInt    time.Duration                   // push metrics interval
+	prom              *prometheusSupport              // prometheus support capabilities
+	spanLimits        sdkTrace.SpanLimits             // default span limits
+	props             []propagation.TextMapPropagator // list of individual text map propagators
+	sampler           sdkTrace.Sampler                // trace sampler strategy used
 	ctx               context.Context
 }
 
-// NewOperator create a new operator instance. This method is useful
-// when monitoring several services, each with its own exporters or settings.
+// NewOperator creates a new operator instance. Operators can be used
+// to monitor individual services, each with its own exporters or settings.
 func NewOperator(options ...OperatorOption) (*Operator, error) {
 	// Create instance and apply options.
 	op := &Operator{
-		log:               xlog.Discard(),    // discard logs
-		coreAttributes:    coreAttributes(),  // standard env attributes
-		userAttributes:    Attributes{},      // no custom attributes
-		exporter:          new(noOpExporter), // discard traces and metrics
+		log:               xlog.Discard(),          // discard logs
+		coreAttributes:    coreAttributes(),        // standard env attributes
+		userAttributes:    Attributes{},            // no custom attributes
+		exporter:          new(noOpExporter),       // discard traces and metrics
+		tracerName:        "go.bryk.io/pkg/otel",   // default value for `otel.library.name`
+		sampler:           sdkTrace.AlwaysSample(), // track all traces by default
+		spanLimits:        sdkTrace.NewSpanLimits(),
 		runtimeMetricsInt: time.Duration(10) * time.Second,
 		metricsPushInt:    time.Duration(5) * time.Second,
 		ctx:               context.TODO(),
+		props: []propagation.TextMapPropagator{
+			propagation.Baggage{},      // baggage
+			propagation.TraceContext{}, // tracecontext
+		},
 	}
 	if err := op.setup(options...); err != nil {
 		return nil, err
 	}
-
-	// Use the service name as tracer name. This will be reported as `otel.library.name`.
-	op.tracerName, _ = op.coreAttributes.Get(lblSvcName).(string)
 
 	// Attributes. Combine the default core attributes and the user provided data.
 	// This attributes will be automatically used when logging messages and "inherited"
 	// by all spans by adjusting the OTEL resource definition.
 	attrs := join(op.coreAttributes, op.userAttributes)
 	op.log = op.log.Sub(xlog.Fields(attrs))
-	op.resource = sdkResource.NewSchemaless(attrs.Expand()...)
+	op.resource = sdkResource.NewWithAttributes(semConv.SchemaURL, attrs.Expand()...)
 
-	// Initialize prometheus handler
+	// Initialize prometheus handler.
 	if op.prom != nil && op.prom.enabled {
 		if err := op.prom.init(); err != nil {
 			return nil, err
@@ -79,7 +85,11 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	}
 
 	// Prepare context propagation mechanisms.
-	op.setupPropagators()
+	// If you do not set a propagator the default is to use a `NoOp` option, which
+	// means that the trace context will not be shared between multiple services. To
+	// avoid that, we set up a composite propagator that consist of a baggage propagator
+	// and trace context propagator.
+	op.propagator = propagation.NewCompositeTextMapPropagator(op.props...)
 
 	// Prepare traces and metrics providers.
 	if err := op.setupProviders(); err != nil {
@@ -117,8 +127,12 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 // will preform any cleanup or synchronization required while honoring all timeouts
 // and cancellations contained in the provided context.
 func (op *Operator) Shutdown(ctx context.Context) {
+	// Stop trace provider and exporter
 	_ = op.traceProvider.ForceFlush(ctx)
 	_ = op.traceProvider.Shutdown(ctx)
+	_ = op.exporter.Shutdown(ctx)
+
+	// Stop metric provider
 	if op.metricProvider != nil {
 		_ = op.metricProvider.Stop(ctx)
 	}
@@ -142,27 +156,11 @@ func (op *Operator) setup(options ...OperatorOption) error {
 	return nil
 }
 
-// If you do not set a propagator, the default is to use a `NoOp` option, which
-// means that the trace context will not be shared between multiple services. To
-// avoid that, we set up a composite propagator that consist of a baggage propagator
-// and trace context propagator. That way, both trace information (trace IDs, span
-// IDs, etc.) and baggage will be propagated. B3 and OT are also enabled for
-// backwards compatibility.
-func (op *Operator) setupPropagators() {
-	props := []propagation.TextMapPropagator{
-		b3.New(),                   // b3
-		ot.OT{},                    // ot-trace
-		propagation.Baggage{},      // baggage
-		propagation.TraceContext{}, // tracecontext
-	}
-	op.propagator = propagation.NewCompositeTextMapPropagator(props...)
-}
-
 // Create the metrics and traces provider elements for the operator instance.
 func (op *Operator) setupProviders() error {
 	// Build a span processing chain.
 	spc := logSpans{
-		log:  op.log,                                      // custom metricProcessor to generate logs
+		log:  op.log,                                      // custom `SpanProcessor` to generate logs
 		Next: sdkTrace.NewBatchSpanProcessor(op.exporter), // submit completed spans to the exporter
 	}
 
@@ -170,13 +168,13 @@ func (op *Operator) setupProviders() error {
 	// A trace provider is used to generate a tracer, and a tracer to create spans.
 	// trace provider -> tracer -> span
 	op.traceProvider = sdkTrace.NewTracerProvider(
-		sdkTrace.WithResource(op.resource),                // adjust monitored resource
-		sdkTrace.WithSampler(sdkTrace.AlwaysSample()),     // track all traces produced
-		sdkTrace.WithRawSpanLimits(sdkTrace.SpanLimits{}), // use default span limits
-		sdkTrace.WithSpanProcessor(spc),                   // set the span processing chain
+		sdkTrace.WithResource(op.resource),        // adjust monitored resource
+		sdkTrace.WithSampler(op.sampler),          // set sampling strategy
+		sdkTrace.WithRawSpanLimits(op.spanLimits), // use default span limits
+		sdkTrace.WithSpanProcessor(spc),           // set the span processing chain
 	)
 
-	// No metrics exporter was provided. Skip provider setup.
+	// If no metrics exporter was provided, skip provider setup.
 	if op.metricExporter == nil {
 		return nil
 	}

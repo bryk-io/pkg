@@ -104,7 +104,7 @@ func TestServer(t *testing.T) {
 		otel.WithServiceName("rpc-test"),
 		otel.WithServiceVersion("0.1.0"),
 		otel.WithLogger(ll),
-		otel.WithHostMetrics(true),
+		otel.WithHostMetrics(),
 	)
 	assert.Nil(err, "initialize operator")
 	defer oop.Shutdown(context.TODO())

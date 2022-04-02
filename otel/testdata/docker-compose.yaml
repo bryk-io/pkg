@@ -1,18 +1,20 @@
 version: "2"
 services:
   otel-collector:
-    image: otel/opentelemetry-collector:0.34.0
+    image: otel/opentelemetry-collector-contrib:0.47.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
       - "13133:13133" # health_check extension
-      - "55680:55680" # default grpc receiver endpoint
+      - "4317:4317" # default grpc receiver endpoint
+      - "4318:4318" # default http receiver endpoint
     depends_on:
       - jaeger
       - zipkin
+      - prometheus
   jaeger:
-    image: jaegertracing/all-in-one:1.23
+    image: jaegertracing/all-in-one:1.32
     ports:
       - "16686:16686" # ui
       - "14250" # grpc receiver endpoint
@@ -20,3 +22,9 @@ services:
     image: openzipkin/zipkin:2.23
     ports:
       - "9411:9411" # ui and HTTP API
+  prometheus:
+    image: prom/prometheus:v2.34.0
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"

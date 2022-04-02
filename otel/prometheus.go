@@ -47,8 +47,9 @@ func (ps *prometheusSupport) init() error {
 	}
 
 	// Include the current state of process metrics including CPU, memory and file
-	// descriptor usage as well as the process start time. The collector is only
-	// available on Linux and Windows.
+	// descriptor usage as well as the process start time. The collector only works on
+	// operating systems with a Linux-style proc filesystem and on Microsoft Windows.
+	// On other operating systems, it will not collect any metrics.
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
 		po := collectors.ProcessCollectorOpts{ReportErrors: true}
 		_ = ps.registry.Register(collectors.NewProcessCollector(po))

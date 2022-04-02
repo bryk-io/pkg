@@ -68,6 +68,7 @@ func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) xlog.Fields {
 		duration := s.EndTime().Sub(s.StartTime()).Round(1 * time.Millisecond)
 		fields.Set(lblDuration, duration.String())
 		fields.Set(lblDurationMS, duration.Milliseconds())
+		fields.Set(lblChildCount, s.ChildSpanCount())
 	}
 
 	// Remove unwanted fields from logged output

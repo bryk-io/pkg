@@ -8,36 +8,37 @@ import (
 	"reflect"
 	"runtime"
 
+	xlog "go.bryk.io/pkg/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/encoding/gzip"
-
-	xlog "go.bryk.io/pkg/log"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	semConv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	rpcCodes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 const (
-	lblSvcName     = "service.name"
-	lblSvcVer      = "service.version"
-	lblSpanID      = "telemetry.span.id"
-	lblSpanKind    = "telemetry.span.kind"
-	lblTraceID     = "telemetry.trace.id"
-	lblDuration    = "duration"
-	lblDurationMS  = "duration_ms"
-	lblHostOS      = "host.os"
-	lblHostArch    = "host.arch"
-	lblHostName    = "host.name"
-	lblHostRuntime = "host.runtime"
-	lblLibName     = "telemetry.sdk.name"
-	lblLibVer      = "telemetry.sdk.version"
-	lblLibLang     = "telemetry.sdk.language"
+	lblSvcName        = string(semConv.ServiceNameKey)
+	lblSvcVer         = string(semConv.ServiceVersionKey)
+	lblHostArch       = string(semConv.HostArchKey)
+	lblHostName       = string(semConv.HostNameKey)
+	lblHostOS         = string(semConv.OSTypeKey)
+	lblLibName        = string(semConv.TelemetrySDKNameKey)
+	lblLibVer         = string(semConv.TelemetrySDKVersionKey)
+	lblLibLang        = string(semConv.TelemetrySDKLanguageKey)
+	lblProcessRuntime = string(semConv.ProcessRuntimeDescriptionKey)
+	lblTraceID        = "telemetry.trace.id"
+	lblSpanID         = "telemetry.span.id"
+	lblSpanKind       = "telemetry.span.kind"
+	lblChildCount     = "telemetry.span.child_count"
+	lblDuration       = "duration"
+	lblDurationMS     = "duration_ms"
 )
 
 // ExporterStdout returns a new trace exporter to send telemetry data
@@ -108,13 +109,13 @@ func ExporterOTLP(
 // https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification
 func coreAttributes() Attributes {
 	core := Attributes{
-		lblSvcName:     "service",
-		lblHostOS:      runtime.GOOS,
-		lblHostArch:    runtime.GOARCH,
-		lblHostRuntime: runtime.Version(),
-		lblLibVer:      otel.Version(),
-		lblLibName:     "opentelemetry",
-		lblLibLang:     "go",
+		lblSvcName:        "service",
+		lblHostOS:         runtime.GOOS,
+		lblHostArch:       runtime.GOARCH,
+		lblProcessRuntime: runtime.Version(),
+		lblLibVer:         otel.Version(),
+		lblLibName:        "opentelemetry",
+		lblLibLang:        "go",
 	}
 	if host, err := os.Hostname(); err == nil {
 		core.Set(lblHostName, host)

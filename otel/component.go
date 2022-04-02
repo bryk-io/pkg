@@ -2,8 +2,10 @@ package otel
 
 import (
 	"context"
+	"encoding/json"
 
 	xlog "go.bryk.io/pkg/log"
+	"go.opentelemetry.io/otel/baggage"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	apiMetric "go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
@@ -30,10 +32,17 @@ type Component struct {
 //    defer task.End()
 func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOption) *Span {
 	sp := cmp.newSpan(name)
-	options = append(options, WithSpanAttributes(cmp.attrs)) // attach component attributes
 	for _, opt := range options {
 		opt(sp)
 	}
+	if sp.bgg != nil {
+		bag, _ := baggage.New(sp.bgg.members()...)
+		ctx = baggage.ContextWithBaggage(ctx, bag)
+		if sp.bggPropagate {
+			sp.attrs.Join(sp.bgg) // attach baggage as attributes
+		}
+	}
+	sp.opts = append(sp.opts, apiTrace.WithAttributes(sp.attrs.Expand()...))
 	sp.ctx, sp.span = cmp.ot.Start(ctx, name, sp.opts...)
 	sp.span.SetStatus(otelCodes.Ok, "ok")
 	return sp
@@ -51,6 +60,33 @@ func (cmp *Component) SpanFromContext(ctx context.Context) *Span {
 	return sp
 }
 
+// Export available span details. Useful when manually propagating a task context
+// across process boundaries.
+func (cmp *Component) Export(ctx context.Context) ([]byte, error) {
+	md := propagation.MapCarrier{}
+	cmp.propagator.Inject(ctx, md)
+	return json.Marshal(md)
+}
+
+// Restore previously exported span context data.
+func (cmp *Component) Restore(data []byte) (context.Context, error) {
+	ctx := context.TODO()
+	md := propagation.MapCarrier{}
+	if err := json.Unmarshal(data, &md); err != nil {
+		return ctx, err
+	}
+	ctx = cmp.propagator.Extract(ctx, md)           // build context with details in the carrier
+	bgg := baggage.FromContext(ctx)                 // restore baggage
+	spanCtx := apiTrace.SpanContextFromContext(ctx) // restore span context
+	ctx = baggage.ContextWithBaggage(ctx, bgg)      // add baggage to context
+	if spanCtx.IsRemote() {                         // restore remote span context
+		ctx = apiTrace.ContextWithRemoteSpanContext(ctx, spanCtx)
+	} else {
+		ctx = apiTrace.ContextWithSpanContext(ctx, spanCtx)
+	}
+	return ctx, nil
+}
+
 // Default span structure.
 func (cmp *Component) newSpan(name string) *Span {
 	return &Span{
@@ -58,6 +94,7 @@ func (cmp *Component) newSpan(name string) *Span {
 		kind:  SpanKindUnspecified, // default kind
 		cp:    cmp.propagator,      // inherit context propagation mechanism
 		attrs: cmp.attrs,           // inherit base component attributes
+		bgg:   nil,                 // no baggage by default
 		opts:  []apiTrace.SpanStartOption{},
 	}
 }

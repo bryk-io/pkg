@@ -20,7 +20,7 @@ processors:
     timeout: 2s
   resource:
     attributes:
-      - key: custom.collector.field
+      - key: collector.level.field
         value: "zone-1"
         action: upsert
 # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md
@@ -29,11 +29,12 @@ exporters:
     loglevel: debug
   jaeger:
     endpoint: "jaeger:14250"
-    insecure: true
+    tls:
+      insecure: true
   zipkin:
     endpoint: "http://zipkin:9411/api/v2/spans"
-    insecure: true
-    format: json
+    tls:
+      insecure: true
 service:
   extensions: [ health_check ]
   pipelines:
@@ -43,7 +44,7 @@ service:
       exporters: [ logging, jaeger, zipkin ]
     metrics:
       receivers: [ otlp ]
-      processors: [ memory_limiter, batch ]
+      processors: [ memory_limiter, batch, resource ]
       exporters: [ logging ]
     logs:
       receivers: [ otlp ]
