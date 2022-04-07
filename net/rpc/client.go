@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/pkg/errors"
 	"go.bryk.io/pkg/otel"
 	"google.golang.org/grpc"
@@ -55,8 +55,8 @@ func NewClient(options ...ClientOption) (*Client, error) {
 
 	// Add middleware
 	unary, stream := c.getMiddleware()
-	c.dialOpts = append(c.dialOpts, grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(unary...)))
-	c.dialOpts = append(c.dialOpts, grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(stream...)))
+	c.dialOpts = append(c.dialOpts, grpc.WithUnaryInterceptor(mw.ChainUnaryClient(unary...)))
+	c.dialOpts = append(c.dialOpts, grpc.WithStreamInterceptor(mw.ChainStreamClient(stream...)))
 	return c, nil
 }
 

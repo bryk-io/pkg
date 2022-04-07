@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"time"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -32,12 +33,23 @@ func (s *Handler) Health(_ context.Context, _ *empty.Empty) (*HealthResponse, er
 	return &HealthResponse{Alive: true}, nil
 }
 
-// Request provides a sample request handler.
+// Request provides a sample request handler. If a `sticky-metadata` value is provided
+// it will be returned to the client.
 func (s *Handler) Request(ctx context.Context, _ *empty.Empty) (*Response, error) {
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
 		log.Println("== request metadata ==")
 		for k, v := range md {
 			log.Printf("%s: %s\n", k, v)
+		}
+
+		// Send `sticky-metadata` back to the client
+		if sm := md.Get("sticky-metadata"); len(sm) > 0 {
+			clientMD := metadata.New(map[string]string{
+				"sticky-metadata": sm[0],
+			})
+			if err := grpc.SendHeader(ctx, clientMD); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return &Response{Name: s.Name}, nil
@@ -46,7 +58,7 @@ func (s *Handler) Request(ctx context.Context, _ *empty.Empty) (*Response, error
 // OpenServerStream starts a streaming operation on the server side.
 func (s *Handler) OpenServerStream(_ *empty.Empty, stream FooAPI_OpenServerStreamServer) error {
 	for i := 0; i < 10; i++ {
-		t := <-time.After(100 * time.Millisecond)
+		t := <-time.After(100 * time.Millisecond) // random latency
 		c := &GenericStreamChunk{
 			Sender: s.Name,
 			Stamp:  t.Unix(),
@@ -59,10 +71,10 @@ func (s *Handler) OpenServerStream(_ *empty.Empty, stream FooAPI_OpenServerStrea
 }
 
 // OpenClientStream starts a streaming operation on the client side.
-func (s *Handler) OpenClientStream(stream FooAPI_OpenClientStreamServer) error {
+func (s *Handler) OpenClientStream(stream FooAPI_OpenClientStreamServer) (err error) {
 	res := &StreamResult{Received: 0}
 	for {
-		_, err := stream.Recv()
+		_, err = stream.Recv()
 		if errors.Is(err, io.EOF) {
 			return stream.SendAndClose(res)
 		}

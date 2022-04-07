@@ -17,16 +17,36 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/net/middleware"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
 	samplev1 "go.bryk.io/pkg/proto/sample/v1"
+	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	empty "google.golang.org/protobuf/types/known/emptypb"
 )
+
+// Verify a local collector instance is available using its `health check`
+// endpoint.
+func isCollectorAvailable() bool {
+	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
+	res, err := http.DefaultClient.Do(req)
+	if res != nil {
+		_ = res.Body.Close()
+	}
+	if err != nil {
+		return false
+	}
+	return res.StatusCode == http.StatusOK
+}
 
 func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
 	// Setup transport
@@ -75,7 +95,11 @@ func (ep *echoProvider) GatewaySetup() GatewayRegister {
 }
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
+		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*controlBuffer).get"),
+		goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"),
+	)
 }
 
 func TestServer(t *testing.T) {
@@ -95,11 +119,23 @@ func TestServer(t *testing.T) {
 		sampleCounter.With(prometheus.Labels{"foo": "bar"}).Inc()
 	}
 
+	// Exporters
+	var (
+		traceExp  sdkTrace.SpanExporter
+		metricExp sdkMetric.Exporter
+		err       error
+	)
+	if isCollectorAvailable() {
+		traceExp, metricExp, err = otel.ExporterOTLP("localhost:4317", true, nil)
+	} else {
+		traceExp, metricExp, err = otel.ExporterStdout(true)
+	}
+	assert.Nil(err, "failed to create exporter")
+
 	// Observability operator
-	exp, _, _ := otel.ExporterStdout(true)
-	// exp, _, _ := otel.ExporterOTLP("localhost:55680", true, nil)
 	oop, err := otel.NewOperator(
-		otel.WithExporter(exp),
+		otel.WithExporter(traceExp),
+		otel.WithMetricExporter(metricExp),
 		otel.WithPrometheusSupport(sampleCounter),
 		otel.WithServiceName("rpc-test"),
 		otel.WithServiceVersion("0.1.0"),
@@ -152,7 +188,7 @@ func TestServer(t *testing.T) {
 		}
 
 		// Start a new server with a single option
-		srv, err := NewServer(WithService(ss))
+		srv, err := NewServer(WithService(ss), WithObservability(oop))
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -186,23 +222,56 @@ func TestServer(t *testing.T) {
 			assert.Nil(err, "health error")
 		})
 
+		t.Run("Request", func(t *testing.T) {
+			// Prepare context with additional metadata
+			smk := "sticky-metadata"
+			sendMD := metadata.New(map[string]string{smk: "c137"})
+			ctx := ContextWithMetadata(context.Background(), sendMD)
+
+			// Submit request and receive metadata from the server
+			receivedMD := metadata.MD{}
+			_, err = cl.Request(ctx, &empty.Empty{}, grpc.Header(&receivedMD))
+			assert.Nil(err, "request error")
+			assert.Equal(sendMD.Get(smk), receivedMD.Get(smk), "invalid metadata")
+		})
+
 		t.Run("Streaming", func(t *testing.T) {
-			ss, err := cl.OpenServerStream(context.TODO(), &empty.Empty{})
-			assert.Nil(err, "failed to open server stream")
-			counter := 0
-			for {
-				msg, err := ss.Recv()
-				if errors.Is(err, io.EOF) {
-					break
+			t.Run("ServerSide", func(t *testing.T) {
+				ss, err := cl.OpenServerStream(context.TODO(), &empty.Empty{})
+				assert.Nil(err, "failed to open server stream")
+				counter := 0
+				for {
+					msg, err := ss.Recv()
+					if errors.Is(err, io.EOF) {
+						break
+					}
+					if err != nil {
+						assert.Fail(err.Error())
+					}
+					if msg != nil {
+						counter++
+					}
 				}
-				if err != nil {
-					assert.Fail(err.Error())
+				assert.Equal(10, counter, "missing messages from the server")
+			})
+
+			t.Run("ClientSide", func(t *testing.T) {
+				cs, err := cl.OpenClientStream(context.TODO())
+				assert.Nil(err, "failed to open client stream")
+				for i := 0; i < 10; i++ {
+					t := <-time.After(100 * time.Millisecond) // random latency
+					c := &samplev1.OpenClientStreamRequest{
+						Sender: "sample-client",
+						Stamp:  t.Unix(),
+					}
+					if err := cs.Send(c); err != nil {
+						assert.Fail(err.Error())
+					}
 				}
-				if msg != nil {
-					counter++
-				}
-			}
-			assert.Equal(10, counter, "missing messages from the server")
+				res, err := cs.CloseAndRecv()
+				assert.Nil(err, "failed to close client stream")
+				assert.Equal(int64(10), res.Received, "invalid message count")
+			})
 		})
 
 		// Stop client and server
@@ -254,6 +323,7 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("WithUnixSocket", func(t *testing.T) {
+		// Prepare socket file
 		socket, err := ioutil.TempFile("", "server-test")
 		if err != nil {
 			assert.Fail(err.Error())
@@ -263,17 +333,8 @@ func TestServer(t *testing.T) {
 			_ = os.Remove(socket.Name())
 		}()
 
-		// Setup HTTP gateway
-		gwOptions := []HTTPGatewayOption{WithGatewayPort(12345)}
-		gw, err := NewHTTPGateway(gwOptions...)
-		if err != nil {
-			assert.Fail(err.Error())
-			return
-		}
-
-		options := append(serverOpts[:],
-			WithUnixSocket(socket.Name()),
-			WithHTTPGateway(gw))
+		// Start server
+		options := append(serverOpts[:], WithUnixSocket(socket.Name()))
 		srv, err := NewServer(options...)
 		if err != nil {
 			assert.Fail(err.Error())
@@ -285,6 +346,7 @@ func TestServer(t *testing.T) {
 		}()
 		<-ready
 
+		// Get client connection
 		conn, err := NewClientConnection(srv.GetEndpoint(), clientOpts...)
 		if err != nil {
 			assert.Fail(err.Error())
@@ -294,6 +356,7 @@ func TestServer(t *testing.T) {
 			_ = conn.Close()
 		}()
 
+		// Consume API
 		cl := samplev1.NewFooAPIClient(conn)
 		_, err = cl.Ping(context.TODO(), &empty.Empty{}, retryOpts...)
 		assert.Nil(err, "ping error")
@@ -313,16 +376,36 @@ func TestServer(t *testing.T) {
 			return nil
 		}
 
+		// Response mutator
+		respMut := func(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
+			switch v := resp.(type) {
+			case *samplev1.Response:
+				// Metadata returned by the server will be available here for further
+				// processing and customization
+				ll.Warningf("mutator metadata: %+v", MetadataFromContext(ctx))
+
+				// Can also remove specific headers if required
+				delete(w.Header(), "Sticky-Metadata")
+
+				// Add custom headers based on the specific type being returned
+				w.Header().Set("X-Custom-Header", "foo-bar")
+				w.Header().Set("X-Response-Name", fmt.Sprintf("%v", v.Name))
+				w.WriteHeader(http.StatusAccepted)
+			}
+			return nil
+		}
+
 		// Setup HTTP gateway
-		// Use JSON pretty print by default.
-		// Register a secondary encoder using standard json package for marshaling.
 		metricsHandler, _ := oop.PrometheusMetricsHandler()
 		gwOptions := []HTTPGatewayOption{
 			WithHandlerName("http-gateway"),
-			WithFilter(customFooPing),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc("/hello", customHandler),
 			WithCustomHandler("/instrumentation", metricsHandler),
+			WithGatewayMiddleware(middleware.GzipCompression(7)),
+			WithInterceptor(customFooPing),
+			WithResponseMutator(respMut),
+			WithClientOptions(WithClientObservability(oop)),
 		}
 		gw, err := NewHTTPGateway(gwOptions...)
 		if err != nil {
@@ -330,6 +413,7 @@ func TestServer(t *testing.T) {
 			return
 		}
 
+		// Start server
 		options := append(serverOpts[:],
 			WithHTTPGateway(gw),
 			WithWebSocketProxy(
@@ -371,24 +455,32 @@ func TestServer(t *testing.T) {
 			ll.Printf(log.Debug, "%s", b)
 		})
 
-		t.Run("Health", func(t *testing.T) {
+		t.Run("Request", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.TODO(), "/foo/health", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.TODO(), "/foo/request", otel.WithSpanKind(otel.SpanKindClient))
 			defer task.End()
 
 			// Prepare request
-			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:12137/foo/health", nil)
+			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:12137/foo/request", nil)
 			req.Header.Set("Content-Type", "application/json+pretty")
+
+			// When submitting HTTP requests, custom metadata values MUST be provided
+			// as HTTP headers.
+			req.Header.Set("sticky-metadata", "c137")
 
 			// Submit request
 			res, err := hcl.Do(req)
 			assert.Nil(err, "failed http post")
-			assert.Equal(http.StatusOK, res.StatusCode, "failed http post")
+			assert.Equal(http.StatusAccepted, res.StatusCode, "failed http post")
 			defer func() {
 				_ = res.Body.Close()
 			}()
 			b, _ := ioutil.ReadAll(res.Body)
 			ll.Printf(log.Debug, "%s", b)
+			ll.Printf(log.Debug, "status: %d", res.StatusCode)
+			for h := range res.Header {
+				ll.Printf(log.Debug, "header received [%s: %s]", h, res.Header.Get(h))
+			}
 		})
 
 		t.Run("CustomPath", func(t *testing.T) {
@@ -426,8 +518,6 @@ func TestServer(t *testing.T) {
 			defer func() {
 				_ = res.Body.Close()
 			}()
-			b, _ := ioutil.ReadAll(res.Body)
-			ll.Printf(log.Debug, "%s", b)
 		})
 
 		t.Run("Streaming", func(t *testing.T) {
@@ -566,11 +656,11 @@ func TestServer(t *testing.T) {
 		// Setup HTTP gateway
 		gwOptions := []HTTPGatewayOption{
 			WithCustomHandlerFunc("/hello", customHandler),
-			WithClientOptions([]ClientOption{
+			WithClientOptions(
 				WithClientTLS(ClientTLSConfig{
 					CustomCAs: [][]byte{ca},
 				}),
-			}),
+			),
 		}
 		gw, err := NewHTTPGateway(gwOptions...)
 		if err != nil {
@@ -748,13 +838,13 @@ func TestServer(t *testing.T) {
 		// Setup HTTP gateway
 		gwOptions := []HTTPGatewayOption{
 			WithCustomHandlerFunc("/hello", customHandler),
-			WithClientOptions([]ClientOption{
+			WithClientOptions(
 				WithInsecureSkipVerify(),
 				WithAuthCertificate(cert, key),
 				WithClientTLS(ClientTLSConfig{
 					CustomCAs: [][]byte{ca},
 				}),
-			}),
+			),
 		}
 		gw, err := NewHTTPGateway(gwOptions...)
 		if err != nil {
@@ -949,7 +1039,7 @@ func TestServer(t *testing.T) {
 	t.Run("Metadata", func(t *testing.T) {
 		data := make(map[string]string)
 		data["foo"] = fmt.Sprintf("%s\n", "bar")
-		ctx := ContextWithMetadata(context.Background(), data)
+		ctx := ContextWithMetadata(context.Background(), metadata.New(data))
 		md, _ := metadata.FromOutgoingContext(ctx)
 		assert.Equal("bar", md.Get("foo")[0], "invalid metadata value")
 	})
@@ -1099,7 +1189,7 @@ func ExampleNewServer() {
 func ExampleContextWithMetadata() {
 	data := make(map[string]string)
 	data["foo"] = "your-value"
-	ctx := ContextWithMetadata(context.TODO(), data)
+	ctx := ContextWithMetadata(context.TODO(), metadata.New(data))
 
 	// Access the metadata in the context instance
 	md, _ := metadata.FromOutgoingContext(ctx)

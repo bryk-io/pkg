@@ -21,7 +21,7 @@ type ContextMetadataOptions struct {
 	Hook func(md *Metadata, r http.Request) `json:"-" yaml:"-" mapstructure:"-"`
 }
 
-// ContextMetadata allows to keep HTTP headers or other request details as
+// ContextMetadata allows keeping HTTP headers or other request details as
 // metadata in the context used when processing incoming requests. This
 // allows other extensions and resolvers to have access to required information.
 //

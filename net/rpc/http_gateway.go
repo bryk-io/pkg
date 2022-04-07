@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -29,9 +29,10 @@ type HTTPGateway struct {
 	port          int
 	customPathsF  map[string]http.HandlerFunc
 	customPathsH  map[string]http.Handler
-	encoders      map[string]gwruntime.Marshaler
+	encoders      map[string]gwRuntime.Marshaler
 	middleware    []func(http.Handler) http.Handler
-	filters       []HTTPGatewayFilter
+	interceptors  []HTTPGatewayInterceptor
+	responseMut   HTTPGatewayResponseMutator
 	handlerName   string
 	mu            sync.Mutex
 }
@@ -43,9 +44,9 @@ func NewHTTPGateway(options ...HTTPGatewayOption) (*HTTPGateway, error) {
 		clientOptions: []ClientOption{},
 		customPathsF:  make(map[string]http.HandlerFunc),
 		customPathsH:  make(map[string]http.Handler),
-		encoders:      make(map[string]gwruntime.Marshaler),
+		encoders:      make(map[string]gwRuntime.Marshaler),
 		middleware:    []func(http.Handler) http.Handler{},
-		filters:       []HTTPGatewayFilter{},
+		interceptors:  []HTTPGatewayInterceptor{},
 		handlerName:   "grpc-gateway",
 	}
 	if err := gw.setup(options...); err != nil {
@@ -63,7 +64,7 @@ func (gw *HTTPGateway) setup(options ...HTTPGatewayOption) error {
 	return nil
 }
 
-func (gw *HTTPGateway) dialOption() (grpc.DialOption, error) {
+func (gw *HTTPGateway) dialOptions() (grpc.DialOption, error) {
 	cl, err := NewClient(gw.clientOptions...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to acquire HTTP gateway's internal client instance")
@@ -74,23 +75,28 @@ func (gw *HTTPGateway) dialOption() (grpc.DialOption, error) {
 	return grpc.WithTransportCredentials(credentials.NewTLS(cl.tlsConf)), nil
 }
 
-func (gw *HTTPGateway) options() (opts []gwruntime.ServeMuxOption) {
+func (gw *HTTPGateway) options() (opts []gwRuntime.ServeMuxOption) {
 	// Encoders
 	for mime, enc := range gw.encoders {
-		opts = append(opts, gwruntime.WithMarshalerOption(mime, enc))
+		opts = append(opts, gwRuntime.WithMarshalerOption(mime, enc))
 	}
 
-	// Preserve all incoming and outgoing HTTP headers as gRPC context
+	// Preserve all (valid) incoming and outgoing HTTP headers as gRPC context
 	// metadata by default.
-	opts = append(opts, gwruntime.WithIncomingHeaderMatcher(preserveHeaders()))
-	opts = append(opts, gwruntime.WithOutgoingHeaderMatcher(preserveHeaders()))
+	opts = append(opts, gwRuntime.WithIncomingHeaderMatcher(preserveHeaders()))
+	opts = append(opts, gwRuntime.WithOutgoingHeaderMatcher(preserveHeaders()))
+
+	// Register response mutator, if provided
+	if gw.responseMut != nil {
+		opts = append(opts, gwRuntime.WithForwardResponseOption(gw.responseMut))
+	}
 
 	return opts
 }
 
-func (gw *HTTPGateway) filterWrapper(h http.Handler, filters []HTTPGatewayFilter) http.Handler {
+func (gw *HTTPGateway) interceptorWrapper(h http.Handler, list []HTTPGatewayInterceptor) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		for _, f := range filters {
+		for _, f := range list {
 			if err := f(res, req); err != nil {
 				return
 			}

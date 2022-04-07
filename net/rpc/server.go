@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	mwAuth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	mwRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	mwValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -198,8 +198,8 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 
 	// Add middleware
 	unaryM, streamM := srv.getMiddleware()
-	srv.opts = append(srv.opts, grpc_middleware.WithUnaryServerChain(unaryM...))
-	srv.opts = append(srv.opts, grpc_middleware.WithStreamServerChain(streamM...))
+	srv.opts = append(srv.opts, mw.WithUnaryServerChain(unaryM...))
+	srv.opts = append(srv.opts, mw.WithStreamServerChain(streamM...))
 
 	// Create RPC instance and setup services
 	srv.mu.Lock()
@@ -335,7 +335,7 @@ func (srv *Server) setupGateway() error {
 	}
 
 	// Internal client dial options
-	authOpt, err := srv.gateway.dialOption()
+	authOpt, err := srv.gateway.dialOptions()
 	if err != nil {
 		return errors.Wrap(err, "failed to get HTTP gateway's auth options")
 	}
@@ -362,9 +362,9 @@ func (srv *Server) setupGateway() error {
 		mux.HandleFunc(path, hf)
 	}
 
-	// Apply gateway filters
-	if len(srv.gateway.filters) > 0 {
-		handler = srv.gateway.filterWrapper(handler, srv.gateway.filters)
+	// Apply gateway interceptors
+	if len(srv.gateway.interceptors) > 0 {
+		handler = srv.gateway.interceptorWrapper(handler, srv.gateway.interceptors)
 	}
 
 	// Gateway middleware
@@ -373,8 +373,8 @@ func (srv *Server) setupGateway() error {
 		// Add OTEL as the first middleware in the chain automatically
 		gmw = append(gmw, srv.oop.HTTPServerMiddleware(srv.gateway.handlerName))
 	}
-	for _, mw := range append(gmw, srv.gateway.middleware...) {
-		handler = mw(handler)
+	for _, m := range append(gmw, srv.gateway.middleware...) {
+		handler = m(handler)
 	}
 
 	// WebSocket support

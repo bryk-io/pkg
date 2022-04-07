@@ -6,6 +6,7 @@ import (
 	"net"
 	"strings"
 
+	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -65,13 +66,36 @@ func LoadCertificate(cert []byte, key []byte) (tls.Certificate, error) {
 // ContextWithMetadata returns a context with the provided value set as metadata.
 // Any existing metadata already present in the context will be preserved. Intended
 // to be used for outgoing RPC calls.
-func ContextWithMetadata(ctx context.Context, md map[string]string) context.Context {
-	for k, v := range md {
-		md[k] = strings.TrimRight(v, "\r\n")
+func ContextWithMetadata(ctx context.Context, md metadata.MD) context.Context {
+	for k := range md {
+		if vals := md.Get(k); len(vals) > 0 {
+			size := len(vals)
+			nv := make([]string, size)
+			for i := 0; i < size; i++ {
+				nv[i] = strings.TrimSpace(vals[i])
+			}
+			md.Set(k, nv...)
+		}
 	}
 	orig, _ := metadata.FromOutgoingContext(ctx)
-	newMD := metadata.New(md)
-	return metadata.NewOutgoingContext(ctx, metadata.Join(orig, newMD))
+	return metadata.NewOutgoingContext(ctx, metadata.Join(orig, md))
+}
+
+// MetadataFromContext extracts and return the metadata values available in the
+// provided context.
+func MetadataFromContext(ctx context.Context) metadata.MD {
+	var list []metadata.MD
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		list = append(list, md)
+	}
+	if md, ok := metadata.FromOutgoingContext(ctx); ok {
+		list = append(list, md)
+	}
+	if md, ok := gwRuntime.ServerMetadataFromContext(ctx); ok {
+		list = append(list, md.HeaderMD)
+		list = append(list, md.TrailerMD)
+	}
+	return metadata.Join(list...)
 }
 
 // GetAuthToken is helper function for extracting the "authorization" header from

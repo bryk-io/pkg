@@ -1,19 +1,28 @@
 package rpc
 
 import (
+	"context"
 	"net/http"
 
-	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 // HTTPGatewayOption allows adjusting gateway settings following a functional pattern.
 type HTTPGatewayOption func(*HTTPGateway) error
 
-// HTTPGatewayFilter allows to further customize the processing of requests.
-// If a filter function returns a non-nil error, any further processing of
+// HTTPGatewayInterceptor allows to further customize the processing of requests.
+// If an interceptor function returns a non-nil error, any further processing of
 // the request will be skipped.
-type HTTPGatewayFilter func(http.ResponseWriter, *http.Request) error
+type HTTPGatewayInterceptor func(http.ResponseWriter, *http.Request) error
+
+// HTTPGatewayResponseMutator allows the user to completely control/adjust the response
+// returned by the gateway. Some common uses cases include:
+//   - Return a subset of response fields as HTTP response headers
+//   - Set an application-specific token in a header
+//   - Mutate the response messages to be returned
+type HTTPGatewayResponseMutator func(context.Context, http.ResponseWriter, proto.Message) error
 
 // WithGatewayPort adjust the gateway to handle requests on a different port. If not
 // set the gateway will use the same port as the RPC server by default. If a custom and
@@ -69,17 +78,17 @@ func WithCustomHandler(path string, handler http.Handler) HTTPGatewayOption {
 
 // WithClientOptions configuration options for the gateway's internal client connection
 // to the upstream RPC server.
-func WithClientOptions(options []ClientOption) HTTPGatewayOption {
+func WithClientOptions(options ...ClientOption) HTTPGatewayOption {
 	return func(gw *HTTPGateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
-		gw.clientOptions = options
+		gw.clientOptions = append(gw.clientOptions, options...)
 		return nil
 	}
 }
 
 // WithEncoder registers a marshaler instance for a specific mime type.
-func WithEncoder(mime string, marshaler gwruntime.Marshaler) HTTPGatewayOption {
+func WithEncoder(mime string, marshaler gwRuntime.Marshaler) HTTPGatewayOption {
 	return func(gw *HTTPGateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
@@ -88,16 +97,30 @@ func WithEncoder(mime string, marshaler gwruntime.Marshaler) HTTPGatewayOption {
 	}
 }
 
-// WithFilter allows to customize the processing of requests. Filter functions are
+// WithInterceptor allows to customize the processing of requests. Interceptors are
 // executed BEFORE the standard processing operations and could impact performance or
 // prevent standard processing handled by the gateway instance. Should be used with
-// care. If a filter function returns a non-nil error, any further processing of the
+// care. If an interceptor returns a non-nil error, any further processing of the
 // request will be skipped.
-func WithFilter(f ...HTTPGatewayFilter) HTTPGatewayOption {
+func WithInterceptor(f ...HTTPGatewayInterceptor) HTTPGatewayOption {
 	return func(gw *HTTPGateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
-		gw.filters = append(gw.filters, f...)
+		gw.interceptors = append(gw.interceptors, f...)
+		return nil
+	}
+}
+
+// WithResponseMutator allows the user to completely control/adjust the response
+// returned by the gateway. Some common uses cases include:
+//   - Return a subset of response fields as HTTP response headers
+//   - Set an application-specific token in a header
+//   - Mutate the response messages to be returned
+func WithResponseMutator(rm HTTPGatewayResponseMutator) HTTPGatewayOption {
+	return func(gw *HTTPGateway) error {
+		gw.mu.Lock()
+		defer gw.mu.Unlock()
+		gw.responseMut = rm
 		return nil
 	}
 }
@@ -107,7 +130,7 @@ func WithFilter(f ...HTTPGatewayFilter) HTTPGatewayOption {
 // use is `application/json+pretty`.
 func WithPrettyJSON(mime string) HTTPGatewayOption {
 	return func(gw *HTTPGateway) error {
-		jm := &gwruntime.JSONPb{
+		jm := &gwRuntime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				UseProtoNames:   true,
 				UseEnumNumbers:  true,
