@@ -11,6 +11,7 @@ import (
 	mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/pkg/errors"
 	"go.bryk.io/pkg/otel"
+	"go.bryk.io/pkg/otel/extras"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -118,7 +119,7 @@ func (c *Client) setup(options ...ClientOption) error {
 func (c *Client) getMiddleware() (unary []grpc.UnaryClientInterceptor, stream []grpc.StreamClientInterceptor) {
 	// Setup observability before anything else
 	if c.oop != nil {
-		ui, si := c.oop.RPCClient()
+		ui, si := extras.NewGRPCMonitor().Client()
 		unary = append(unary, ui)
 		stream = append(stream, si)
 	}

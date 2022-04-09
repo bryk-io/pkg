@@ -39,11 +39,9 @@ type Operator struct {
 	runtimeMetrics    bool                            // capture standard runtime metrics
 	runtimeMetricsInt time.Duration                   // runtime memory capture interval
 	metricsPushInt    time.Duration                   // push metrics interval
-	prom              *prometheusSupport              // prometheus support capabilities
 	spanLimits        sdkTrace.SpanLimits             // default span limits
 	props             []propagation.TextMapPropagator // list of individual text map propagators
 	sampler           sdkTrace.Sampler                // trace sampler strategy used
-	ctx               context.Context
 }
 
 // NewOperator creates a new operator instance. Operators can be used
@@ -60,7 +58,6 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 		spanLimits:        sdkTrace.NewSpanLimits(),
 		runtimeMetricsInt: time.Duration(10) * time.Second,
 		metricsPushInt:    time.Duration(5) * time.Second,
-		ctx:               context.TODO(),
 		props: []propagation.TextMapPropagator{
 			propagation.Baggage{},      // baggage
 			propagation.TraceContext{}, // tracecontext
@@ -76,13 +73,6 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	attrs := join(op.coreAttributes, op.userAttributes)
 	op.log = op.log.Sub(xlog.Fields(attrs))
 	op.resource = sdkResource.NewWithAttributes(semConv.SchemaURL, attrs.Expand()...)
-
-	// Initialize prometheus handler.
-	if op.prom != nil && op.prom.enabled {
-		if err := op.prom.init(); err != nil {
-			return nil, err
-		}
-	}
 
 	// Prepare context propagation mechanisms.
 	// If you do not set a propagator the default is to use a `NoOp` option, which
@@ -191,7 +181,7 @@ func (op *Operator) setupProviders() error {
 
 	// Since we are using a push metrics controller, start the provider
 	// automatically here.
-	return op.metricProvider.Start(op.ctx)
+	return op.metricProvider.Start(context.Background())
 }
 
 // Start collection of host and runtime metrics, if enabled.

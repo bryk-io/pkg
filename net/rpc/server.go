@@ -19,6 +19,7 @@ import (
 	"github.com/soheilhy/cmux"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
+	"go.bryk.io/pkg/otel/extras"
 	"golang.org/x/net/netutil"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -64,6 +65,7 @@ type Server struct {
 	panicRecovery    bool                           // Enable panic recovery interceptor
 	inputValidation  bool                           // Enable automatic input validation
 	reflection       bool                           // Enable server reflection protocol
+	prometheus       extras.PrometheusIntegration   // Prometheus support
 	mu               sync.Mutex
 }
 
@@ -95,6 +97,7 @@ func (srv *Server) Reset() {
 	srv.opts = []grpc.ServerOption{}
 	srv.middlewareUnary = []grpc.UnaryServerInterceptor{}
 	srv.middlewareStream = []grpc.StreamServerInterceptor{}
+	srv.prometheus = nil
 	srv.tokenValidator = nil
 }
 
@@ -215,8 +218,8 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 	}
 
 	// Initialize server metrics
-	if srv.oop != nil {
-		srv.oop.PrometheusInitializeServer(srv.grpc)
+	if srv.prometheus != nil {
+		srv.prometheus.InitializeMetrics(srv.grpc)
 	}
 
 	// Setup main server network interface
@@ -371,7 +374,8 @@ func (srv *Server) setupGateway() error {
 	var gmw []func(http.Handler) http.Handler
 	if srv.oop != nil {
 		// Add OTEL as the first middleware in the chain automatically
-		gmw = append(gmw, srv.oop.HTTPServerMiddleware(srv.gateway.handlerName))
+		httpMonitor := extras.NewHTTPMonitor()
+		gmw = append(gmw, httpMonitor.ServerMiddleware(srv.gateway.handlerName))
 	}
 	for _, m := range append(gmw, srv.gateway.middleware...) {
 		handler = m(handler)
@@ -421,7 +425,14 @@ func (srv *Server) setupGatewayInterface() error {
 func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream []grpc.StreamServerInterceptor) {
 	// Setup observability before anything else
 	if srv.oop != nil {
-		ui, si := srv.oop.RPCServer()
+		ui, si := extras.NewGRPCMonitor().Server()
+		unary = append(unary, ui)
+		stream = append(stream, si)
+	}
+
+	// Setup prometheus metrics before any functional middleware
+	if srv.prometheus != nil {
+		ui, si := srv.prometheus.Server()
 		unary = append(unary, ui)
 		stream = append(stream, si)
 	}

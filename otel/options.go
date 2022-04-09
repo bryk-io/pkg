@@ -6,7 +6,6 @@ import (
 
 	"go.opentelemetry.io/otel/propagation"
 
-	"github.com/prometheus/client_golang/prometheus"
 	xlog "go.bryk.io/pkg/log"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
@@ -134,19 +133,6 @@ func WithRuntimeMetrics(interval time.Duration) OperatorOption {
 		op.runtimeMetrics = true
 		if interval != 0 {
 			op.runtimeMetricsInt = interval
-		}
-		return nil
-	}
-}
-
-// WithPrometheusSupport enables the operator instance to collect and provide prometheus
-// metrics. If enabled, host and runtime metrics are collected by default, in addition to
-// any collector specified here.
-func WithPrometheusSupport(extras ...prometheus.Collector) OperatorOption {
-	return func(op *Operator) error {
-		op.prom = newPrometheusHandler()
-		if len(extras) > 0 {
-			op.prom.extras = append(op.prom.extras, extras...)
 		}
 		return nil
 	}

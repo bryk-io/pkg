@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"go.bryk.io/pkg/otel/extras"
 	"go.opentelemetry.io/contrib/propagators/b3"
 
 	"github.com/google/uuid"
@@ -116,7 +117,6 @@ func TestNewOperator(t *testing.T) {
 		WithHostMetrics(),
 		WithRuntimeMetrics(time.Duration(10) * time.Second),
 		WithMetricPushPeriod(time.Duration(10) * time.Second),
-		WithPrometheusSupport(),
 		WithResourceAttributes(Attributes{"resource.level.field": "bar"}),
 		WithLogger(xlog.WithZero(xlog.ZeroOptions{
 			PrettyPrint: true,
@@ -161,6 +161,9 @@ func TestNewOperator(t *testing.T) {
 	})
 
 	t.Run("Server", func(t *testing.T) {
+		// Get HTTP monitor provider from the extras package
+		monitor := extras.NewHTTPMonitor()
+
 		// Setup server
 		router := http.NewServeMux()
 
@@ -168,14 +171,14 @@ func TestNewOperator(t *testing.T) {
 		var clientBaggage Attributes
 
 		// Simple request
-		router.Handle("/ping", op.HTTPHandleFunc("ping processor", func(res http.ResponseWriter, req *http.Request) {
+		router.HandleFunc("/ping", func(res http.ResponseWriter, req *http.Request) {
 			<-time.After(time.Duration(rand.Intn(100)) * time.Millisecond)
 			res.WriteHeader(200)
 			_, _ = res.Write([]byte("pong"))
-		}))
+		})
 
 		// Expensive request
-		router.Handle("/expensive", op.HTTPHandleFunc("expensive processor", func(res http.ResponseWriter, req *http.Request) {
+		router.HandleFunc("/expensive", func(res http.ResponseWriter, req *http.Request) {
 			// Start span from context
 			task := op.SpanFromContext(req.Context())
 			defer task.End()
@@ -202,15 +205,17 @@ func TestNewOperator(t *testing.T) {
 			// Return error code
 			res.WriteHeader(417)
 			_, _ = res.Write([]byte("error"))
-		}))
+		})
 
 		// Run server in the background
 		go func() {
-			_ = http.ListenAndServe(":8080", router)
+			// Use OTEL operator to add automatic instrumentation to all routes on the
+			// server using a middleware pattern
+			_ = http.ListenAndServe(":8080", monitor.ServerMiddleware("server")(router))
 		}()
 
 		// Get instrumented HTTP client
-		cl := op.HTTPClient(nil)
+		cl := monitor.Client(nil)
 
 		// Run client requests
 		t.Run("Ping", func(t *testing.T) {
@@ -286,8 +291,6 @@ func TestNewOperator(t *testing.T) {
 	})
 }
 
-var op *Operator
-
 func ExampleNewOperator() {
 	options := []OperatorOption{
 		WithServiceName("operator-testing"),
@@ -310,12 +313,4 @@ func ExampleNewOperator() {
 	sp := op.Start(context.Background(), "task", WithSpanKind(SpanKindServer))
 	defer sp.End()
 	fmt.Println(sp.ID())
-}
-
-func ExampleOperator_HTTPHandler() {
-	// Add paths, functions, etc; to server mux
-	router := http.NewServeMux()
-
-	// Apply middleware to server mux
-	_ = http.ListenAndServe(":8080", op.HTTPHandler("my-server", router))
 }

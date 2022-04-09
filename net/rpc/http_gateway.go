@@ -82,11 +82,11 @@ func (gw *HTTPGateway) options() (opts []gwRuntime.ServeMuxOption) {
 	}
 
 	// Preserve all (valid) incoming and outgoing HTTP headers as gRPC context
-	// metadata by default.
+	// metadata by default
 	opts = append(opts, gwRuntime.WithIncomingHeaderMatcher(preserveHeaders()))
 	opts = append(opts, gwRuntime.WithOutgoingHeaderMatcher(preserveHeaders()))
 
-	// Register response mutator, if provided
+	// Register response mutator
 	if gw.responseMut != nil {
 		opts = append(opts, gwRuntime.WithForwardResponseOption(gw.responseMut))
 	}

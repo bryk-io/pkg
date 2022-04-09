@@ -20,7 +20,7 @@ type CORSOptions struct {
 	// Causes the CORS middleware to ignore OPTIONS requests, instead
 	// passing them through to the next handler. This is useful when
 	// your application or framework has a pre-existing mechanism for
-	// responding to OPTIONS requests.
+	// responding to `OPTIONS` requests.
 	IgnoreOptions bool `json:"ignore_options" yaml:"ignore_options" mapstructure:"ignore_options"`
 
 	// Adds the provided headers to the list of allowed headers in a CORS
@@ -31,7 +31,7 @@ type CORSOptions struct {
 	AllowedHeaders []string `json:"allowed_headers" yaml:"allowed_headers" mapstructure:"allowed_headers"`
 
 	// Explicitly allow methods in the Access-Control-Allow-Methods header. This
-	// is a replacement operation so you must also pass GET, HEAD, and POST if
+	// is a replacement operation, so you must also pass GET, HEAD, and POST if
 	// you wish to support those methods.
 	AllowedMethods []string `json:"allowed_methods" yaml:"allowed_methods" mapstructure:"allowed_methods"`
 

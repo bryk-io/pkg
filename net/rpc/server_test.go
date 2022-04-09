@@ -20,6 +20,7 @@ import (
 	"go.bryk.io/pkg/net/middleware"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
+	"go.bryk.io/pkg/otel/extras"
 	samplev1 "go.bryk.io/pkg/proto/sample/v1"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
@@ -65,7 +66,8 @@ func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
 
 	// Get client
 	if srv.oop != nil {
-		cl = srv.oop.HTTPClient(rt) // instrumented client
+		httpMonitor := extras.NewHTTPMonitor()
+		cl = httpMonitor.Client(rt) // instrumented client
 	} else {
 		cl = http.Client{Transport: rt} // regular client
 	}
@@ -119,7 +121,7 @@ func TestServer(t *testing.T) {
 		sampleCounter.With(prometheus.Labels{"foo": "bar"}).Inc()
 	}
 
-	// Exporters
+	// OTEL Exporters
 	var (
 		traceExp  sdkTrace.SpanExporter
 		metricExp sdkMetric.Exporter
@@ -132,11 +134,14 @@ func TestServer(t *testing.T) {
 	}
 	assert.Nil(err, "failed to create exporter")
 
+	// Prometheus integration
+	prom, err := extras.PrometheusMetrics(prometheus.NewRegistry(), sampleCounter)
+	assert.Nil(err, "failed to enable prometheus, support")
+
 	// Observability operator
 	oop, err := otel.NewOperator(
 		otel.WithExporter(traceExp),
 		otel.WithMetricExporter(metricExp),
-		otel.WithPrometheusSupport(sampleCounter),
 		otel.WithServiceName("rpc-test"),
 		otel.WithServiceVersion("0.1.0"),
 		otel.WithLogger(ll),
@@ -145,6 +150,9 @@ func TestServer(t *testing.T) {
 	assert.Nil(err, "initialize operator")
 	defer oop.Shutdown(context.TODO())
 
+	// HTTP monitor
+	httpMonitor := extras.NewHTTPMonitor()
+
 	// Base server configuration options
 	serverOpts := []ServerOption{
 		WithObservability(oop),
@@ -152,6 +160,7 @@ func TestServer(t *testing.T) {
 		WithInputValidation(),
 		WithReflection(),
 		WithServiceProvider(&fooProvider{}),
+		WithPrometheus(prom),
 		WithResourceLimits(ResourceLimits{
 			Connections: 100,
 			Requests:    100,
@@ -187,8 +196,12 @@ func TestServer(t *testing.T) {
 			},
 		}
 
-		// Start a new server with a single option
-		srv, err := NewServer(WithService(ss), WithObservability(oop))
+		// Start a new server with minimal settings
+		srv, err := NewServer(
+			WithService(ss),
+			WithObservability(oop),
+			WithPrometheus(prom),
+		)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -279,7 +292,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(srv.Stop(false), "stop server error")
 
 		// Collect client info
-		_, err = c.oop.PrometheusGatherMetrics()
+		_, err = srv.prometheus.GatherMetrics()
 		assert.Nil(err, "failed to collect client info")
 	})
 
@@ -396,12 +409,11 @@ func TestServer(t *testing.T) {
 		}
 
 		// Setup HTTP gateway
-		metricsHandler, _ := oop.PrometheusMetricsHandler()
 		gwOptions := []HTTPGatewayOption{
 			WithHandlerName("http-gateway"),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc("/hello", customHandler),
-			WithCustomHandler("/instrumentation", metricsHandler),
+			WithCustomHandler("/instrumentation", prom.MetricsHandler()),
 			WithGatewayMiddleware(middleware.GzipCompression(7)),
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
@@ -433,7 +445,7 @@ func TestServer(t *testing.T) {
 		<-serverReady
 
 		// Instrumented HTTP client
-		hcl := oop.HTTPClient(nil)
+		hcl := httpMonitor.Client(nil)
 
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
@@ -518,6 +530,10 @@ func TestServer(t *testing.T) {
 			defer func() {
 				_ = res.Body.Close()
 			}()
+
+			// Dump metrics data
+			data, _ := ioutil.ReadAll(res.Body)
+			ll.Debugf("%s", data)
 		})
 
 		t.Run("Streaming", func(t *testing.T) {
