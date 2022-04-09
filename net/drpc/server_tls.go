@@ -82,12 +82,11 @@ func (opts ServerTLS) conf() (*tls.Config, error) {
 
 	// Base TLS configuration
 	conf := &tls.Config{
-		Certificates:             []tls.Certificate{cert},
-		CipherSuites:             opts.SupportedCiphers,
-		CurvePreferences:         opts.PreferredCurves,
-		RootCAs:                  cp,
-		PreferServerCipherSuites: true,
-		MinVersion:               tls.VersionTLS12,
+		Certificates:     []tls.Certificate{cert},
+		CipherSuites:     opts.SupportedCiphers,
+		CurvePreferences: opts.PreferredCurves,
+		RootCAs:          cp,
+		MinVersion:       tls.VersionTLS12,
 	}
 	return conf, nil
 }

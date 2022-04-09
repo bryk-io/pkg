@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Option allows to adjust server settings following a functional pattern.
+// Option allows adjusting server settings following a functional pattern.
 type Option func(srv *Server) error
 
 // WithPort sets the TCP port to handle requests.
@@ -30,7 +30,7 @@ func WithIdleTimeout(timeout time.Duration) Option {
 // WithHandler sets the HTTP handler used by the server.
 func WithHandler(handler lib.Handler) Option {
 	return func(srv *Server) error {
-		srv.nh.Handler = handler
+		srv.sh = handler
 		return nil
 	}
 }
@@ -45,5 +45,21 @@ func WithTLS(settings TLS) Option {
 			srv.nh.TLSConfig = srv.tls
 		}
 		return err
+	}
+}
+
+// WithMiddleware register the provided middleware to customize/extend the
+// processing of HTTP requests. When applying middleware the ordering is very
+// important, in this case it will be applied in the same order provided.
+// For example:
+//    Use(foo bar baz)
+// Will be applied as:
+//    baz( bar( foo(handler) ) )
+func WithMiddleware(md ...func(lib.Handler) lib.Handler) Option {
+	return func(srv *Server) error {
+		srv.mu.Lock()
+		defer srv.mu.Unlock()
+		srv.mw = append(srv.mw, md...)
+		return nil
 	}
 }

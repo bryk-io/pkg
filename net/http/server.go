@@ -4,11 +4,15 @@ import (
 	"context"
 	"crypto/tls"
 	lib "net/http"
+	"sync"
 )
 
 // Server provides the main HTTP(S) service provider.
 type Server struct {
 	nh   *lib.Server
+	sh   lib.Handler
+	mw   []func(lib.Handler) lib.Handler
+	mu   sync.Mutex
 	tls  *tls.Config
 	port int
 }
@@ -18,15 +22,26 @@ type Server struct {
 func NewServer(options ...Option) (*Server, error) {
 	srv := &Server{
 		nh: &lib.Server{},
+		mw: []func(lib.Handler) lib.Handler{},
 	}
-	if err := srv.setup(options...); err != nil {
-		return nil, err
+
+	// Apply user settings
+	for _, opt := range options {
+		if err := opt(srv); err != nil {
+			return nil, err
+		}
+	}
+
+	// Apply middleware
+	for _, mw := range srv.mw {
+		srv.sh = mw(srv.sh)
 	}
 	return srv, nil
 }
 
 // Start the server instance and start receiving and handling requests.
 func (srv *Server) Start() error {
+	srv.nh.Handler = srv.sh
 	if srv.tls != nil {
 		return srv.nh.ListenAndServeTLS("", "")
 	}
@@ -42,13 +57,4 @@ func (srv *Server) Stop(graceful bool) error {
 		return srv.nh.Close()
 	}
 	return srv.nh.Shutdown(context.Background())
-}
-
-func (srv *Server) setup(options ...Option) error {
-	for _, opt := range options {
-		if err := opt(srv); err != nil {
-			return err
-		}
-	}
-	return nil
 }

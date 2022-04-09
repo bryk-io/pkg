@@ -52,11 +52,10 @@ func (t TLS) Expand() (*tls.Config, error) {
 
 	// Base TLS configuration
 	return &tls.Config{
-		Certificates:             []tls.Certificate{cert},
-		CipherSuites:             ciphers,
-		CurvePreferences:         curves,
-		RootCAs:                  cp,
-		PreferServerCipherSuites: true,
-		MinVersion:               tls.VersionTLS12,
+		Certificates:     []tls.Certificate{cert},
+		CipherSuites:     ciphers,
+		CurvePreferences: curves,
+		RootCAs:          cp,
+		MinVersion:       tls.VersionTLS12,
 	}, nil
 }

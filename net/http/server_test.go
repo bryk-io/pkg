@@ -8,6 +8,8 @@ import (
 	"time"
 
 	tdd "github.com/stretchr/testify/assert"
+	xlog "go.bryk.io/pkg/log"
+	mw "go.bryk.io/pkg/net/middleware"
 )
 
 var mux *lib.ServeMux
@@ -16,16 +18,25 @@ func TestNewServer(t *testing.T) {
 	assert := tdd.New(t)
 
 	// Handler
-	mux = lib.NewServeMux()
-	mux.HandleFunc("/ping", func(res lib.ResponseWriter, req *lib.Request) {
+	router := lib.NewServeMux()
+	router.HandleFunc("/ping", func(res lib.ResponseWriter, _ *lib.Request) {
 		_, _ = res.Write([]byte("pong"))
+	})
+	router.HandleFunc("/panic", func(res lib.ResponseWriter, _ *lib.Request) {
+		panic("cool services never panic!!!")
 	})
 
 	// Server options
 	opts := []Option{
 		WithPort(8080),
 		WithIdleTimeout(10 * time.Second),
-		WithHandler(mux),
+		WithHandler(router),
+		WithMiddleware(
+			mw.PanicRecovery(),
+			mw.ProxyHeaders(),
+			mw.GzipCompression(9),
+			mw.Logging(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
+		),
 	}
 
 	// HTTP client
@@ -46,11 +57,23 @@ func TestNewServer(t *testing.T) {
 			_ = srv.Start()
 		}()
 
-		// Sample request
-		res, err := cl.Get("http://localhost:8080/ping")
-		assert.Nil(err, "ping")
-		assert.Equal(lib.StatusOK, res.StatusCode, "wrong status")
-		_ = res.Body.Close()
+		t.Run("Ping", func(t *testing.T) {
+			res, err := cl.Get("http://localhost:8080/ping")
+			assert.Nil(err, "ping")
+			assert.Equal(lib.StatusOK, res.StatusCode, "wrong status")
+			_ = res.Body.Close()
+		})
+
+		t.Run("Panic", func(t *testing.T) {
+			res, err := cl.Get("http://localhost:8080/panic")
+			assert.Nil(err, "panic")
+			assert.Equal(lib.StatusInternalServerError, res.StatusCode, "wrong status")
+
+			data, err := ioutil.ReadAll(res.Body)
+			assert.Nil(err, "panic response")
+			assert.Equal(string(data), "cool services never panic!!!")
+			_ = res.Body.Close()
+		})
 
 		// Stop server
 		assert.Nil(srv.Stop(true), "server stop")
@@ -77,11 +100,23 @@ func TestNewServer(t *testing.T) {
 			_ = srv.Start()
 		}()
 
-		// Sample request
-		res, err := cl.Get("https://localhost:8080/ping")
-		assert.Nil(err, "ping")
-		assert.Equal(lib.StatusOK, res.StatusCode, "wrong status")
-		_ = res.Body.Close()
+		t.Run("Ping", func(t *testing.T) {
+			res, err := cl.Get("https://localhost:8080/ping")
+			assert.Nil(err, "ping")
+			assert.Equal(lib.StatusOK, res.StatusCode, "wrong status")
+			_ = res.Body.Close()
+		})
+
+		t.Run("Panic", func(t *testing.T) {
+			res, err := cl.Get("https://localhost:8080/panic")
+			assert.Nil(err, "panic")
+			assert.Equal(lib.StatusInternalServerError, res.StatusCode, "wrong status")
+
+			data, err := ioutil.ReadAll(res.Body)
+			assert.Nil(err, "panic response")
+			assert.Equal(string(data), "cool services never panic!!!")
+			_ = res.Body.Close()
+		})
 
 		// Stop server
 		assert.Nil(srv.Stop(true), "server stop")
