@@ -2,6 +2,8 @@ package ws
 
 import (
 	"context"
+	"errors"
+	"io"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -12,6 +14,7 @@ import (
 type wrappedStream struct {
 	ctx  context.Context // original request context
 	conn *websocket.Conn // websocket connection
+	done bool            // already closed
 	json bool            // use JSON encoding?
 	init bool            // already initialized on receiver end?
 }
@@ -23,12 +26,20 @@ func (st *wrappedStream) Context() context.Context {
 
 // CloseSend signals to the remote that we will no longer send any messages.
 func (st *wrappedStream) CloseSend() error {
+	if st.done {
+		return nil
+	}
+	st.done = true
 	msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "no more messages")
 	return st.conn.WriteControl(websocket.CloseMessage, msg, time.Now().Add(1*time.Second))
 }
 
 // Close the request stream.
 func (st *wrappedStream) Close() error {
+	if st.done {
+		return nil
+	}
+	st.done = true
 	msg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "bye")
 	_ = st.conn.WriteControl(websocket.CloseMessage, msg, time.Now().Add(1*time.Second))
 	return st.conn.Close()
@@ -45,21 +56,24 @@ func (st *wrappedStream) MsgSend(msg drpc.Message, enc drpc.Encoding) error {
 
 // MsgRecv receives a message from the remote.
 func (st *wrappedStream) MsgRecv(msg drpc.Message, enc drpc.Encoding) error {
-	// FIXME: Improve initialization and support 'CloseAndRecv'
-	// There's a problem with server side streaming only.
-	// - The original RPC request triggers this method but blocks since no
-	//   data is written by the client on the socket connection.
-	// - A "solution" for now is simply to ignore the first original request.
-	// - The following 'MsgRecv' invocations occur only when the client
-	//   actual sends data, hence preventing blocking and/or corrupting the
-	//   socket connection.
+	// Initialize stream and handle empty messages
 	if !st.init {
 		st.init = true
-		return nil
+		if size, _ := enc.Marshal(msg); len(size) == 0 {
+			return nil // no data is expected, continue
+		}
 	}
+
+	// Receive data from client
 	_, data, err := st.conn.ReadMessage()
 	if err != nil {
-		return err
+		var ce *websocket.CloseError
+		if errors.As(err, &ce) && ce.Code == websocket.CloseNormalClosure {
+			if st.done {
+				st.done = true
+			}
+			return io.EOF
+		}
 	}
 	return st.decode(msg, enc, data)
 }
@@ -83,11 +97,4 @@ func (st *wrappedStream) messageType() int {
 		return websocket.TextMessage
 	}
 	return websocket.BinaryMessage
-}
-
-func (st *wrappedStream) process() {
-	// Automatically close connection when the request's
-	// context completes.
-	<-st.ctx.Done()
-	_ = st.Close()
 }

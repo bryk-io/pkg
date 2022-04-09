@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"errors"
 	"html"
 	"net/http"
@@ -13,7 +14,12 @@ import (
 
 var headerFragment = "Sec-WebSocket-Protocol"
 
-// Proxy provides support for bi-directional DRPC streaming via websockets.
+var supportContentTypes = []string{
+	"application/protobuf",
+	"application/json",
+}
+
+// Proxy provides support for bidirectional DRPC streaming via websockets.
 type Proxy struct {
 	handler        drpc.Handler
 	fallback       http.Handler
@@ -48,10 +54,13 @@ func (p *Proxy) Wrap(handler drpc.Handler, fallback http.Handler) http.Handler {
 
 // ServeHTTP handles incoming HTTP requests.
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// No protocol upgrade? use fallback handler
 	if !websocket.IsWebSocketUpgrade(r) {
 		p.fallback.ServeHTTP(w, r)
 		return
 	}
+
+	// Upgrade connection and setup stream handler for it
 	if err := p.proxy(w, r); err != nil {
 		var ce *websocket.CloseError
 		if !errors.As(err, &ce) || ce.Code != websocket.CloseNormalClosure {
@@ -69,8 +78,8 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) *proxyErr {
 
 	// Validate content-type header
 	ct := r.Header.Get("Content-Type")
-	if ct != "application/protobuf" && ct != "application/json" {
-		return newProxyErr(http.StatusUnsupportedMediaType, "invalid content type: %q", ct)
+	if !isValidContentType(ct) {
+		return newProxyErr(http.StatusUnsupportedMediaType, "invalid content type: %s", ct)
 	}
 
 	// Get the http request context while preserving metadata values
@@ -94,16 +103,20 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) *proxyErr {
 	}
 
 	// Custom stream handler
+	rc, halt := context.WithCancel(ctx)
+	defer halt()
 	req := &wrappedStream{
-		ctx:  ctx,
+		ctx:  rc,
 		conn: conn,
 		json: ct == "application/json",
 	}
 
 	// Handle the incoming RPC request
-	go req.process()
 	if err := p.handler.HandleRPC(req, sanitize(r.URL.Path)); err != nil {
-		return wrapErr(http.StatusInternalServerError, err)
+		var ce *websocket.CloseError
+		if errors.As(err, &ce) && ce.Code != websocket.CloseNormalClosure {
+			return wrapErr(http.StatusInternalServerError, err)
+		}
 	}
 	return nil
 }
@@ -112,4 +125,13 @@ func sanitize(src string) string {
 	res := strings.Replace(strings.Replace(src, "\n", "", -1), "\r", "", -1)
 	res = html.EscapeString(res)
 	return res
+}
+
+func isValidContentType(ct string) bool {
+	for _, el := range supportContentTypes {
+		if ct == el {
+			return true
+		}
+	}
+	return false
 }

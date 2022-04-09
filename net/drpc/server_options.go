@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"syscall"
 
-	srvmw "go.bryk.io/pkg/net/drpc/middleware/server"
+	srvMW "go.bryk.io/pkg/net/drpc/middleware/server"
 	"go.bryk.io/pkg/net/drpc/ws"
 )
 
-// Option allows to adjust server settings following a functional pattern.
+// Option allows adjusting server settings following a functional pattern.
 type Option func(srv *Server) error
 
 // WithServiceProvider can be used to expose RPC services described and implemented
@@ -73,7 +73,7 @@ func WithTLS(opts ServerTLS) Option {
 //    Use(foo bar baz)
 // Will be applied as:
 //    baz( bar( foo(handler) ) )
-func WithMiddleware(mw ...srvmw.Middleware) Option {
+func WithMiddleware(mw ...srvMW.Middleware) Option {
 	return func(srv *Server) error {
 		srv.Use(mw...)
 		return nil
@@ -95,7 +95,7 @@ func WithHTTP() Option {
 	}
 }
 
-// WithWebSocketProxy enable bi-directional streaming on the DRPC server via
+// WithWebSocketProxy enable bidirectional streaming on the DRPC server via
 // websocket connections.
 func WithWebSocketProxy(opts ...ws.ProxyOption) Option {
 	return func(srv *Server) error {

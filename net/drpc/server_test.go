@@ -19,10 +19,10 @@ import (
 	"github.com/gorilla/websocket"
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
-	clmw "go.bryk.io/pkg/net/drpc/middleware/client"
-	srvmw "go.bryk.io/pkg/net/drpc/middleware/server"
+	clMW "go.bryk.io/pkg/net/drpc/middleware/client"
+	srvMW "go.bryk.io/pkg/net/drpc/middleware/server"
 	"go.bryk.io/pkg/net/drpc/ws"
-	samplev1 "go.bryk.io/pkg/proto/sample/v1"
+	sampleV1 "go.bryk.io/pkg/proto/sample/v1"
 	"go.uber.org/goleak"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -105,17 +105,17 @@ func TestServer(t *testing.T) {
 	})
 
 	// Server middleware
-	smw := []srvmw.Middleware{
-		srvmw.Logging(ll.Sub(xlog.Fields{"component": "server"}), nil),
-		srvmw.PanicRecovery(),
+	smw := []srvMW.Middleware{
+		srvMW.Logging(ll.Sub(xlog.Fields{"component": "server"}), nil),
+		srvMW.PanicRecovery(),
 	}
 
 	// Client middleware
-	cmw := []clmw.Middleware{
-		clmw.Metadata(map[string]string{"metadata.user": "rick"}),
-		clmw.Logging(ll.Sub(xlog.Fields{"component": "client"}), nil),
-		clmw.PanicRecovery(),
-		clmw.RateLimit(10),
+	cmw := []clMW.Middleware{
+		clMW.Metadata(map[string]string{"metadata.user": "rick"}),
+		clMW.Logging(ll.Sub(xlog.Fields{"component": "client"}), nil),
+		clMW.PanicRecovery(),
+		clMW.RateLimit(10),
 	}
 
 	t.Run("WithPort", func(t *testing.T) {
@@ -142,7 +142,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "client connection")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 
 		t.Run("Ping", func(t *testing.T) {
 			_, err := client.Ping(context.TODO(), &emptypb.Empty{})
@@ -162,7 +162,7 @@ func TestServer(t *testing.T) {
 		t.Run("ConcurrentClients", func(t *testing.T) {
 			// Simulate a randomly slow RPC client
 			startWorker := func(cl *Client, wg *sync.WaitGroup) {
-				wk := samplev1.NewDRPCFooAPIClient(cl)
+				wk := sampleV1.NewDRPCFooAPIClient(cl)
 				for i := 0; i < 10; i++ {
 					<-time.After(time.Duration(rand.Intn(100)) * time.Millisecond)
 					_, err := wk.Ping(context.TODO(), &emptypb.Empty{})
@@ -221,7 +221,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "client connection")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 		res, err := client.Ping(context.TODO(), &emptypb.Empty{})
 		assert.Nil(err, "ping")
 		assert.True(res.Ok, "ping result")
@@ -267,7 +267,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "new client")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 		res, err := client.Ping(context.TODO(), &emptypb.Empty{})
 		assert.Nil(err, "ping")
 		assert.True(res.Ok, "ping result")
@@ -298,7 +298,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "client connection")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 		res, err := client.Ping(context.TODO(), &emptypb.Empty{})
 		assert.Nil(err, "ping")
 		assert.True(res.Ok, "ping result")
@@ -354,7 +354,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "new client")
 
 		// RPC request
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 		res, err := client.Ping(context.TODO(), &emptypb.Empty{})
 		assert.Nil(err, "ping")
 		assert.True(res.Ok, "ping result")
@@ -375,7 +375,7 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithAuth", func(t *testing.T) {
 		// Auth middleware
-		auth := srvmw.AuthByToken("auth.token", func(token string) bool {
+		auth := srvMW.AuthByToken("auth.token", func(token string) bool {
 			return token == "super-secure-credentials"
 		})
 
@@ -396,7 +396,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "client connection")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 
 		t.Run("NoCredentials", func(t *testing.T) {
 			_, err := client.Ping(context.TODO(), &emptypb.Empty{})
@@ -446,12 +446,12 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Client connection
-		clm := append(cmw, clmw.Retry(5, ll.Sub(xlog.Fields{"component": "client"})))
+		clm := append(cmw, clMW.Retry(5, ll.Sub(xlog.Fields{"component": "client"})))
 		cl, err := NewClient("tcp", ":8080", WithClientMiddleware(clm...))
 		assert.Nil(err, "client connection")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 
 		// Call operation with automatic retries
 		_, err = client.Slow(context.TODO(), &emptypb.Empty{})
@@ -469,7 +469,7 @@ func TestServer(t *testing.T) {
 		opts := []Option{
 			WithPort(8080),
 			WithServiceProvider(sampleServiceProvider()),
-			WithMiddleware(append(smw, srvmw.RateLimit(1))...),
+			WithMiddleware(append(smw, srvMW.RateLimit(1))...),
 		}
 		srv, err := NewServer(opts...)
 		assert.Nil(err, "new server")
@@ -482,7 +482,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "client connection")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 
 		// First request should work, second shouldn't
 		_, err = client.Ping(context.TODO(), &emptypb.Empty{})
@@ -534,7 +534,7 @@ func TestServer(t *testing.T) {
 		assert.Nil(err, "client connection")
 
 		// RPC client
-		client := samplev1.NewDRPCFooAPIClient(cl)
+		client := sampleV1.NewDRPCFooAPIClient(cl)
 
 		t.Run("RPC", func(t *testing.T) {
 			t.Run("Server", func(t *testing.T) {
@@ -561,7 +561,7 @@ func TestServer(t *testing.T) {
 				assert.Nil(err, "failed to open client stream")
 
 				// Send messages
-				msg := &samplev1.OpenClientStreamRequest{
+				msg := &sampleV1.OpenClientStreamRequest{
 					Sender: "client-1",
 					Stamp:  time.Now().Unix(),
 				}
@@ -572,9 +572,10 @@ func TestServer(t *testing.T) {
 						ll.Warning(err)
 					}
 				}
-				res, err := ss.CloseAndRecv()
+				err = ss.Close()
+				// res, err := ss.CloseAndRecv()
 				assert.Nil(err, "client stream close")
-				ll.Debugf("%+v", res)
+				// ll.Debugf("%+v", res)
 			})
 		})
 
@@ -595,7 +596,7 @@ func TestServer(t *testing.T) {
 					_ = rr.Body.Close()
 				}()
 
-				// Receive messages
+				// Receive messages until the server signals the stream is closed
 				for {
 					<-time.After(100 * time.Millisecond)
 					_, _, err := wc.ReadMessage()
@@ -625,10 +626,12 @@ func TestServer(t *testing.T) {
 					_ = rr.Body.Close()
 				}()
 
+				// Message encoder
+				jsM := protojson.MarshalOptions{EmitUnpopulated: true}
+				msg := &sampleV1.OpenClientStreamRequest{Sender: "test-client"}
+
 				// Send messages
 				var ce *websocket.CloseError
-				jsM := protojson.MarshalOptions{EmitUnpopulated: true}
-				msg := &samplev1.OpenClientStreamRequest{Sender: "test-client"}
 				for i := 0; i < 10; i++ {
 					<-time.After(100 * time.Millisecond)
 					msg.Stamp = time.Now().Unix()
@@ -639,9 +642,9 @@ func TestServer(t *testing.T) {
 					}
 				}
 
-				// Properly close the connection
+				// Cleanly close the connection by sending a close message to the server
 				closeMessage := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "bye")
-				err = wc.WriteControl(websocket.CloseMessage, closeMessage, time.Now().Add(1*time.Second))
+				err = wc.WriteMessage(websocket.CloseMessage, closeMessage)
 				assert.Nil(err, "write close message")
 			})
 		})
@@ -684,7 +687,7 @@ func ExampleNewClient() {
 	}
 
 	// RPC client
-	client := samplev1.NewDRPCEchoAPIClient(cl)
+	client := sampleV1.NewDRPCEchoAPIClient(cl)
 
 	// Consume the RPC service
 	res, _ := client.Ping(context.TODO(), &emptypb.Empty{})
@@ -699,23 +702,24 @@ type fooServiceProvider struct {
 	// implementation required when registering the element as a service
 	// provider. This allows us to simplify the "ServiceProvider" interface
 	// even further.
-	*samplev1.Handler
+	*sampleV1.Handler
 }
 
 func (fsp *fooServiceProvider) DRPCDescription() drpc.Description {
-	return samplev1.DRPCFooAPIDescription{}
+	return sampleV1.DRPCFooAPIDescription{}
 }
 
 // This custom implementation of the Faulty method will panic and
 // crash the server =(.
-func (fsp *fooServiceProvider) Faulty(_ context.Context, _ *emptypb.Empty) (*samplev1.DummyResponse, error) {
+func (fsp *fooServiceProvider) Faulty(_ context.Context, _ *emptypb.Empty) (*sampleV1.DummyResponse, error) {
 	panic("cool services MUST never panic!!!")
 }
 
-func (fsp *fooServiceProvider) OpenServerStream(_ *emptypb.Empty, stream samplev1.DRPCFooAPI_OpenServerStreamStream) error {
+func (fsp *fooServiceProvider) OpenServerStream(_ *emptypb.Empty, stream sampleV1.DRPCFooAPI_OpenServerStreamStream) error {
+	// Send 10 messages to the client
 	for i := 0; i < 10; i++ {
 		t := <-time.After(100 * time.Millisecond)
-		c := &samplev1.GenericStreamChunk{
+		c := &sampleV1.GenericStreamChunk{
 			Sender: fsp.Name,
 			Stamp:  t.Unix(),
 		}
@@ -723,15 +727,20 @@ func (fsp *fooServiceProvider) OpenServerStream(_ *emptypb.Empty, stream samplev
 			return err
 		}
 	}
-	return nil
+
+	// Close the stream
+	return stream.Close()
 }
 
-func (fsp *fooServiceProvider) OpenClientStream(stream samplev1.DRPCFooAPI_OpenClientStreamStream) (err error) {
-	res := &samplev1.StreamResult{Received: 0}
+func (fsp *fooServiceProvider) OpenClientStream(stream sampleV1.DRPCFooAPI_OpenClientStreamStream) (err error) {
+	res := &sampleV1.StreamResult{Received: 0}
 	for {
 		_, err = stream.Recv()
 		if errors.Is(err, io.EOF) {
-			return stream.SendAndClose(res)
+			// SendAndClose doesn't currently work when exposing stream operations
+			// through WebSockets. If that's required we can use bidirectional streams
+			// instead.
+			return stream.Close()
 		}
 		if err != nil {
 			return
@@ -742,7 +751,7 @@ func (fsp *fooServiceProvider) OpenClientStream(stream samplev1.DRPCFooAPI_OpenC
 
 func sampleServiceProvider() *fooServiceProvider {
 	return &fooServiceProvider{
-		Handler: &samplev1.Handler{Name: "foo"},
+		Handler: &sampleV1.Handler{Name: "foo"},
 	}
 }
 

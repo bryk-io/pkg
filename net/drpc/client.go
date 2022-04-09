@@ -102,12 +102,12 @@ func (cl *Client) Transport() drpc.Transport {
 
 // Use will register middleware elements to be applied to the client instance.
 // Middleware is executed before the processing of RPC requests is started.
-// When applying middleware the ordering is very important, in this case it will
-// be applied in the same order provided.
-// For example:
-//    Use(foo bar baz)
-// Will be applied as:
-//    baz( bar( foo(handler) ) )
+// When providing middleware the ordering is very important; middleware will be
+// applied in the same order provided.
+//   For example:
+//     Use(foo bar baz)
+//   Will be applied as:
+//     baz( bar( foo(handler) ) )
 func (cl *Client) Use(mw ...clmw.Middleware) {
 	cl.mtx.Lock()
 	for _, m := range mw {
@@ -118,7 +118,7 @@ func (cl *Client) Use(mw ...clmw.Middleware) {
 
 // Invoke acquires a connection from the pool, dialing if necessary, and
 // issues a unary RPC to the remote on that connection. The connection is
-// put back into the pool after the invoke finishes.
+// put back into the pool after the operation finishes.
 func (cl *Client) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in, out drpc.Message) error {
 	// Get connection from the pool
 	conn, err := cl.cache.Get()
@@ -141,7 +141,7 @@ func (cl *Client) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in,
 
 // NewStream acquires a connection from the pool, dialing if necessary, and
 // starts a stream with the remote on that connection. The connection is put
-// back  into the pool after the stream is finished.
+// back into the pool after the stream is finished.
 func (cl *Client) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) (drpc.Stream, error) {
 	// Get connection from the pool
 	conn, err := cl.cache.Get()

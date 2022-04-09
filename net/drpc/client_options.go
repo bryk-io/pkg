@@ -4,7 +4,7 @@ import (
 	clmw "go.bryk.io/pkg/net/drpc/middleware/client"
 )
 
-// ClientOption allows to adjust client settings following a functional pattern.
+// ClientOption allows adjusting client settings following a functional pattern.
 type ClientOption func(cl *Client) error
 
 // WithClientTLS adjust the client to establish a secure communication channel
@@ -39,12 +39,12 @@ func WithPoolCapacity(limit int) ClientOption {
 }
 
 // WithClientMiddleware register the provided middleware to customize/extend
-// the processing of RPC requests. When applying middleware the ordering is
-// very important, in this case it will be applied in the same order provided.
-// For example:
-//    Use(foo bar baz)
-// Will be applied as:
-//    baz( bar( foo(handler) ) )
+// the processing of RPC requests. When providing middleware the ordering is very
+// important; middleware will be applied in the same order provided.
+//   For example:
+//     Use(foo bar baz)
+//   Will be applied as:
+//     baz( bar( foo(handler) ) )
 func WithClientMiddleware(mw ...clmw.Middleware) ClientOption {
 	return func(cl *Client) error {
 		cl.Use(mw...)
