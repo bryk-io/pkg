@@ -32,24 +32,24 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.31.0
 	go.opentelemetry.io/contrib/propagators v0.22.0
-	go.opentelemetry.io/otel v1.6.1
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.28.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.28.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.1
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.1
-	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.28.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.1
-	go.opentelemetry.io/otel/metric v0.28.0
-	go.opentelemetry.io/otel/sdk v1.6.1
-	go.opentelemetry.io/otel/sdk/metric v0.28.0
-	go.opentelemetry.io/otel/trace v1.6.1
+	go.opentelemetry.io/otel v1.6.3
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.29.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.29.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.6.3
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.6.3
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v0.29.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.6.3
+	go.opentelemetry.io/otel/metric v0.29.0
+	go.opentelemetry.io/otel/sdk v1.6.3
+	go.opentelemetry.io/otel/sdk/metric v0.29.0
+	go.opentelemetry.io/otel/trace v1.6.3
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220408190544-5352b0902921
-	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
+	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171
+	golang.org/x/time v0.0.0-20220411224347-583f2d630306
 	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.28.0

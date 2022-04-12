@@ -38,7 +38,7 @@ type authFunc func(ctx context.Context) (context.Context, error)
 // Server provides an easy-to-setup RPC server handler with several utilities.
 type Server struct {
 	tlsOptions       ServerTLSConfig                // TLS settings
-	services         []*Service                     // Services enabled on the server
+	services         []ServiceProvider              // Services enabled on the server
 	clientCAs        [][]byte                       // Custom CAs used for client authentication
 	middlewareUnary  []grpc.UnaryServerInterceptor  // Unary methods middleware
 	middlewareStream []grpc.StreamServerInterceptor // Stream methods middleware
@@ -72,56 +72,10 @@ type Server struct {
 // NewServer is a constructor method that returns a ready-to-use new server instance.
 func NewServer(options ...ServerOption) (*Server, error) {
 	srv := &Server{}
-	if err := srv.Setup(options...); err != nil {
+	if err := srv.setup(options...); err != nil {
 		return nil, errors.Wrap(err, "setup error")
 	}
 	return srv, nil
-}
-
-// Reset will remove any previously configuration options returning the server
-// to its default state.
-func (srv *Server) Reset() {
-	if srv.halt != nil {
-		srv.halt()
-	}
-	srv.ctx, srv.halt = context.WithCancel(context.TODO())
-	srv.net = netTCP
-	srv.port = 12137
-	srv.services = []*Service{}
-	srv.address = "127.0.0.1"
-	srv.tlsConfig = nil
-	srv.clientCAs = [][]byte{}
-	srv.panicRecovery = false
-	srv.inputValidation = false
-	srv.gateway = nil
-	srv.opts = []grpc.ServerOption{}
-	srv.middlewareUnary = []grpc.UnaryServerInterceptor{}
-	srv.middlewareStream = []grpc.StreamServerInterceptor{}
-	srv.prometheus = nil
-	srv.tokenValidator = nil
-}
-
-// Setup will remove any existing setting and apply the provided configuration options.
-func (srv *Server) Setup(options ...ServerOption) error {
-	srv.Reset()
-	for _, opt := range options {
-		if err := opt(srv); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	// Additional TLS configuration
-	if srv.tlsConfig != nil && len(srv.clientCAs) > 0 {
-		cp := x509.NewCertPool()
-		for _, c := range srv.clientCAs {
-			if !cp.AppendCertsFromPEM(c) {
-				return errors.New("failed to append provided CA certificates")
-			}
-		}
-		srv.tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-		srv.tlsConfig.ClientCAs = cp
-	}
-	return nil
 }
 
 // GetEndpoint returns the server's main entry point.
@@ -151,6 +105,9 @@ func (srv *Server) Stop(graceful bool) error {
 	if srv.gw != nil {
 		if err := srv.gw.Shutdown(context.TODO()); err != nil {
 			e = errors.WithMessage(err, "failed to shutdown HTTP gateway")
+		}
+		if err := srv.gateway.conn.Close(); err != nil {
+			e = errors.WithMessage(err, "failed to shutdown HTTP gateway connection")
 		}
 	}
 
@@ -238,6 +195,52 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 
 	// Start network handlers
 	return errors.Wrap(srv.start(ready, 20*time.Millisecond), "failed to start request processing")
+}
+
+// Reset will remove any previously configuration options returning the server
+// to its default state.
+func (srv *Server) reset() {
+	if srv.halt != nil {
+		srv.halt()
+	}
+	srv.ctx, srv.halt = context.WithCancel(context.TODO())
+	srv.net = netTCP
+	srv.port = 12137
+	srv.services = []ServiceProvider{}
+	srv.address = "127.0.0.1"
+	srv.tlsConfig = nil
+	srv.clientCAs = [][]byte{}
+	srv.panicRecovery = false
+	srv.inputValidation = false
+	srv.gateway = nil
+	srv.opts = []grpc.ServerOption{}
+	srv.middlewareUnary = []grpc.UnaryServerInterceptor{}
+	srv.middlewareStream = []grpc.StreamServerInterceptor{}
+	srv.prometheus = nil
+	srv.tokenValidator = nil
+}
+
+// Setup will remove any existing setting and apply the provided configuration options.
+func (srv *Server) setup(options ...ServerOption) error {
+	srv.reset()
+	for _, opt := range options {
+		if err := opt(srv); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	// Additional TLS configuration
+	if srv.tlsConfig != nil && len(srv.clientCAs) > 0 {
+		cp := x509.NewCertPool()
+		for _, c := range srv.clientCAs {
+			if !cp.AppendCertsFromPEM(c) {
+				return errors.New("failed to append provided CA certificates")
+			}
+		}
+		srv.tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		srv.tlsConfig.ClientCAs = cp
+	}
+	return nil
 }
 
 // Start server's network handlers.
@@ -337,61 +340,50 @@ func (srv *Server) setupGateway() error {
 		return err
 	}
 
-	// Internal client dial options
-	authOpt, err := srv.gateway.dialOptions()
-	if err != nil {
-		return errors.Wrap(err, "failed to get HTTP gateway's auth options")
+	// Establish gateway <-> server connection
+	if err := srv.gateway.connect(srv.GetEndpoint()); err != nil {
+		return err
 	}
 
 	// Gateway mux
 	gwMux := gwRuntime.NewServeMux(srv.gateway.options()...)
+	var gwMuxH = http.Handler(gwMux) // cast gateway mux as regular HTTP handler
 	for _, s := range srv.services {
-		if s.GatewaySetup != nil {
-			if err := s.GatewaySetup(srv.ctx, gwMux, srv.GetEndpoint(), []grpc.DialOption{authOpt}); err != nil {
-				return errors.Wrap(err, "HTTP gateway setup error")
-			}
+		if err := s.GatewaySetup()(srv.ctx, gwMux, srv.gateway.conn); err != nil {
+			return errors.Wrap(err, "HTTP gateway setup error")
 		}
-	}
-
-	// Base server mux and root handler
-	mux := http.NewServeMux()
-	handler := http.Handler(gwMux)
-
-	// Add custom paths
-	for path, hh := range srv.gateway.customPathsH {
-		mux.Handle(path, hh)
-	}
-	for path, hf := range srv.gateway.customPathsF {
-		mux.HandleFunc(path, hf)
 	}
 
 	// Apply gateway interceptors
 	if len(srv.gateway.interceptors) > 0 {
-		handler = srv.gateway.interceptorWrapper(handler, srv.gateway.interceptors)
+		gwMuxH = srv.gateway.interceptorWrapper(gwMuxH, srv.gateway.interceptors)
+	}
+
+	// Add custom paths
+	for _, chf := range srv.gateway.customPaths {
+		_ = gwMux.HandlePath(chf.method, chf.path, func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+			chf.hf(w, r)
+		})
 	}
 
 	// Gateway middleware
 	var gmw []func(http.Handler) http.Handler
 	if srv.oop != nil {
 		// Add OTEL as the first middleware in the chain automatically
-		httpMonitor := extras.NewHTTPMonitor()
-		gmw = append(gmw, httpMonitor.ServerMiddleware(srv.gateway.handlerName))
+		gmw = append(gmw, extras.NewHTTPMonitor().ServerMiddleware(srv.gateway.handlerName))
 	}
 	for _, m := range append(gmw, srv.gateway.middleware...) {
-		handler = m(handler)
+		gwMuxH = m(gwMuxH)
 	}
 
 	// WebSocket support
 	if srv.wsProxy != nil {
-		handler = srv.wsProxy.Wrap(handler)
+		gwMuxH = srv.wsProxy.Wrap(gwMuxH)
 	}
-
-	// Register root handler with base server mux
-	mux.Handle("/", handler)
 
 	// Setup gateway server
 	srv.mu.Lock()
-	srv.gw = &http.Server{Handler: mux}
+	srv.gw = &http.Server{Handler: gwMuxH}
 	srv.mu.Unlock()
 
 	// All good!

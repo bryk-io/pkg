@@ -9,6 +9,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+type customHandler struct {
+	method string
+	path   string
+	hf     http.HandlerFunc
+}
+
 // HTTPGatewayOption allows adjusting gateway settings following a functional pattern.
 type HTTPGatewayOption func(*HTTPGateway) error
 
@@ -51,27 +57,15 @@ func WithGatewayMiddleware(md func(http.Handler) http.Handler) HTTPGatewayOption
 
 // WithCustomHandlerFunc add a new handler function for a path on the gateway's
 // internal mux.
-func WithCustomHandlerFunc(path string, handler http.HandlerFunc) HTTPGatewayOption {
+func WithCustomHandlerFunc(method string, path string, hf http.HandlerFunc) HTTPGatewayOption {
 	return func(gw *HTTPGateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
-		if gw.customPathsF == nil {
-			gw.customPathsF = make(map[string]http.HandlerFunc)
-		}
-		gw.customPathsF[path] = handler
-		return nil
-	}
-}
-
-// WithCustomHandler add a new handler for a path on the gateway's internal mux.
-func WithCustomHandler(path string, handler http.Handler) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
-		gw.mu.Lock()
-		defer gw.mu.Unlock()
-		if gw.customPathsH == nil {
-			gw.customPathsH = make(map[string]http.Handler)
-		}
-		gw.customPathsH[path] = handler
+		gw.customPaths = append(gw.customPaths, customHandler{
+			method: method,
+			path:   path,
+			hf:     hf,
+		})
 		return nil
 	}
 }

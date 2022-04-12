@@ -141,7 +141,7 @@ func NewClientConnection(endpoint string, options ...ClientOption) (*grpc.Client
 }
 
 // MonitorClientConnection enable notifications on connection state change. If no
-// interval is provided (i.e. 0) a default value of 2 seconds will be used.
+// interval `ti` is provided (i.e. 0) a default value of 2 seconds will be used.
 func MonitorClientConnection(ctx context.Context, conn *grpc.ClientConn, ti time.Duration) <-chan connectivity.State {
 	// Use a default value, if no internal is provided
 	if ti == 0 {

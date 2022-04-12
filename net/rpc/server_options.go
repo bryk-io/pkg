@@ -29,27 +29,13 @@ type ServerOption func(*Server) error
 // optionally, a custom message.
 type TokenValidator func(token string) (codes.Code, string)
 
-// WithService adds an RPC service handler to the server instance, at least one service
-// or service provider is required when starting the server.
-func WithService(ss *Service) ServerOption {
-	return func(srv *Server) error {
-		srv.mu.Lock()
-		defer srv.mu.Unlock()
-		srv.services = append(srv.services, ss)
-		return nil
-	}
-}
-
 // WithServiceProvider adds an RPC service handler to the server instance, at least one
 // service or service provider is required when starting the server.
 func WithServiceProvider(sp ServiceProvider) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
 		defer srv.mu.Unlock()
-		srv.services = append(srv.services, &Service{
-			ServerSetup:  sp.ServerSetup,
-			GatewaySetup: sp.GatewaySetup(),
-		})
+		srv.services = append(srv.services, sp)
 		return nil
 	}
 }

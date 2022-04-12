@@ -8,8 +8,6 @@ import (
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Invalid HTTP2 headers
@@ -25,15 +23,15 @@ var invalidHeaders = []string{
 // HTTPGateway permits to consume an HTTP2 RPC-based service through a flexible HTTP1.1
 // REST interface.
 type HTTPGateway struct {
-	clientOptions []ClientOption
-	port          int
-	customPathsF  map[string]http.HandlerFunc
-	customPathsH  map[string]http.Handler
-	encoders      map[string]gwRuntime.Marshaler
-	middleware    []func(http.Handler) http.Handler
-	interceptors  []HTTPGatewayInterceptor
-	responseMut   HTTPGatewayResponseMutator
-	handlerName   string
+	port          int                               // TCP port
+	customPaths   []customHandler                   // additional "routes" on the server
+	encoders      map[string]gwRuntime.Marshaler    // custom encoding mechanisms
+	middleware    []func(http.Handler) http.Handler // HTTP middleware
+	interceptors  []HTTPGatewayInterceptor          // registered request interceptors
+	responseMut   HTTPGatewayResponseMutator        // main response mutator
+	handlerName   string                            // gateway server name, used for observability
+	conn          *grpc.ClientConn                  // internal connection to the underlying gRPC server
+	clientOptions []ClientOption                    // internal gRPC client connection settings
 	mu            sync.Mutex
 }
 
@@ -42,8 +40,7 @@ func NewHTTPGateway(options ...HTTPGatewayOption) (*HTTPGateway, error) {
 	gw := &HTTPGateway{
 		port:          0,
 		clientOptions: []ClientOption{},
-		customPathsF:  make(map[string]http.HandlerFunc),
-		customPathsH:  make(map[string]http.Handler),
+		customPaths:   []customHandler{},
 		encoders:      make(map[string]gwRuntime.Marshaler),
 		middleware:    []func(http.Handler) http.Handler{},
 		interceptors:  []HTTPGatewayInterceptor{},
@@ -64,15 +61,9 @@ func (gw *HTTPGateway) setup(options ...HTTPGatewayOption) error {
 	return nil
 }
 
-func (gw *HTTPGateway) dialOptions() (grpc.DialOption, error) {
-	cl, err := NewClient(gw.clientOptions...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to acquire HTTP gateway's internal client instance")
-	}
-	if cl.tlsConf == nil {
-		return grpc.WithTransportCredentials(insecure.NewCredentials()), nil
-	}
-	return grpc.WithTransportCredentials(credentials.NewTLS(cl.tlsConf)), nil
+func (gw *HTTPGateway) connect(endpoint string) (err error) {
+	gw.conn, err = NewClientConnection(endpoint, gw.clientOptions...)
+	return err
 }
 
 func (gw *HTTPGateway) options() (opts []gwRuntime.ServeMuxOption) {
