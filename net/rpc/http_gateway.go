@@ -29,6 +29,7 @@ type HTTPGateway struct {
 	middleware    []func(http.Handler) http.Handler // HTTP middleware
 	interceptors  []HTTPGatewayInterceptor          // registered request interceptors
 	responseMut   HTTPGatewayResponseMutator        // main response mutator
+	unaryErrorMut HTTPGatewayUnaryErrorHandler      // unary error response mutator
 	handlerName   string                            // gateway server name, used for observability
 	conn          *grpc.ClientConn                  // internal connection to the underlying gRPC server
 	clientOptions []ClientOption                    // internal gRPC client connection settings
@@ -80,6 +81,11 @@ func (gw *HTTPGateway) options() (opts []gwRuntime.ServeMuxOption) {
 	// Register response mutator
 	if gw.responseMut != nil {
 		opts = append(opts, gwRuntime.WithForwardResponseOption(gw.responseMut))
+	}
+
+	// Register error handler
+	if gw.unaryErrorMut != nil {
+		opts = append(opts, gwRuntime.WithErrorHandler(gwRuntime.ErrorHandlerFunc(gw.unaryErrorMut)))
 	}
 
 	return opts

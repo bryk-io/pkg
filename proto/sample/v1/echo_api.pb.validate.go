@@ -245,3 +245,108 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EchoResponseValidationError{}
+
+// Validate checks the field values on FaultyError with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *FaultyError) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on FaultyError with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in FaultyErrorMultiError, or
+// nil if none found.
+func (m *FaultyError) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *FaultyError) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Code
+
+	// no validation rules for Desc
+
+	// no validation rules for Metadata
+
+	if len(errors) > 0 {
+		return FaultyErrorMultiError(errors)
+	}
+
+	return nil
+}
+
+// FaultyErrorMultiError is an error wrapping multiple validation errors
+// returned by FaultyError.ValidateAll() if the designated constraints aren't met.
+type FaultyErrorMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m FaultyErrorMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m FaultyErrorMultiError) AllErrors() []error { return m }
+
+// FaultyErrorValidationError is the validation error returned by
+// FaultyError.Validate if the designated constraints aren't met.
+type FaultyErrorValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e FaultyErrorValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e FaultyErrorValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e FaultyErrorValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e FaultyErrorValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e FaultyErrorValidationError) ErrorName() string { return "FaultyErrorValidationError" }
+
+// Error satisfies the builtin error interface
+func (e FaultyErrorValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sFaultyError.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = FaultyErrorValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = FaultyErrorValidationError{}

@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus"
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/log"
@@ -28,6 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	empty "google.golang.org/protobuf/types/known/emptypb"
@@ -1057,9 +1059,20 @@ func TestEchoServer(t *testing.T) {
 		ErrorField:  "error.message",
 	})
 
+	// OTEL Exporters
+	var (
+		traceExp  sdkTrace.SpanExporter
+		metricExp sdkMetric.Exporter
+		err       error
+	)
+	if isCollectorAvailable() {
+		traceExp, metricExp, err = otel.ExporterOTLP("localhost:4317", true, nil)
+	} else {
+		traceExp, metricExp, err = otel.ExporterStdout(true)
+	}
+	assert.Nil(err, "failed to create exporter")
+
 	// Observability operator
-	traceExp, metricExp, _ := otel.ExporterStdout(true)
-	// traceExp, metricExp, _ := otel.ExporterOTLP("localhost:55680", true, nil)
 	oop, err := otel.NewOperator(
 		otel.WithServiceName("echo-server"),
 		otel.WithServiceVersion("0.1.0"),
@@ -1073,27 +1086,70 @@ func TestEchoServer(t *testing.T) {
 	assert.Nil(err, "initialize observability operator")
 	defer oop.Shutdown(context.TODO())
 
+	// Custom HTTP error handler
+	eh := func(
+		ctx context.Context,
+		mux *gwRuntime.ServeMux,
+		enc gwRuntime.Marshaler,
+		res http.ResponseWriter,
+		req *http.Request,
+		err error) {
+		for _, d := range status.Convert(err).Details() {
+			switch fe := d.(type) {
+			case *samplev1.FaultyError:
+				// Add custom headers
+				res.Header().Set("content-type", enc.ContentType(fe))
+				for k, v := range fe.Metadata {
+					res.Header().Set(fmt.Sprintf("x-faulty-error-%s", k), v)
+				}
+
+				// Status header MUST be the last header added
+				data, err := enc.Marshal(fe)
+				if err == nil {
+					res.WriteHeader(gwRuntime.HTTPStatusFromCode(codes.Code(fe.Code)))
+					_, _ = res.Write(data)
+					return
+				}
+			}
+		}
+
+		// Fallback to the default error handler mechanism
+		gwRuntime.DefaultHTTPErrorHandler(ctx, mux, enc, res, req, err)
+	}
+
+	// Base client options
+	clientOpts := []ClientOption{
+		WithUserAgent("echo-client/0.1.0"),
+		WithCompression(),
+		WithKeepalive(10),
+		WithClientObservability(oop),
+	}
+
+	// Setup HTTP gateway
+	gwOptions := []HTTPGatewayOption{
+		WithHandlerName("http-gateway"),
+		WithUnaryErrorHandler(eh),
+		WithClientOptions(clientOpts...),
+	}
+	gw, err := NewHTTPGateway(gwOptions...)
+	if err != nil {
+		assert.Fail(err.Error())
+		return
+	}
+
 	// Base server configuration options
 	serverOpts := []ServerOption{
 		WithObservability(oop),
 		WithPort(7878),
 		WithPanicRecovery(),
 		WithInputValidation(),
+		WithHTTPGateway(gw),
 		WithServiceProvider(&echoProvider{}),
 		WithResourceLimits(ResourceLimits{
 			Connections: 100,
 			Requests:    100,
 			Rate:        1000,
 		}),
-	}
-
-	// Base client options
-	clientOpts := []ClientOption{
-		WaitForReady(),
-		WithUserAgent("echo-client/0.1.0"),
-		WithCompression(),
-		WithKeepalive(10),
-		WithClientObservability(oop),
 	}
 
 	// Start server
@@ -1109,32 +1165,30 @@ func TestEchoServer(t *testing.T) {
 	<-serverReady
 
 	// Get client connection
-	c, err := NewClient(clientOpts...)
+	conn, err := NewClientConnection(srv.GetEndpoint(), clientOpts...)
 	if err != nil {
 		assert.Fail(err.Error())
 		return
 	}
-	conn, err := c.GetConnection(srv.GetEndpoint())
-	if err != nil {
-		assert.Fail(err.Error())
-		return
-	}
-	defer func() {
-		_ = conn.Close()
-	}()
 
-	// Get API client and run methods
+	// Get API client
 	cl := samplev1.NewEchoAPIClient(conn)
-	_, err = cl.Ping(context.TODO(), &empty.Empty{})
-	assert.Nil(err, "ping error")
-	r, err := cl.Echo(context.TODO(), &samplev1.EchoRequest{Value: "hi there"})
-	assert.Nil(err, "request error")
-	assert.Equal("you said: hi there", r.Result, "invalid response")
 
-	// Invalid argument
-	r2, err := cl.Echo(context.TODO(), &samplev1.EchoRequest{Value: ""})
-	assert.Nil(r2, "unexpected result")
-	assert.NotNil(err, "unexpected result")
+	t.Run("Ping", func(t *testing.T) {
+		_, err = cl.Ping(context.TODO(), &empty.Empty{})
+		assert.Nil(err, "ping error")
+	})
+
+	t.Run("EchoRequest", func(t *testing.T) {
+		r, err := cl.Echo(context.TODO(), &samplev1.EchoRequest{Value: "hi there"})
+		assert.Nil(err, "request error")
+		assert.Equal("you said: hi there", r.Result, "invalid response")
+
+		// Invalid argument
+		r2, err := cl.Echo(context.TODO(), &samplev1.EchoRequest{Value: ""})
+		assert.Nil(r2, "unexpected result")
+		assert.NotNil(err, "unexpected result")
+	})
 
 	t.Run("Slow", func(t *testing.T) {
 		var avg int64
@@ -1150,7 +1204,7 @@ func TestEchoServer(t *testing.T) {
 
 	t.Run("Faulty", func(t *testing.T) {
 		errCount := 0
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 10; i++ {
 			_, err := cl.Faulty(context.TODO(), &empty.Empty{})
 			if err != nil {
 				errCount++
@@ -1159,7 +1213,44 @@ func TestEchoServer(t *testing.T) {
 		ll.Debugf("faulty error rate: %d%%", errCount)
 	})
 
-	// Stop server
+	t.Run("HTTP", func(t *testing.T) {
+		// Instrumented HTTP client
+		hcl := extras.NewHTTPMonitor().Client(nil)
+
+		// Submit requests until one fails
+		for {
+			// Start span
+			task := oop.Start(context.TODO(), "/echo/faulty", otel.WithSpanKind(otel.SpanKindClient))
+
+			// Prepare HTTP request
+			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:7878/echo/faulty", nil)
+			req.Header.Set("Content-Type", "application/json")
+
+			// Submit request
+			done := false
+			res, err := hcl.Do(req)
+			assert.Nil(err, "failed http post")
+			if res.StatusCode != http.StatusOK {
+				assert.Equal(http.StatusBadRequest, res.StatusCode, "unexpected status code")
+				assert.NotEmpty(res.Header.Get("x-faulty-error-foo"), "missing header")
+				assert.NotEmpty(res.Header.Get("x-faulty-error-x-value"), "missing header")
+				assert.Equal("application/json", res.Header.Get("content-type"))
+				b, _ := ioutil.ReadAll(res.Body)
+				ll.Debugf("custom error: %s", b)
+				done = true
+			}
+
+			// End span
+			_ = res.Body.Close()
+			task.End()
+			if done {
+				break
+			}
+		}
+	})
+
+	// Stop client and server
+	assert.Nil(conn.Close(), "close client error")
 	assert.Nil(srv.Stop(false), "stop server error")
 }
 

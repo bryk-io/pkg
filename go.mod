@@ -6,7 +6,7 @@ require (
 	github.com/awnumar/memguard v0.22.2
 	github.com/briandowns/spinner v1.18.1
 	github.com/btcsuite/btcd v0.22.0-beta
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
+	github.com/chzyer/readline v0.0.0-20220413143528-a11d8f26cf34
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/websocket v1.5.0
@@ -22,7 +22,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.4.0
-	github.com/spf13/viper v1.10.1
+	github.com/spf13/viper v1.11.0
 	github.com/stretchr/testify v1.7.1
 	go.bryk.io/miracl v0.4.1
 	go.mongodb.org/mongo-driver v1.9.0
@@ -50,7 +50,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306
-	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb
+	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0

@@ -30,6 +30,16 @@ type HTTPGatewayInterceptor func(http.ResponseWriter, *http.Request) error
 //   - Mutate the response messages to be returned
 type HTTPGatewayResponseMutator func(context.Context, http.ResponseWriter, proto.Message) error
 
+// HTTPGatewayUnaryErrorHandler allows the user to completely control/adjust all unary
+// error responses returned by the gateway.
+type HTTPGatewayUnaryErrorHandler func(
+	context.Context,
+	*gwRuntime.ServeMux,
+	gwRuntime.Marshaler,
+	http.ResponseWriter,
+	*http.Request,
+	error)
+
 // WithGatewayPort adjust the gateway to handle requests on a different port. If not
 // set the gateway will use the same port as the RPC server by default. If a custom and
 // different port is provided, the gateway will manage its own network interface. If
@@ -81,12 +91,12 @@ func WithClientOptions(options ...ClientOption) HTTPGatewayOption {
 	}
 }
 
-// WithEncoder registers a marshaler instance for a specific mime type.
-func WithEncoder(mime string, marshaler gwRuntime.Marshaler) HTTPGatewayOption {
+// WithEncoder registers a marshaller instance for a specific mime type.
+func WithEncoder(mime string, marshaller gwRuntime.Marshaler) HTTPGatewayOption {
 	return func(gw *HTTPGateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
-		gw.encoders[mime] = marshaler
+		gw.encoders[mime] = marshaller
 		return nil
 	}
 }
@@ -115,6 +125,17 @@ func WithResponseMutator(rm HTTPGatewayResponseMutator) HTTPGatewayOption {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.responseMut = rm
+		return nil
+	}
+}
+
+// WithUnaryErrorHandler allows the user to completely control/adjust all unary
+// error responses returned by the gateway.
+func WithUnaryErrorHandler(eh HTTPGatewayUnaryErrorHandler) HTTPGatewayOption {
+	return func(gw *HTTPGateway) error {
+		gw.mu.Lock()
+		defer gw.mu.Unlock()
+		gw.unaryErrorMut = eh
 		return nil
 	}
 }
