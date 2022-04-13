@@ -3,13 +3,13 @@ package rpc
 import (
 	"time"
 
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 )
 
-// RetryCallOptions define the required parameters to execute an RPC call
+// RetryOptions define the required parameters to execute an RPC call
 // with a retry strategy.
-type RetryCallOptions struct {
+type RetryOptions struct {
 	// Max number of tries for the call before returning an error
 	Attempts uint
 
@@ -20,18 +20,17 @@ type RetryCallOptions struct {
 	BackoffExponential *time.Duration
 }
 
-// WithRetry allows setting automatic retry settings when invoking a specific
-// RPC method.
-func WithRetry(config *RetryCallOptions) []grpc.CallOption {
+// Retry specific failed RPC operations automatically.
+func Retry(config *RetryOptions) []grpc.CallOption {
 	var opts []grpc.CallOption
 	if config.Attempts > 0 {
-		opts = append(opts, grpc_retry.WithMax(config.Attempts))
+		opts = append(opts, grpcRetry.WithMax(config.Attempts))
 	}
 	if config.PerRetryTimeout != nil {
-		opts = append(opts, grpc_retry.WithPerRetryTimeout(*config.PerRetryTimeout))
+		opts = append(opts, grpcRetry.WithPerRetryTimeout(*config.PerRetryTimeout))
 	}
 	if config.BackoffExponential != nil {
-		opts = append(opts, grpc_retry.WithBackoff(grpc_retry.BackoffExponential(*config.BackoffExponential)))
+		opts = append(opts, grpcRetry.WithBackoff(grpcRetry.BackoffExponential(*config.BackoffExponential)))
 	}
 	return opts
 }

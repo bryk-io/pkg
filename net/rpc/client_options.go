@@ -112,12 +112,22 @@ func WithClientTLS(opts ClientTLSConfig) ClientOption {
 	}
 }
 
-// WithCompression will enable standard GZIP compression on all the client requests.
+// WithCompression will enable standard GZIP compression on all client requests.
 func WithCompression() ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.callOpts = append(c.callOpts, grpc.UseCompressor(gzip.Name))
+		return nil
+	}
+}
+
+// WithRetry will enable automatic error retries on all client requests.
+func WithRetry(config *RetryOptions) ClientOption {
+	return func(c *Client) error {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		c.callOpts = append(c.callOpts, Retry(config)...)
 		return nil
 	}
 }

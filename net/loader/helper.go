@@ -168,11 +168,11 @@ func (h *Helper) ServerRPC() []rpc.ServerOption {
 }
 
 // HTTPGateway configuration options.
-func (h *Helper) HTTPGateway() []rpc.HTTPGatewayOption {
+func (h *Helper) HTTPGateway() []rpc.GatewayOption {
 	if !h.Data.RPC.HTTPGateway.Enabled {
 		return nil
 	}
-	return []rpc.HTTPGatewayOption{
+	return []rpc.GatewayOption{
 		rpc.WithGatewayPort(h.Data.RPC.HTTPGateway.Port),
 	}
 }

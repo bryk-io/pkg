@@ -35,80 +35,6 @@ import (
 	empty "google.golang.org/protobuf/types/known/emptypb"
 )
 
-// Verify a local collector instance is available using its `health check`
-// endpoint.
-func isCollectorAvailable() bool {
-	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
-	defer cancel()
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
-	res, err := http.DefaultClient.Do(req)
-	if res != nil {
-		_ = res.Body.Close()
-	}
-	if err != nil {
-		return false
-	}
-	return res.StatusCode == http.StatusOK
-}
-
-func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
-	// Setup transport
-	var cl http.Client
-	rt := http.DefaultTransport
-	if srv.tlsConfig != nil {
-		// Add TLS credentials
-		conf := &tls.Config{
-			RootCAs: srv.tlsConfig.RootCAs,
-		}
-		if cert != nil {
-			conf.Certificates = append(conf.Certificates, *cert)
-		}
-		rt = &http.Transport{TLSClientConfig: conf}
-	}
-
-	// Get client
-	if srv.oop != nil {
-		httpMonitor := extras.NewHTTPMonitor()
-		cl = httpMonitor.Client(rt) // instrumented client
-	} else {
-		cl = http.Client{Transport: rt} // regular client
-	}
-	return cl
-}
-
-// Foo service provider.
-type fooProvider struct{}
-
-func (fp *fooProvider) ServerSetup(server *grpc.Server) {
-	samplev1.RegisterFooAPIServer(server, &samplev1.Handler{Name: "foo"})
-}
-
-func (fp *fooProvider) GatewaySetup() GatewayRegister {
-	return samplev1.RegisterFooAPIHandler
-}
-
-// Bar service provider.
-type barProvider struct{}
-
-func (bp *barProvider) ServerSetup(server *grpc.Server) {
-	samplev1.RegisterBarAPIServer(server, &samplev1.Handler{Name: "bar"})
-}
-
-func (bp *barProvider) GatewaySetup() GatewayRegister {
-	return samplev1.RegisterBarAPIHandler
-}
-
-// Echo service provider.
-type echoProvider struct{}
-
-func (ep *echoProvider) ServerSetup(server *grpc.Server) {
-	samplev1.RegisterEchoAPIServer(server, &samplev1.EchoHandler{})
-}
-
-func (ep *echoProvider) GatewaySetup() GatewayRegister {
-	return samplev1.RegisterEchoAPIHandler
-}
-
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
 		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
@@ -185,22 +111,23 @@ func TestServer(t *testing.T) {
 		_, _ = res.Write([]byte("world"))
 	}
 
+	// Retry call configuration
+	retrySpan := 300 * time.Millisecond
+	retryOpts := &RetryOptions{
+		Attempts:           3,
+		PerRetryTimeout:    &retrySpan,
+		BackoffExponential: &retrySpan,
+	}
+
 	// Client configuration options
 	clientOpts := []ClientOption{
 		WaitForReady(),
 		WithUserAgent("sample-client/0.1.0"),
 		WithCompression(),
 		WithKeepalive(10),
+		WithRetry(retryOpts),
 		WithClientObservability(oop),
 	}
-
-	// Retry call configuration
-	retrySpan := 300 * time.Millisecond
-	retryOpts := WithRetry(&RetryCallOptions{
-		Attempts:           3,
-		PerRetryTimeout:    &retrySpan,
-		BackoffExponential: &retrySpan,
-	})
 
 	t.Run("WithDefaults", func(t *testing.T) {
 		// Start a new server with minimal settings
@@ -219,12 +146,8 @@ func TestServer(t *testing.T) {
 		}()
 		<-ready
 
-		c, err := NewClient(clientOpts...)
-		if err != nil {
-			assert.Fail(err.Error())
-			return
-		}
-		conn, err := c.GetConnection(srv.GetEndpoint())
+		// Get client connection
+		conn, err := NewClientConnection(srv.GetEndpoint(), clientOpts...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -233,12 +156,12 @@ func TestServer(t *testing.T) {
 		cl := samplev1.NewFooAPIClient(conn)
 
 		t.Run("Ping", func(t *testing.T) {
-			_, err = cl.Ping(context.TODO(), &empty.Empty{}, retryOpts...)
+			_, err = cl.Ping(context.TODO(), &empty.Empty{})
 			assert.Nil(err, "ping error")
 		})
 
 		t.Run("Health", func(t *testing.T) {
-			_, err = cl.Health(context.TODO(), &empty.Empty{}, retryOpts...)
+			_, err = cl.Health(context.TODO(), &empty.Empty{})
 			assert.Nil(err, "health error")
 		})
 
@@ -335,7 +258,7 @@ func TestServer(t *testing.T) {
 
 		// Sample request
 		cl := samplev1.NewFooAPIClient(conn)
-		_, err = cl.Ping(ctx, &empty.Empty{}, retryOpts...)
+		_, err = cl.Ping(ctx, &empty.Empty{})
 		assert.Nil(err, "ping error")
 
 		// Stop server
@@ -378,7 +301,7 @@ func TestServer(t *testing.T) {
 
 		// Consume API
 		cl := samplev1.NewFooAPIClient(conn)
-		_, err = cl.Ping(context.TODO(), &empty.Empty{}, retryOpts...)
+		_, err = cl.Ping(context.TODO(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 
 		// Stop server
@@ -416,7 +339,7 @@ func TestServer(t *testing.T) {
 		}
 
 		// Setup HTTP gateway
-		gwOptions := []HTTPGatewayOption{
+		gwOptions := []GatewayOption{
 			WithHandlerName("http-gateway"),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
@@ -425,7 +348,7 @@ func TestServer(t *testing.T) {
 			WithResponseMutator(respMut),
 			WithClientOptions(WithClientObservability(oop)),
 		}
-		gw, err := NewHTTPGateway(gwOptions...)
+		gw, err := NewGateway(gwOptions...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -657,7 +580,7 @@ func TestServer(t *testing.T) {
 
 		// Request
 		cl := samplev1.NewFooAPIClient(conn)
-		_, err = cl.Ping(context.TODO(), &empty.Empty{}, retryOpts...)
+		_, err = cl.Ping(context.TODO(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 
 		// Stop server
@@ -671,7 +594,7 @@ func TestServer(t *testing.T) {
 		key, _ := ioutil.ReadFile("testdata/server.sample_key")
 
 		// Setup HTTP gateway
-		gwOptions := []HTTPGatewayOption{
+		gwOptions := []GatewayOption{
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
 			WithClientOptions(
 				WithClientTLS(ClientTLSConfig{
@@ -679,7 +602,7 @@ func TestServer(t *testing.T) {
 				}),
 			),
 		}
-		gw, err := NewHTTPGateway(gwOptions...)
+		gw, err := NewGateway(gwOptions...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -847,7 +770,7 @@ func TestServer(t *testing.T) {
 		key, _ := ioutil.ReadFile("testdata/server.sample_key")
 
 		// Setup HTTP gateway
-		gwOptions := []HTTPGatewayOption{
+		gwOptions := []GatewayOption{
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
 			WithClientOptions(
 				WithInsecureSkipVerify(),
@@ -857,7 +780,7 @@ func TestServer(t *testing.T) {
 				}),
 			),
 		}
-		gw, err := NewHTTPGateway(gwOptions...)
+		gw, err := NewGateway(gwOptions...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -942,9 +865,9 @@ func TestServer(t *testing.T) {
 		}()
 
 		foo := samplev1.NewFooAPIClient(conn)
-		_, err = foo.Ping(context.TODO(), &empty.Empty{}, retryOpts...)
+		_, err = foo.Ping(context.TODO(), &empty.Empty{})
 		assert.Nil(err, "ping error")
-		_, err = foo.Request(context.TODO(), &empty.Empty{}, retryOpts...)
+		_, err = foo.Request(context.TODO(), &empty.Empty{})
 		assert.Nil(err, "request error")
 
 		bar := samplev1.NewBarAPIClient(conn)
@@ -1034,9 +957,9 @@ func TestServer(t *testing.T) {
 
 		// Use client connection
 		foo := samplev1.NewFooAPIClient(conn)
-		_, err = foo.Ping(context.TODO(), &empty.Empty{}, retryOpts...)
+		_, err = foo.Ping(context.TODO(), &empty.Empty{})
 		assert.Nil(err, "ping error")
-		_, err = foo.Health(context.TODO(), &empty.Empty{}, retryOpts...)
+		_, err = foo.Health(context.TODO(), &empty.Empty{})
 		assert.Nil(err, "health error")
 
 		// Stop server
@@ -1126,12 +1049,12 @@ func TestEchoServer(t *testing.T) {
 	}
 
 	// Setup HTTP gateway
-	gwOptions := []HTTPGatewayOption{
+	gwOptions := []GatewayOption{
 		WithHandlerName("http-gateway"),
 		WithUnaryErrorHandler(eh),
 		WithClientOptions(clientOpts...),
 	}
-	gw, err := NewHTTPGateway(gwOptions...)
+	gw, err := NewGateway(gwOptions...)
 	if err != nil {
 		assert.Fail(err.Error())
 		return
@@ -1338,4 +1261,78 @@ func ExampleNewClientConnection() {
 	defer func() {
 		_ = conn.Close()
 	}()
+}
+
+// Verify a local collector instance is available using its `health check`
+// endpoint.
+func isCollectorAvailable() bool {
+	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	defer cancel()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
+	res, err := http.DefaultClient.Do(req)
+	if res != nil {
+		_ = res.Body.Close()
+	}
+	if err != nil {
+		return false
+	}
+	return res.StatusCode == http.StatusOK
+}
+
+func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
+	// Setup transport
+	var cl http.Client
+	rt := http.DefaultTransport
+	if srv.tlsConfig != nil {
+		// Add TLS credentials
+		conf := &tls.Config{
+			RootCAs: srv.tlsConfig.RootCAs,
+		}
+		if cert != nil {
+			conf.Certificates = append(conf.Certificates, *cert)
+		}
+		rt = &http.Transport{TLSClientConfig: conf}
+	}
+
+	// Get client
+	if srv.oop != nil {
+		httpMonitor := extras.NewHTTPMonitor()
+		cl = httpMonitor.Client(rt) // instrumented client
+	} else {
+		cl = http.Client{Transport: rt} // regular client
+	}
+	return cl
+}
+
+// Foo service provider.
+type fooProvider struct{}
+
+func (fp *fooProvider) ServerSetup(server *grpc.Server) {
+	samplev1.RegisterFooAPIServer(server, &samplev1.Handler{Name: "foo"})
+}
+
+func (fp *fooProvider) GatewaySetup() GatewayRegister {
+	return samplev1.RegisterFooAPIHandler
+}
+
+// Bar service provider.
+type barProvider struct{}
+
+func (bp *barProvider) ServerSetup(server *grpc.Server) {
+	samplev1.RegisterBarAPIServer(server, &samplev1.Handler{Name: "bar"})
+}
+
+func (bp *barProvider) GatewaySetup() GatewayRegister {
+	return samplev1.RegisterBarAPIHandler
+}
+
+// Echo service provider.
+type echoProvider struct{}
+
+func (ep *echoProvider) ServerSetup(server *grpc.Server) {
+	samplev1.RegisterEchoAPIServer(server, &samplev1.EchoHandler{})
+}
+
+func (ep *echoProvider) GatewaySetup() GatewayRegister {
+	return samplev1.RegisterEchoAPIHandler
 }

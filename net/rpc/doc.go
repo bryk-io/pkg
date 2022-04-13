@@ -1,12 +1,12 @@
 /*
 Package rpc provides a utilities and components to easily deploy a robust RPC network service.
 
-RPC stands for Remote Procedure Call and its an architecture style for distributed systems in
+RPC stands for Remote Procedure Call, and it's an architecture style for distributed systems in
 which a system causes a procedure (subroutine) to execute in a different address space (commonly
 on another computer on a network). This package use gRPC as its underlying high-performance
 framework.
 
-Deploying a gRPC service in production involves several different aspects and considerations.
+Deploying a gRPC service in production involves several aspects and considerations.
 Things like: logging, authentication, secure communication channels, request tracing, manage
 server resources, support regular HTTP (REST) access, etc. This package greatly simplifies
 the process of properly configuring and running a production grade RPC service.
@@ -22,7 +22,7 @@ and/or 'Setup' methods.
 
 For example, let's create and start a server using some common configuration options.
 
-	// Server configuration options
+	// Server configuration options.
 	settings := []ServerOption{
 		WithLogger(nil),
 		WithPanicRecovery(),
@@ -34,10 +34,10 @@ For example, let's create and start a server using some common configuration opt
 		}),
 	}
 
-	// Create new server
+	// Create new server.
 	server, _ := NewServer(settings...)
 
-	// Start the server instance and wait for it to be ready
+	// Start the server instance and wait for it to be ready.
 	ready := make(chan bool)
 	go server.Start(ready)
 	<-ready
@@ -47,9 +47,8 @@ For example, let's create and start a server using some common configuration opt
 Services
 
 The most important configuration setting for a server instance are the "Services" it
-supports. You can provide services either by providing a service definition using the
-"WithService" option, or by implementing the "ServiceProvider" interface in your
-application and passing it along using the "WithServiceProvider" option.
+supports. You can provide services by implementing the "ServiceProvider" interface in
+your application and passing it along using the "WithServiceProvider" option.
 
 	// Echo service provider (i.e., implementing the "ServiceProvider" interface.)
 	type echoProvider struct{}
@@ -59,7 +58,7 @@ application and passing it along using the "WithServiceProvider" option.
 	}
 
 	func (ep *echoProvider) GatewaySetup() GatewayRegister {
-		return samplev1.RegisterEchoAPIHandlerFromEndpoint
+		return samplev1.RegisterEchoAPIHandler
 	}
 
 	// Base server configuration options
@@ -71,7 +70,7 @@ application and passing it along using the "WithServiceProvider" option.
 Client
 
 In order to interact with an RPC server and access the provided functionality you need
-to setup and establish a client connection. A client connection should be be closed when
+to set up and establish a client connection. A client connection should be closed when
 no longer needed to free the used resources. A connection can also be monitored to detect
 any changes in its current state.
 
@@ -112,14 +111,14 @@ method.
 
 	// Use connection
 
-	// Close it when not needed anymore
+	// Close it when not needed any more
 	defer conn.Close()
 
-Regardless of how a connection is created you can setup a monitor for it using the
+Regardless of how a connection is created you can set up a monitor for it using the
 'MonitorClientConnection' method. The monitor instance can be properly terminated using
 the provided context.
 
-	// Get a monitor instance with a 5 second check interval
+	// Get a monitor instance with a 5 seconds check interval
 	ctx, close := context.WithCancel(context.TODO())
 	defer close()
 	monitor := MonitorClientConnection(ctx, conn, 5*time.Second)

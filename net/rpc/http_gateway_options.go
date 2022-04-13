@@ -15,24 +15,24 @@ type customHandler struct {
 	hf     http.HandlerFunc
 }
 
-// HTTPGatewayOption allows adjusting gateway settings following a functional pattern.
-type HTTPGatewayOption func(*HTTPGateway) error
+// GatewayOption allows adjusting gateway settings following a functional pattern.
+type GatewayOption func(*Gateway) error
 
-// HTTPGatewayInterceptor allows to further customize the processing of requests.
+// GatewayInterceptor allows to further customize the processing of requests.
 // If an interceptor function returns a non-nil error, any further processing of
 // the request will be skipped.
-type HTTPGatewayInterceptor func(http.ResponseWriter, *http.Request) error
+type GatewayInterceptor func(http.ResponseWriter, *http.Request) error
 
-// HTTPGatewayResponseMutator allows the user to completely control/adjust the response
+// GatewayResponseMutator allows the user to completely control/adjust the response
 // returned by the gateway. Some common uses cases include:
 //   - Return a subset of response fields as HTTP response headers
 //   - Set an application-specific token in a header
 //   - Mutate the response messages to be returned
-type HTTPGatewayResponseMutator func(context.Context, http.ResponseWriter, proto.Message) error
+type GatewayResponseMutator func(context.Context, http.ResponseWriter, proto.Message) error
 
-// HTTPGatewayUnaryErrorHandler allows the user to completely control/adjust all unary
+// GatewayUnaryErrorHandler allows the user to completely control/adjust all unary
 // error responses returned by the gateway.
-type HTTPGatewayUnaryErrorHandler func(
+type GatewayUnaryErrorHandler func(
 	context.Context,
 	*gwRuntime.ServeMux,
 	gwRuntime.Marshaler,
@@ -45,8 +45,8 @@ type HTTPGatewayUnaryErrorHandler func(
 // different port is provided, the gateway will manage its own network interface. If
 // the RPC endpoint is a UNIX socket and no port is provided for the gateway, a free
 // port number will be randomly assigned.
-func WithGatewayPort(port int) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithGatewayPort(port int) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.port = port
@@ -56,8 +56,8 @@ func WithGatewayPort(port int) HTTPGatewayOption {
 
 // WithGatewayMiddleware allows extending and adjusting the behavior of the
 // HTTP gateway with standard middleware providers.
-func WithGatewayMiddleware(md func(http.Handler) http.Handler) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithGatewayMiddleware(md func(http.Handler) http.Handler) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.middleware = append(gw.middleware, md)
@@ -67,8 +67,8 @@ func WithGatewayMiddleware(md func(http.Handler) http.Handler) HTTPGatewayOption
 
 // WithCustomHandlerFunc add a new handler function for a path on the gateway's
 // internal mux.
-func WithCustomHandlerFunc(method string, path string, hf http.HandlerFunc) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithCustomHandlerFunc(method string, path string, hf http.HandlerFunc) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.customPaths = append(gw.customPaths, customHandler{
@@ -82,8 +82,8 @@ func WithCustomHandlerFunc(method string, path string, hf http.HandlerFunc) HTTP
 
 // WithClientOptions configuration options for the gateway's internal client connection
 // to the upstream RPC server.
-func WithClientOptions(options ...ClientOption) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithClientOptions(options ...ClientOption) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.clientOptions = append(gw.clientOptions, options...)
@@ -92,8 +92,8 @@ func WithClientOptions(options ...ClientOption) HTTPGatewayOption {
 }
 
 // WithEncoder registers a marshaller instance for a specific mime type.
-func WithEncoder(mime string, marshaller gwRuntime.Marshaler) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithEncoder(mime string, marshaller gwRuntime.Marshaler) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.encoders[mime] = marshaller
@@ -106,8 +106,8 @@ func WithEncoder(mime string, marshaller gwRuntime.Marshaler) HTTPGatewayOption 
 // prevent standard processing handled by the gateway instance. Should be used with
 // care. If an interceptor returns a non-nil error, any further processing of the
 // request will be skipped.
-func WithInterceptor(f ...HTTPGatewayInterceptor) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithInterceptor(f ...GatewayInterceptor) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.interceptors = append(gw.interceptors, f...)
@@ -120,8 +120,8 @@ func WithInterceptor(f ...HTTPGatewayInterceptor) HTTPGatewayOption {
 //   - Return a subset of response fields as HTTP response headers
 //   - Set an application-specific token in a header
 //   - Mutate the response messages to be returned
-func WithResponseMutator(rm HTTPGatewayResponseMutator) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithResponseMutator(rm GatewayResponseMutator) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.responseMut = rm
@@ -131,8 +131,8 @@ func WithResponseMutator(rm HTTPGatewayResponseMutator) HTTPGatewayOption {
 
 // WithUnaryErrorHandler allows the user to completely control/adjust all unary
 // error responses returned by the gateway.
-func WithUnaryErrorHandler(eh HTTPGatewayUnaryErrorHandler) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithUnaryErrorHandler(eh GatewayUnaryErrorHandler) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
 		gw.unaryErrorMut = eh
@@ -143,8 +143,8 @@ func WithUnaryErrorHandler(eh HTTPGatewayUnaryErrorHandler) HTTPGatewayOption {
 // WithPrettyJSON provides a convenient mechanism to enable pretty printed JSON
 // responses for requests with a specific content-type header. A usual value to
 // use is `application/json+pretty`.
-func WithPrettyJSON(mime string) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithPrettyJSON(mime string) GatewayOption {
+	return func(gw *Gateway) error {
 		jm := &gwRuntime.JSONPb{
 			MarshalOptions: protojson.MarshalOptions{
 				UseProtoNames:   true,
@@ -166,8 +166,8 @@ func WithPrettyJSON(mime string) HTTPGatewayOption {
 // WithHandlerName will adjust the OpenTelemetry name used to report spans generated
 // by the HTTP gateway instance. If not provided the default name `grpc-gateway`
 // will be used.
-func WithHandlerName(name string) HTTPGatewayOption {
-	return func(gw *HTTPGateway) error {
+func WithHandlerName(name string) GatewayOption {
+	return func(gw *Gateway) error {
 		gw.handlerName = name
 		return nil
 	}

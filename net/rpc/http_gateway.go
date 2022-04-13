@@ -20,31 +20,31 @@ var invalidHeaders = []string{
 	"upgrade",
 }
 
-// HTTPGateway permits to consume an HTTP2 RPC-based service through a flexible HTTP1.1
+// Gateway permits to consume an HTTP2 RPC-based service through a flexible HTTP1.1
 // REST interface.
-type HTTPGateway struct {
+type Gateway struct {
 	port          int                               // TCP port
 	customPaths   []customHandler                   // additional "routes" on the server
 	encoders      map[string]gwRuntime.Marshaler    // custom encoding mechanisms
 	middleware    []func(http.Handler) http.Handler // HTTP middleware
-	interceptors  []HTTPGatewayInterceptor          // registered request interceptors
-	responseMut   HTTPGatewayResponseMutator        // main response mutator
-	unaryErrorMut HTTPGatewayUnaryErrorHandler      // unary error response mutator
+	interceptors  []GatewayInterceptor              // registered request interceptors
+	responseMut   GatewayResponseMutator            // main response mutator
+	unaryErrorMut GatewayUnaryErrorHandler          // unary error response mutator
 	handlerName   string                            // gateway server name, used for observability
 	conn          *grpc.ClientConn                  // internal connection to the underlying gRPC server
 	clientOptions []ClientOption                    // internal gRPC client connection settings
 	mu            sync.Mutex
 }
 
-// NewHTTPGateway setups an HTTP interface for an RPC server.
-func NewHTTPGateway(options ...HTTPGatewayOption) (*HTTPGateway, error) {
-	gw := &HTTPGateway{
+// NewGateway setups an HTTP interface for an RPC server.
+func NewGateway(options ...GatewayOption) (*Gateway, error) {
+	gw := &Gateway{
 		port:          0,
 		clientOptions: []ClientOption{},
 		customPaths:   []customHandler{},
 		encoders:      make(map[string]gwRuntime.Marshaler),
 		middleware:    []func(http.Handler) http.Handler{},
-		interceptors:  []HTTPGatewayInterceptor{},
+		interceptors:  []GatewayInterceptor{},
 		handlerName:   "grpc-gateway",
 	}
 	if err := gw.setup(options...); err != nil {
@@ -53,7 +53,7 @@ func NewHTTPGateway(options ...HTTPGatewayOption) (*HTTPGateway, error) {
 	return gw, nil
 }
 
-func (gw *HTTPGateway) setup(options ...HTTPGatewayOption) error {
+func (gw *Gateway) setup(options ...GatewayOption) error {
 	for _, opt := range options {
 		if err := opt(gw); err != nil {
 			return errors.WithStack(err)
@@ -62,12 +62,12 @@ func (gw *HTTPGateway) setup(options ...HTTPGatewayOption) error {
 	return nil
 }
 
-func (gw *HTTPGateway) connect(endpoint string) (err error) {
+func (gw *Gateway) connect(endpoint string) (err error) {
 	gw.conn, err = NewClientConnection(endpoint, gw.clientOptions...)
 	return err
 }
 
-func (gw *HTTPGateway) options() (opts []gwRuntime.ServeMuxOption) {
+func (gw *Gateway) options() (opts []gwRuntime.ServeMuxOption) {
 	// Encoders
 	for mime, enc := range gw.encoders {
 		opts = append(opts, gwRuntime.WithMarshalerOption(mime, enc))
@@ -91,7 +91,7 @@ func (gw *HTTPGateway) options() (opts []gwRuntime.ServeMuxOption) {
 	return opts
 }
 
-func (gw *HTTPGateway) interceptorWrapper(h http.Handler, list []HTTPGatewayInterceptor) http.Handler {
+func (gw *Gateway) interceptorWrapper(h http.Handler, list []GatewayInterceptor) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		for _, f := range list {
 			if err := f(res, req); err != nil {

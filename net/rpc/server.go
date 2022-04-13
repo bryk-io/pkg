@@ -52,7 +52,7 @@ type Server struct {
 	nl               net.Listener                   // Base RPC network interface
 	ctx              context.Context                // Context shared by server's internal tasks
 	gwNl             net.Listener                   // HTTP gateway network interface, if required
-	gateway          *HTTPGateway                   // HTTP gateway
+	gateway          *Gateway                       // HTTP gateway
 	port             int                            // TCP port, if used
 	tlsConfig        *tls.Config                    // TLS configuration
 	tokenValidator   authFunc                       // Custom method to provide token-based authenticator
