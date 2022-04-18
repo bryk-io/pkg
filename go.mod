@@ -6,7 +6,7 @@ require (
 	github.com/awnumar/memguard v0.22.2
 	github.com/briandowns/spinner v1.18.1
 	github.com/btcsuite/btcd v0.22.0-beta
-	github.com/chzyer/readline v0.0.0-20220413143528-a11d8f26cf34
+	github.com/chzyer/readline v1.5.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/websocket v1.5.0
@@ -23,6 +23,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.11.0
+	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.7.1
 	go.bryk.io/miracl v0.4.1
 	go.mongodb.org/mongo-driver v1.9.0
