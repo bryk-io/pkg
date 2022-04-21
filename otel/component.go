@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	"go.opentelemetry.io/otel/baggage"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	apiMetric "go.opentelemetry.io/otel/metric"
@@ -20,7 +20,7 @@ type Component struct {
 	ot                      apiTrace.Tracer               // underlying OTEL tracer
 	propagator              propagation.TextMapPropagator // context propagation mechanism
 	attrs                   Attributes                    // base component attributes
-	xlog.Logger                                           // embedded main logger instance
+	log.Logger                                            // embedded main logger instance
 	apiMetric.MeterProvider                               // embedded metric provider
 }
 
@@ -50,14 +50,17 @@ func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOpt
 
 // SpanFromContext returns the current span stored in the context. Useful when
 // starting a child span across processes boundaries.
-func (cmp *Component) SpanFromContext(ctx context.Context) *Span {
-	sp := &Span{
-		ctx:   ctx,                           // provided context
-		span:  apiTrace.SpanFromContext(ctx), // restored span from provided context
-		cp:    cmp.propagator,                // context propagation mechanism
-		attrs: Attributes{},                  // empty attributes set
+func (cmp *Component) SpanFromContext(ctx context.Context, attrs ...Attributes) *Span {
+	fields := Attributes{}
+	fields.Join(attrs...)
+	sp := apiTrace.SpanFromContext(ctx)
+	sp.SetAttributes(fields.Expand()...)
+	return &Span{
+		ctx:   ctx,            // provided context
+		span:  sp,             // restored span from provided context
+		cp:    cmp.propagator, // context propagation mechanism
+		attrs: fields,         // provided attributes
 	}
-	return sp
 }
 
 // Export available span details. Useful when manually propagating a task context

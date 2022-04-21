@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -24,7 +24,7 @@ import (
 // requirements on a system, including: logs, metrics and traces.
 type Operator struct {
 	*Component                                        // main embedded component
-	log               xlog.Logger                     // logger instance
+	log               log.Logger                      // logger instance
 	coreAttributes    Attributes                      // resource attributes
 	userAttributes    Attributes                      // user-provided additional attributes
 	resource          *sdkResource.Resource           // OTEL resource definition
@@ -49,7 +49,7 @@ type Operator struct {
 func NewOperator(options ...OperatorOption) (*Operator, error) {
 	// Create instance and apply options.
 	op := &Operator{
-		log:               xlog.Discard(),          // discard logs
+		log:               log.Discard(),           // discard logs
 		coreAttributes:    coreAttributes(),        // standard env attributes
 		userAttributes:    Attributes{},            // no custom attributes
 		exporter:          new(noOpExporter),       // discard traces and metrics
@@ -71,7 +71,7 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	// This attributes will be automatically used when logging messages and "inherited"
 	// by all spans by adjusting the OTEL resource definition.
 	attrs := join(op.coreAttributes, op.userAttributes)
-	op.log = op.log.Sub(xlog.Fields(attrs))
+	op.log = op.log.Sub(log.Fields(attrs))
 	op.resource = sdkResource.NewWithAttributes(semConv.SchemaURL, attrs.Expand()...)
 
 	// Prepare context propagation mechanisms.
@@ -210,7 +210,7 @@ func (op *Operator) captureStandardMetrics() {
 
 // Simple error handler.
 type errorHandler struct {
-	ll xlog.Logger
+	ll log.Logger
 }
 
 // Handle any error deemed irremediable by the OpenTelemetry operator.

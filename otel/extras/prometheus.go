@@ -1,7 +1,6 @@
 package extras
 
 import (
-	"errors"
 	"net/http"
 	"runtime"
 	"time"
@@ -11,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	"google.golang.org/grpc"
 )
 
@@ -56,10 +55,11 @@ type prometheusSupport struct {
 
 // PrometheusMetrics allows to easily collect and consume instrumentation data.
 // Host and runtime metrics are collected by default, in addition to any additional
-// collector provided.
+// collector provided. If you don't provide a prometheus registry `reg`, a new
+// empty one will be created by default.
 func PrometheusMetrics(reg *prometheus.Registry, cols ...prometheus.Collector) (PrometheusIntegration, error) {
 	if reg == nil {
-		return nil, errors.New("registry is required")
+		reg = prometheus.NewRegistry()
 	}
 	ps := &prometheusSupport{
 		registry: reg,
@@ -109,7 +109,7 @@ func (ps *prometheusSupport) GatherMetrics() ([]*dto.MetricFamily, error) {
 
 func (ps *prometheusSupport) MetricsHandler() http.Handler {
 	return promhttp.HandlerFor(ps.registry, promhttp.HandlerOpts{
-		ErrorLog:            &errorLogger{ll: xlog.Discard()},
+		ErrorLog:            &errorLogger{ll: log.Discard()},
 		ErrorHandling:       promhttp.ContinueOnError, // Best effort mode
 		Registry:            ps.registry,              // Collect 'promhttp_metric_handler_errors_total'
 		DisableCompression:  false,                    // Always use compression
@@ -152,9 +152,9 @@ func (ps *prometheusSupport) Server() (grpc.UnaryServerInterceptor, grpc.StreamS
 
 // Minimal prometheus error logger implementation.
 type errorLogger struct {
-	ll xlog.Logger
+	ll log.Logger
 }
 
 func (el *errorLogger) Println(v ...interface{}) {
-	el.ll.Print(xlog.Warning, v...)
+	el.ll.Print(log.Warning, v...)
 }

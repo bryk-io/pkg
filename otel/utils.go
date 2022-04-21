@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"runtime"
 
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
@@ -125,48 +125,48 @@ func coreAttributes() Attributes {
 
 // Map an OTEL code value to a valid logging level.
 // nolint:gocyclo,deadcode,unused
-func codeToLevel(code rpcCodes.Code) xlog.Level {
+func codeToLevel(code rpcCodes.Code) log.Level {
 	switch code {
 	// Info
 	case rpcCodes.OK:
-		return xlog.Info
+		return log.Info
 	case rpcCodes.Canceled:
-		return xlog.Info
+		return log.Info
 	case rpcCodes.NotFound:
-		return xlog.Info
+		return log.Info
 	case rpcCodes.AlreadyExists:
-		return xlog.Info
+		return log.Info
 	// Warning
 	case rpcCodes.Unavailable:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.InvalidArgument:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.DeadlineExceeded:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.PermissionDenied:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.Unauthenticated:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.ResourceExhausted:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.FailedPrecondition:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.Aborted:
-		return xlog.Warning
+		return log.Warning
 	case rpcCodes.OutOfRange:
-		return xlog.Warning
+		return log.Warning
 	// Errors
 	case rpcCodes.Unknown:
-		return xlog.Error
+		return log.Error
 	case rpcCodes.Unimplemented:
-		return xlog.Error
+		return log.Error
 	case rpcCodes.Internal:
-		return xlog.Error
+		return log.Error
 	case rpcCodes.DataLoss:
-		return xlog.Error
+		return log.Error
 	// Non-matched codes are identified as errors
 	default:
-		return xlog.Error
+		return log.Error
 	}
 }
 

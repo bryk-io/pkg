@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -19,7 +19,7 @@ var noLogFields = []string{
 
 // Custom `sdkTrace.SpanProcessor` that logs all spans as they are completed.
 type logSpans struct {
-	log xlog.Logger
+	log log.Logger
 
 	// Next is the next SpanProcessor in the chain.
 	Next sdkTrace.SpanProcessor
@@ -27,9 +27,9 @@ type logSpans struct {
 
 // OnEnd is used to log a message once each span has ended.
 func (f logSpans) OnEnd(s sdkTrace.ReadOnlySpan) {
-	level := xlog.Info
+	level := log.Info
 	if s.Status().Code == otelCodes.Error {
-		level = xlog.Error
+		level = log.Error
 	}
 	for _, event := range s.Events() {
 		eventLvl, eventAttrs := f.event(event, f.fields(s, false))
@@ -55,7 +55,7 @@ func (f logSpans) ForceFlush(ctx context.Context) error {
 	return f.Next.ForceFlush(ctx)
 }
 
-func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) xlog.Fields {
+func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) log.Fields {
 	// Get span attributes
 	fields := Attributes{}
 	fields.load(s.Attributes())
@@ -78,11 +78,11 @@ func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) xlog.Fields {
 		}
 	}
 
-	return xlog.Fields(fields)
+	return log.Fields(fields)
 }
 
-func (f logSpans) event(event sdkTrace.Event, fields xlog.Fields) (xlog.Level, xlog.Fields) {
-	eventLvl := xlog.Debug
+func (f logSpans) event(event sdkTrace.Event, fields log.Fields) (log.Level, log.Fields) {
+	eventLvl := log.Debug
 	attrs := Attributes{}
 	attrs.Set("time", event.Time)
 	attrs.load(event.Attributes)
@@ -93,7 +93,7 @@ func (f logSpans) event(event sdkTrace.Event, fields xlog.Fields) (xlog.Level, x
 		}
 	}
 	if lvl := attrs.Get("error.level"); lvl != nil {
-		eventLvl = xlog.Level(fmt.Sprintf("%s", lvl))
+		eventLvl = log.Level(fmt.Sprintf("%s", lvl))
 	}
-	return eventLvl, xlog.Fields(attrs)
+	return eventLvl, log.Fields(attrs)
 }

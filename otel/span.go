@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	"go.opentelemetry.io/otel/baggage"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -85,7 +85,7 @@ func (s *Span) Event(message string, attributes Attributes) {
 // Error adds an annotation to the span with an error event. If `setStatus` is true
 // the status of the span will also be adjusted.
 // More information: https://bit.ly/3lqxl5b
-func (s *Span) Error(level xlog.Level, err error, attributes Attributes, setStatus bool) {
+func (s *Span) Error(level log.Level, err error, attributes Attributes, setStatus bool) {
 	// Base error details
 	fields := Attributes{
 		"event":                "error",
@@ -93,7 +93,7 @@ func (s *Span) Error(level xlog.Level, err error, attributes Attributes, setStat
 		"error.message":        err.Error(),
 		"exception.stacktrace": getStack(1),
 	}
-	if level == xlog.Error || level == xlog.Fatal || level == xlog.Panic {
+	if level == log.Error || level == log.Fatal || level == log.Panic {
 		fields.Set("exception.escaped", true)
 	}
 	if attributes != nil {

@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	tdd "github.com/stretchr/testify/assert"
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -118,7 +118,7 @@ func TestNewOperator(t *testing.T) {
 		WithRuntimeMetrics(time.Duration(10) * time.Second),
 		WithMetricPushPeriod(time.Duration(10) * time.Second),
 		WithResourceAttributes(Attributes{"resource.level.field": "bar"}),
-		WithLogger(xlog.WithZero(xlog.ZeroOptions{
+		WithLogger(log.WithZero(log.ZeroOptions{
 			PrettyPrint: true,
 			ErrorField:  "error.message",
 		})),
@@ -180,7 +180,7 @@ func TestNewOperator(t *testing.T) {
 		// Expensive request
 		router.HandleFunc("/expensive", func(res http.ResponseWriter, req *http.Request) {
 			// Start span from context
-			task := op.SpanFromContext(req.Context())
+			task := op.SpanFromContext(req.Context(), Attributes{"task.value": "added-on-handler"})
 			defer task.End()
 
 			// Verify baggage was properly propagated
@@ -200,7 +200,7 @@ func TestNewOperator(t *testing.T) {
 
 			// Annotate span with error details
 			err := errors.New("RANDOM_ERROR")
-			task.Error(xlog.Warning, err, Attributes{"value.n": n}, true)
+			task.Error(log.Warning, err, Attributes{"value.n": n}, true)
 
 			// Return error code
 			res.WriteHeader(417)
@@ -227,7 +227,7 @@ func TestNewOperator(t *testing.T) {
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodGet, "http://localhost:8080/ping", nil)
 			res, err := cl.Do(req)
 			if err != nil {
-				task.Error(xlog.Error, err, nil, true)
+				task.Error(log.Error, err, nil, true)
 				t.Error(err)
 			}
 			_ = res.Body.Close()
@@ -295,7 +295,7 @@ func ExampleNewOperator() {
 	options := []OperatorOption{
 		WithServiceName("operator-testing"),
 		WithServiceVersion("0.1.0"),
-		WithLogger(xlog.WithZero(xlog.ZeroOptions{
+		WithLogger(log.WithZero(log.ZeroOptions{
 			PrettyPrint: true,
 			ErrorField:  "error.message",
 		})),

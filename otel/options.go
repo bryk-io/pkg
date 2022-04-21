@@ -6,7 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/propagation"
 
-	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/log"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -73,7 +73,7 @@ func WithResourceAttributes(fields Attributes) OperatorOption {
 }
 
 // WithLogger set the output handler. If not provided, all output is discarded by default.
-func WithLogger(ll xlog.Logger) OperatorOption {
+func WithLogger(ll log.Logger) OperatorOption {
 	return func(op *Operator) error {
 		op.log = ll
 		return nil
