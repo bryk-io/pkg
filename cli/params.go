@@ -12,25 +12,29 @@ type Param struct {
 	// help information for the command.
 	Name string
 
-	// Brief and clear description of the parameter usage or intent, will be displayed
-	// to the user when inspecting the help information for the command.
+	// Brief and clear description of the parameter usage or intent, will be
+	// displayed to the user when inspecting the help information for the command.
 	Usage string
 
-	// Internal code for the parameter. This should match the structure of a configuration
-	// file when used and can be useful to add 'namespaces' for configuration settings.
-	// This key should be used when reading configuration options using viper.
-	// For example:
+	// Internal code for the parameter. This should match the structure of a
+	// configuration file when used and can be useful to add 'namespaces' for
+	// configuration settings. This key should be used when reading configuration
+	// options using viper. For example:
 	//   root.child.parameter
 	FlagKey string
 
-	// Default value to use for the parameter, the type of the default value will determine
-	// the expected type for the parameter. Supported types are:
+	// Default value to use for the parameter, the type of the default value will
+	// determine the expected type for the parameter. Supported types are:
 	// int, int32, int64 uint32, uint64, string, bool, []string
 	ByDefault interface{}
 
-	// If provided the parameter can be provided using a shorthand letter that can be used
-	// after a single dash. Must be unique.
+	// If provided the parameter can be provided using a shorthand letter that can
+	// be used after a single dash. Must be unique.
 	Short string
+
+	// Parameters are optional by default. If instead you wish your command to report
+	// an error when a parameter has not been set, mark it as required.
+	Required bool
 }
 
 // SetupCommandParams will properly configure the command with the provided parameter list.
@@ -60,6 +64,11 @@ func SetupCommandParams(c *cobra.Command, params []Param) error {
 		}
 		if err := errors.WithStack(viper.BindPFlag(p.FlagKey, c.Flags().Lookup(p.Name))); err != nil {
 			return err
+		}
+		if p.Required {
+			if err := errors.WithStack(c.MarkFlagRequired(p.Name)); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
