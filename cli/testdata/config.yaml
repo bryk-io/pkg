@@ -1,0 +1,21 @@
+http:
+  port: 8080
+  idle_timeout: 10
+middleware:
+  cors:
+    allow_credentials: true
+    ignore_options: false
+    allowed_headers:
+      - content-type
+      - x-api-key
+    allowed_methods:
+      - get
+      - head
+      - post
+      - options
+    allowed_origins:
+      - "*"
+    exposed_headers:
+      - x-api-key
+    max_age: 300
+    options_status_code: 200

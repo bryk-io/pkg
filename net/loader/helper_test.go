@@ -29,7 +29,7 @@ func TestHelper(t *testing.T) {
 	}
 
 	// Use the helper instance to set up CLI command
-	err := cli.SetupCommandParams(sampleCobraCommand, helper.Params(segments...))
+	err := cli.SetupCommandParams(sampleCobraCommand, helper.Params(segments...), viper.GetViper())
 	assert.Nil(err, "setup command")
 
 	// At a later point values can be accessed using viper for example
@@ -66,13 +66,13 @@ func ExampleNew() {
 		SegmentMiddlewareMetadata,
 	}
 
-	// Use the helper instance to setup CLI command
-	err := cli.SetupCommandParams(sampleCobraCommand, helper.Params(segments...))
+	// Use the helper instance to set up CLI command
+	err := cli.SetupCommandParams(sampleCobraCommand, helper.Params(segments...), viper.GetViper())
 	if err != nil {
 		panic(err)
 	}
 
-	// At a later point values can accessed using viper for example
+	// At a later point values can be accessed using viper for example
 	err = viper.Unmarshal(helper.Data)
 	if err != nil {
 		panic(err)

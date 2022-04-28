@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // Register a list of parameters to a sample command.
@@ -21,7 +22,7 @@ func ExampleSetupCommandParams() {
 			ByDefault: false,
 		},
 	}
-	if err := SetupCommandParams(sampleCmd, parameters); err != nil {
+	if err := SetupCommandParams(sampleCmd, parameters, viper.GetViper()); err != nil {
 		panic(err)
 	}
 }
