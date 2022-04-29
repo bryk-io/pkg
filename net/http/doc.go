@@ -11,10 +11,13 @@ and manage an HTTP(S) server instance.
 		WithHandler(mux),
 	}
 
-	// Create and start the server
+	// Create and start the server in the background
 	server, _ := NewServer(options...)
+	go func() {
+		_ = server.Start()
+	}()
 
-	// When no long required, gracefully stop the server
+	// When no longer required, gracefully stop the server
 	_ = server.Stop(true)
 */
 package http

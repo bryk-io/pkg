@@ -11,7 +11,7 @@ type ProxyOption func(p *Proxy) error
 
 // EnableCompression specify if the server should attempt to negotiate per
 // message compression (RFC 7692). Setting this value to true does not guarantee
-// that compression will be supported. Currently only "no context takeover"
+// that compression will be supported. Currently, only "no context takeover"
 // modes are supported.
 func EnableCompression() ProxyOption {
 	return func(p *Proxy) error {
@@ -71,7 +71,7 @@ func AuthorizationCookie(name string) ProxyOption {
 	}
 }
 
-// ForwardHeaders sets which HTTP headers (case insensitive) should be forward in
+// ForwardHeaders sets which HTTP headers (case-insensitive) should be forward in
 // requests behind the proxy. If no list is specified, ALL headers are forwarded
 // by default.
 func ForwardHeaders(list []string) ProxyOption {
