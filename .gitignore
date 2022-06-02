@@ -1,6 +1,7 @@
 # Generals
 .DS_Store
 .idea
+.vscode
 
 # Deps
 vendor/**

@@ -9,7 +9,7 @@ LD_FLAGS += -s -w
 # locally (on a dev container) or using a builder image.
 buf:=buf
 ifndef REMOTE_CONTAINERS_SOCKETS
-	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.2.1 buf
+	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.5.0 buf
 endif
 
 # For commands that require a specific package path, default to all local

@@ -73,9 +73,9 @@ jobs:
       # Setup buf
       - name: Setup buf
         id: buf-setup
-        uses: bufbuild/buf-setup-action@v1.4.0
+        uses: bufbuild/buf-setup-action@v1.5.0
         with:
-          version: '1.2.1'
+          version: 1.5.0
           github_token: ${{ github.token }}
 
       # Static analysis
@@ -129,7 +129,7 @@ jobs:
       # if: steps.vendor-cache.outputs.cache-hit != 'true'
       - name: Restore modules from cache
         id: vendor-cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.3
         env:
           cache-name: vendor
         with:
