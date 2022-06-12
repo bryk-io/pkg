@@ -14,7 +14,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/mr-tron/base58"
 	"go.bryk.io/pkg/crypto/ed25519"
 	e "golang.org/x/crypto/ed25519"
@@ -217,13 +218,13 @@ func (k *PublicKey) sign(data []byte) ([]byte, error) {
 		}
 		return rsaSign(pvt, data)
 	case KeyTypeSecp256k1:
-		pvt, _ := btcec.PrivKeyFromBytes(btcec.S256(), k.Private)
+		pvt, _ := btcec.PrivKeyFromBytes(k.Private)
 		if pvt == nil {
 			return nil, errors.New("failed to decode private key")
 		}
-		ss, err := pvt.Sign(data)
-		if err != nil {
-			return nil, err
+		ss := ecdsa.Sign(pvt, data)
+		if ss == nil {
+			return nil, errors.New("failed to sign message")
 		}
 		return ss.Serialize(), nil
 	default:
@@ -256,11 +257,11 @@ func (k *PublicKey) verify(data, signature []byte) bool {
 		}
 		return rsaVerify(pk, data, signature) == nil
 	case KeyTypeSecp256k1:
-		pub, err := btcec.ParsePubKey(pubBytes, btcec.S256())
+		pub, err := btcec.ParsePubKey(pubBytes)
 		if err != nil {
 			return false
 		}
-		sig, err := btcec.ParseSignature(signature, btcec.S256())
+		sig, err := ecdsa.ParseSignature(signature)
 		if err != nil {
 			return false
 		}
@@ -296,7 +297,7 @@ func newCryptoKey(kt KeyType) (*PublicKey, error) {
 		copy(pk.Private, key.PrivateKey())
 		key.Destroy()
 	case KeyTypeSecp256k1:
-		key, err := btcec.NewPrivateKey(btcec.S256())
+		key, err := btcec.NewPrivateKey()
 		if err != nil {
 			return nil, wrap(err, "failed to create new secp256k1 key")
 		}
@@ -468,12 +469,12 @@ func validateKeyEd(private, challenge []byte) ([]byte, error) {
 // Validate the provided 'private' key is Secp256k1. Return
 // the corresponding public key (compressed).
 func validateKeySecp256k1(private, challenge []byte) ([]byte, error) {
-	pvt, pp := btcec.PrivKeyFromBytes(btcec.S256(), private)
+	pvt, pp := btcec.PrivKeyFromBytes(private)
 	if pvt == nil {
 		return nil, errors.New("invalid secp256k1 private key")
 	}
-	ss, err := pvt.Sign(challenge)
-	if err != nil {
+	ss := ecdsa.Sign(pvt, challenge)
+	if ss == nil {
 		return nil, errors.New("invalid secp256k1 private key")
 	}
 	if !ss.Verify(challenge, pp) {
