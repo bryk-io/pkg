@@ -50,6 +50,10 @@ func WithZero(options ZeroOptions) Logger {
 	if options.Sink == nil {
 		options.Sink = os.Stderr
 	}
+	// Use `error` as default error field
+	if options.ErrorField == "" {
+		options.ErrorField = "error"
+	}
 	zerolog.ErrorFieldName = options.ErrorField
 	handler := zerolog.New(os.Stderr).With().Timestamp().Logger()
 	if options.PrettyPrint {

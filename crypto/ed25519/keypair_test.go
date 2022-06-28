@@ -12,7 +12,8 @@ import (
 func TestMain(m *testing.M) {
 	// The method "github.com/awnumar/memguard/core.NewCoffer" currently
 	// leaks a routine used to re-key the global enclave handler.
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("time.Sleep"))
+	// https://github.com/awnumar/memguard/blob/master/core/coffer.go#L36
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/awnumar/memguard/core.NewCoffer.func1"))
 }
 
 func TestNew(t *testing.T) {

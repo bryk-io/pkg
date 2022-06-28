@@ -3,7 +3,7 @@ module go.bryk.io/pkg
 go 1.16
 
 require (
-	github.com/awnumar/memguard v0.22.2
+	github.com/awnumar/memguard v0.22.3
 	github.com/briandowns/spinner v1.18.1
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0
 	github.com/chzyer/readline v1.5.0
@@ -21,10 +21,10 @@ require (
 	github.com/rs/zerolog v1.27.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/cobra v1.4.0
+	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
 	github.com/streadway/amqp v1.0.0
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.5
 	go.bryk.io/miracl v0.4.2
 	go.mongodb.org/mongo-driver v1.9.1
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.32.0
@@ -46,8 +46,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.7.0
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
-	golang.org/x/net v0.0.0-20220607020251-c690dde0001d
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
@@ -56,5 +56,5 @@ require (
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
-	storj.io/drpc v0.0.30
+	storj.io/drpc v0.0.32
 )
