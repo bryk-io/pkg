@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"go.bryk.io/pkg/log"
+	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -25,6 +26,7 @@ import (
 type Operator struct {
 	*Component                                        // main embedded component
 	log               log.Logger                      // logger instance
+	reporter          apiErrors.Reporter              // error reporter
 	coreAttributes    Attributes                      // resource attributes
 	userAttributes    Attributes                      // user-provided additional attributes
 	resource          *sdkResource.Resource           // OTEL resource definition
@@ -49,12 +51,13 @@ type Operator struct {
 func NewOperator(options ...OperatorOption) (*Operator, error) {
 	// Create instance and apply options.
 	op := &Operator{
-		log:               log.Discard(),           // discard logs
-		coreAttributes:    coreAttributes(),        // standard env attributes
-		userAttributes:    Attributes{},            // no custom attributes
-		exporter:          new(noOpExporter),       // discard traces and metrics
-		tracerName:        "go.bryk.io/pkg/otel",   // default value for `otel.library.name`
-		sampler:           sdkTrace.AlwaysSample(), // track all traces by default
+		log:               log.Discard(),            // discard logs
+		reporter:          apiErrors.NoOpReporter(), // discard reported errors
+		coreAttributes:    coreAttributes(),         // standard env attributes
+		userAttributes:    Attributes{},             // no custom attributes
+		exporter:          new(noOpExporter),        // discard traces and metrics
+		tracerName:        "go.bryk.io/pkg/otel",    // default value for `otel.library.name`
+		sampler:           sdkTrace.AlwaysSample(),  // track all traces by default
 		spanLimits:        sdkTrace.NewSpanLimits(),
 		runtimeMetricsInt: time.Duration(10) * time.Second,
 		metricsPushInt:    time.Duration(5) * time.Second,
@@ -95,12 +98,13 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 		propagator: op.propagator,
 		attrs:      Attributes{},
 		Logger:     op.log,
+		reporter:   op.reporter,
 	}
 	if op.metricProvider != nil {
 		op.Component.MeterProvider = op.metricProvider
 	}
 
-	// Set OTEL error handler.
+	// Set internal OTEL error handler.
 	otel.SetErrorHandler(errorHandler{ll: op.log})
 
 	// Set OTEL globals.
@@ -117,6 +121,9 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 // will preform any cleanup or synchronization required while honoring all timeouts
 // and cancellations contained in the provided context.
 func (op *Operator) Shutdown(ctx context.Context) {
+	// Stop error reporter
+	_ = op.reporter.Flush(5 * time.Second)
+
 	// Stop trace provider and exporter
 	_ = op.traceProvider.ForceFlush(ctx)
 	_ = op.traceProvider.Shutdown(ctx)
@@ -134,6 +141,11 @@ func (op *Operator) Shutdown(ctx context.Context) {
 // limit its access to the operator handler.
 func (op *Operator) MainComponent() *Component {
 	return op.Component
+}
+
+// ErrorReporter returns the error reporting instance setup with the operator.
+func (op *Operator) ErrorReporter() apiErrors.Reporter {
+	return op.reporter
 }
 
 // Apply provided configuration settings.
@@ -208,7 +220,7 @@ func (op *Operator) captureStandardMetrics() {
 	}
 }
 
-// Simple error handler.
+// Simple internal OTEL error handler.
 type errorHandler struct {
 	ll log.Logger
 }

@@ -73,7 +73,7 @@ jobs:
       # Setup buf
       - name: Setup buf
         id: buf-setup
-        uses: bufbuild/buf-setup-action@v1.5.0
+        uses: bufbuild/buf-setup-action@v1.6.0
         with:
           version: 1.5.0
           github_token: ${{ github.token }}
@@ -81,13 +81,13 @@ jobs:
       # Static analysis
       - name: Static analysis
         id: buf-lint
-        uses: bufbuild/buf-lint-action@v1.0.0
+        uses: bufbuild/buf-lint-action@v1.0.1
         if: ${{ steps.buf-setup.outcome == 'success' }}
 
       # Detect breaking changes
       - name: Detect breaking changes
         id: buf-breaking
-        uses: bufbuild/buf-breaking-action@v1.0.0
+        uses: bufbuild/buf-breaking-action@v1.1.0
         if: steps.buf-lint.outcome == 'success' && !contains(env.commit_msg, '[buf-breaking skip]')
         with:
           against: 'https://github.com/${{ github.repository }}.git#branch=master'
@@ -129,7 +129,7 @@ jobs:
       # if: steps.vendor-cache.outputs.cache-hit != 'true'
       - name: Restore modules from cache
         id: vendor-cache
-        uses: actions/cache@v3.0.3
+        uses: actions/cache@v3
         env:
           cache-name: vendor
         with:

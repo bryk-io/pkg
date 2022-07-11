@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/chzyer/readline"
-	"github.com/pkg/errors"
+	"go.bryk.io/x/errors"
 )
 
 // Instance defines the main interface for an interactive shell.

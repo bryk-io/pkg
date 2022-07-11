@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/pkg/errors"
+	"go.bryk.io/x/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"

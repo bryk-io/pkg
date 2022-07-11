@@ -15,11 +15,13 @@ import (
 	mwRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	mwValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/pkg/errors"
 	"github.com/soheilhy/cmux"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
-	"go.bryk.io/pkg/otel/extras"
+	otelGrpc "go.bryk.io/pkg/otel/grpc"
+	otelHttp "go.bryk.io/pkg/otel/http"
+	otelProm "go.bryk.io/pkg/otel/prometheus"
+	"go.bryk.io/x/errors"
 	"golang.org/x/net/netutil"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -65,7 +67,7 @@ type Server struct {
 	panicRecovery    bool                           // Enable panic recovery interceptor
 	inputValidation  bool                           // Enable automatic input validation
 	reflection       bool                           // Enable server reflection protocol
-	prometheus       extras.PrometheusIntegration   // Prometheus support
+	prometheus       otelProm.Operator              // Prometheus support
 	mu               sync.Mutex
 }
 
@@ -104,10 +106,10 @@ func (srv *Server) Stop(graceful bool) error {
 	var e error
 	if srv.gw != nil {
 		if err := srv.gw.Shutdown(context.TODO()); err != nil {
-			e = errors.WithMessage(err, "failed to shutdown HTTP gateway")
+			e = errors.Wrap(err, "shutdown HTTP gateway")
 		}
 		if err := srv.gateway.conn.Close(); err != nil {
-			e = errors.WithMessage(err, "failed to shutdown HTTP gateway connection")
+			e = errors.Wrap(err, "shutdown HTTP gateway connection")
 		}
 	}
 
@@ -370,7 +372,8 @@ func (srv *Server) setupGateway() error {
 	var gmw []func(http.Handler) http.Handler
 	if srv.oop != nil {
 		// Add OTEL as the first middleware in the chain automatically
-		gmw = append(gmw, extras.NewHTTPMonitor().ServerMiddleware(srv.gateway.handlerName))
+		hm := otelHttp.NewMonitor(otelHttp.WithErrorReporter(srv.oop.ErrorReporter()))
+		gmw = append(gmw, hm.ServerMiddleware(srv.gateway.handlerName))
 	}
 	for _, m := range append(gmw, srv.gateway.middleware...) {
 		gwMuxH = m(gwMuxH)
@@ -417,7 +420,7 @@ func (srv *Server) setupGatewayInterface() error {
 func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream []grpc.StreamServerInterceptor) {
 	// Setup observability before anything else
 	if srv.oop != nil {
-		ui, si := extras.NewGRPCMonitor().Server()
+		ui, si := otelGrpc.NewMonitor(srv.oop.ErrorReporter()).Server()
 		unary = append(unary, ui)
 		stream = append(stream, si)
 	}

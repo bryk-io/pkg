@@ -1,4 +1,4 @@
-package extras
+package prometheus
 
 import (
 	"net/http"
@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-// PrometheusIntegration allows to easily collect and consume prometheus metrics.
-type PrometheusIntegration interface {
+// Operator instances allows to easily collect and consume prometheus metrics.
+type Operator interface {
 	// GatherMetrics try to collect metrics available on a best-effort manner.
 	GatherMetrics() ([]*dto.MetricFamily, error)
 
@@ -46,22 +46,26 @@ type PrometheusIntegration interface {
 
 // Prometheus support capabilities. These are optional and abstracted away
 // from the main operator instance.
-type prometheusSupport struct {
+type handler struct {
 	registry   *prometheus.Registry   // Main metrics registry
 	extras     []prometheus.Collector // User-provided metric collectors
 	srvMetrics *gp.ServerMetrics      // Server metrics
 	cltMetrics *gp.ClientMetrics      // Client metrics
 }
 
-// PrometheusMetrics allows to easily collect and consume instrumentation data.
-// Host and runtime metrics are collected by default, in addition to any additional
-// collector provided. If you don't provide a prometheus registry `reg`, a new
-// empty one will be created by default.
-func PrometheusMetrics(reg *prometheus.Registry, cols ...prometheus.Collector) (PrometheusIntegration, error) {
+// NewOperator returns a ready-to-use operator instance. An operator allows to
+// easily collect and consume instrumentation data. Host and runtime metrics are
+// collected by default, in addition to any additional collector provided. If you
+// don't provide a prometheus registry `reg`, a new empty one will be created by
+// default.
+//
+//   prom, _ := pkg.NewOperator(prometheus.NewRegistry())
+//   opts := []rpc.ServerOption{WithPrometheus(prom)}
+func NewOperator(reg *prometheus.Registry, cols ...prometheus.Collector) (Operator, error) {
 	if reg == nil {
 		reg = prometheus.NewRegistry()
 	}
-	ps := &prometheusSupport{
+	ps := &handler{
 		registry: reg,
 		extras:   append([]prometheus.Collector{}, cols...),
 	}
@@ -71,7 +75,7 @@ func PrometheusMetrics(reg *prometheus.Registry, cols ...prometheus.Collector) (
 	return ps, nil
 }
 
-func (ps *prometheusSupport) init() error {
+func (ps *handler) init() error {
 	// Include a collector that exports metrics about the current Go process. This
 	// includes memory stats. To collect those, runtime.ReadMemStats is called. This
 	// requires to “stop the world”, which usually only happens for garbage collection
@@ -103,11 +107,11 @@ func (ps *prometheusSupport) init() error {
 	return nil
 }
 
-func (ps *prometheusSupport) GatherMetrics() ([]*dto.MetricFamily, error) {
+func (ps *handler) GatherMetrics() ([]*dto.MetricFamily, error) {
 	return ps.registry.Gather()
 }
 
-func (ps *prometheusSupport) MetricsHandler() http.Handler {
+func (ps *handler) MetricsHandler() http.Handler {
 	return promhttp.HandlerFor(ps.registry, promhttp.HandlerOpts{
 		ErrorLog:            &errorLogger{ll: log.Discard()},
 		ErrorHandling:       promhttp.ContinueOnError, // Best effort mode
@@ -119,14 +123,14 @@ func (ps *prometheusSupport) MetricsHandler() http.Handler {
 	})
 }
 
-func (ps *prometheusSupport) InitializeMetrics(srv *grpc.Server) {
+func (ps *handler) InitializeMetrics(srv *grpc.Server) {
 	if ps.srvMetrics == nil {
 		return
 	}
 	ps.srvMetrics.InitializeMetrics(srv)
 }
 
-func (ps *prometheusSupport) Client() (grpc.UnaryClientInterceptor, grpc.StreamClientInterceptor) {
+func (ps *handler) Client() (grpc.UnaryClientInterceptor, grpc.StreamClientInterceptor) {
 	// Register client metrics
 	if ps.cltMetrics == nil {
 		ps.cltMetrics = gp.NewClientMetrics()
@@ -138,7 +142,7 @@ func (ps *prometheusSupport) Client() (grpc.UnaryClientInterceptor, grpc.StreamC
 	return ps.cltMetrics.UnaryClientInterceptor(), ps.cltMetrics.StreamClientInterceptor()
 }
 
-func (ps *prometheusSupport) Server() (grpc.UnaryServerInterceptor, grpc.StreamServerInterceptor) {
+func (ps *handler) Server() (grpc.UnaryServerInterceptor, grpc.StreamServerInterceptor) {
 	// Register server metrics
 	if ps.srvMetrics == nil {
 		ps.srvMetrics = gp.NewServerMetrics()

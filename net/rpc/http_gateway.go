@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/pkg/errors"
+	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 )
 

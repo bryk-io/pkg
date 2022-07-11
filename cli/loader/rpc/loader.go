@@ -3,11 +3,11 @@ package rpc
 import (
 	"encoding/json"
 
-	"github.com/pkg/errors"
 	"go.bryk.io/pkg/cli"
 	"go.bryk.io/pkg/cli/loader/internal"
 	"go.bryk.io/pkg/net/rpc"
 	rpcWS "go.bryk.io/pkg/net/rpc/ws"
+	"go.bryk.io/x/errors"
 )
 
 // New loader component instance with default values.

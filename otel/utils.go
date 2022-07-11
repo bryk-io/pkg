@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"go.bryk.io/pkg/log"
+	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
@@ -217,4 +218,31 @@ func kvAny(k string, value interface{}) attribute.KeyValue {
 		}
 		return attribute.String(k, fmt.Sprint(value))
 	}
+}
+
+// Extract user data of the provided attribute set.
+//  - user.id
+//  - user.ip
+//  - user.email
+//  - user.username
+func extractUser(attrs Attributes) (apiErrors.User, bool) {
+	report := false
+	usr := apiErrors.User{}
+	if id := attrs.Get("user.id"); id != nil {
+		usr.ID = fmt.Sprintf("%s", id)
+		report = true
+	}
+	if ip := attrs.Get("user.ip"); ip != nil {
+		usr.IPAddress = fmt.Sprintf("%s", ip)
+		report = true
+	}
+	if email := attrs.Get("user.email"); email != nil {
+		usr.Email = fmt.Sprintf("%s", email)
+		report = true
+	}
+	if username := attrs.Get("user.username"); username != nil {
+		usr.Username = fmt.Sprintf("%s", username)
+		report = true
+	}
+	return usr, report
 }

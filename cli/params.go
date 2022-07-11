@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.bryk.io/x/errors"
 )
 
 // Param represents an individual CLI parameter.

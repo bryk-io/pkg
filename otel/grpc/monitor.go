@@ -1,13 +1,16 @@
-package extras
+package otelgrpc
 
 import (
+	mw "github.com/grpc-ecosystem/go-grpc-middleware"
+	apiErrors "go.bryk.io/pkg/otel/errors"
+	sentrygrpc "go.bryk.io/pkg/otel/sentry/grpc"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
-// GRPCMonitor provide easy-to-use instrumentation primitives for gRPC clients
+// Monitor provide easy-to-use instrumentation primitives for gRPC clients
 // and servers.
-type GRPCMonitor interface {
+type Monitor interface {
 	// Client returns the unary and stream interceptor required to instrument a
 	// gRPC client instance.
 	Client() (grpc.UnaryClientInterceptor, grpc.StreamClientInterceptor)
@@ -16,12 +19,14 @@ type GRPCMonitor interface {
 	Server() (grpc.UnaryServerInterceptor, grpc.StreamServerInterceptor)
 }
 
-type grpcMonitor struct{}
+type grpcMonitor struct {
+	rep apiErrors.Reporter
+}
 
-// NewGRPCMonitor returns a ready to use monitor instance that can be used to
+// NewMonitor returns a ready to use monitor instance that can be used to
 // easily instrument gRPC clients and servers.
-func NewGRPCMonitor() GRPCMonitor {
-	return &grpcMonitor{}
+func NewMonitor(rep apiErrors.Reporter) Monitor {
+	return &grpcMonitor{rep: rep}
 }
 
 func (e *grpcMonitor) settings() []otelgrpc.Option {
@@ -34,14 +39,20 @@ func (e *grpcMonitor) Client() (grpc.UnaryClientInterceptor, grpc.StreamClientIn
 	// Settings
 	opts := e.settings()
 
-	// Client interceptors
-	return otelgrpc.UnaryClientInterceptor(opts...), otelgrpc.StreamClientInterceptor(opts...)
+	// Build client interceptors
+	sui, ssi := sentrygrpc.Client(e.rep)
+	ui := mw.ChainUnaryClient(otelgrpc.UnaryClientInterceptor(opts...), sui)
+	si := mw.ChainStreamClient(otelgrpc.StreamClientInterceptor(opts...), ssi)
+	return ui, si
 }
 
 func (e *grpcMonitor) Server() (grpc.UnaryServerInterceptor, grpc.StreamServerInterceptor) {
 	// Settings
 	opts := e.settings()
 
-	// Server interceptors
-	return otelgrpc.UnaryServerInterceptor(opts...), otelgrpc.StreamServerInterceptor(opts...)
+	// Build server interceptors
+	sui, ssi := sentrygrpc.Server(e.rep)
+	ui := mw.ChainUnaryServer(otelgrpc.UnaryServerInterceptor(opts...), sui)
+	si := mw.ChainStreamServer(otelgrpc.StreamServerInterceptor(opts...), ssi)
+	return ui, si
 }

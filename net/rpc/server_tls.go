@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/pkg/errors"
+	"go.bryk.io/x/errors"
 )
 
 // RecommendedCiphers provides a default list of secure/modern ciphers.

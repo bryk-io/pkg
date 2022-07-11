@@ -3,8 +3,8 @@ package loader
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"go.bryk.io/pkg/cli"
+	"go.bryk.io/x/errors"
 )
 
 // Component elements represent discrete configuration portions of a larger

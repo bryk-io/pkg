@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/pkg/errors"
 	"go.bryk.io/pkg/net/rpc"
+	"go.bryk.io/x/errors"
 )
 
 // TLS defines available settings when enabling secure TLS communications.

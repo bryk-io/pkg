@@ -21,7 +21,9 @@ import (
 	"go.bryk.io/pkg/net/middleware"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
-	"go.bryk.io/pkg/otel/extras"
+	apiErrors "go.bryk.io/pkg/otel/errors"
+	otelHttp "go.bryk.io/pkg/otel/http"
+	otelProm "go.bryk.io/pkg/otel/prometheus"
 	samplev1 "go.bryk.io/pkg/proto/sample/v1"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
@@ -37,6 +39,7 @@ import (
 
 func TestMain(m *testing.M) {
 	goleak.VerifyTestMain(m,
+		goleak.IgnoreTopFunction("github.com/getsentry/sentry-go.(*HTTPTransport).worker"),
 		goleak.IgnoreTopFunction("google.golang.org/grpc.(*ccBalancerWrapper).watcher"),
 		goleak.IgnoreTopFunction("google.golang.org/grpc/internal/transport.(*controlBuffer).get"),
 		goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"),
@@ -74,8 +77,11 @@ func TestServer(t *testing.T) {
 	assert.Nil(err, "failed to create exporter")
 
 	// Prometheus integration
-	prom, err := extras.PrometheusMetrics(prometheus.NewRegistry(), sampleCounter)
+	prom, err := otelProm.NewOperator(prometheus.NewRegistry(), sampleCounter)
 	assert.Nil(err, "failed to enable prometheus, support")
+
+	// Error reporter
+	rep := apiErrors.NoOpReporter()
 
 	// Observability operator
 	oop, err := otel.NewOperator(
@@ -85,12 +91,26 @@ func TestServer(t *testing.T) {
 		otel.WithServiceVersion("0.1.0"),
 		otel.WithLogger(ll),
 		otel.WithHostMetrics(),
+		otel.WithErrorReporter(rep),
 	)
 	assert.Nil(err, "initialize operator")
 	defer oop.Shutdown(context.TODO())
 
 	// HTTP monitor
-	httpMonitor := extras.NewHTTPMonitor()
+	spanNameFormatter := func(req *http.Request) string {
+		// A name formatter function can be used to adjust how spans/transactions are reported.
+		// For example, on restful APIs is very common to have URLs of the form:
+		// `GET /my-assets/1`; to prevent having too many "one ofs" transactions like this
+		// you can instead report those in aggregate like: `GET /my-asset/{id}`
+		if req.URL.Path == "/foo/request" {
+			return "foo-request"
+		}
+		return fmt.Sprintf("%s %s", req.Method, req.URL.Path)
+	}
+	httpMonitor := otelHttp.NewMonitor(
+		otelHttp.WithErrorReporter(oop.ErrorReporter()),
+		otelHttp.WithSpanNameFormatter(spanNameFormatter),
+	)
 
 	// Base server configuration options
 	serverOpts := []ServerOption{
@@ -1138,7 +1158,9 @@ func TestEchoServer(t *testing.T) {
 
 	t.Run("HTTP", func(t *testing.T) {
 		// Instrumented HTTP client
-		hcl := extras.NewHTTPMonitor().Client(nil)
+		hcl := otelHttp.NewMonitor(
+			otelHttp.WithErrorReporter(oop.ErrorReporter()),
+		).Client(nil)
 
 		// Submit requests until one fails
 		for {
@@ -1296,7 +1318,7 @@ func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
 
 	// Get client
 	if srv.oop != nil {
-		httpMonitor := extras.NewHTTPMonitor()
+		httpMonitor := otelHttp.NewMonitor()
 		cl = httpMonitor.Client(rt) // instrumented client
 	} else {
 		cl = http.Client{Transport: rt} // regular client

@@ -3,10 +3,10 @@ package internal
 import (
 	"time"
 
-	"github.com/pkg/errors"
 	"go.bryk.io/pkg/cli"
 	drpcWS "go.bryk.io/pkg/net/drpc/ws"
 	rpcWS "go.bryk.io/pkg/net/rpc/ws"
+	"go.bryk.io/x/errors"
 )
 
 // WSProxy allows to configure a WebSocket proxy for RPC and DRPC servers.

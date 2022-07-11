@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	driver "github.com/streadway/amqp"
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/x/errors"
 )
 
 // MessageOptions allow a publisher to adjust the expected behavior when

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"go.bryk.io/x/errors"
 )
 
 // Config provides a simple interface to manage application settings using Viper.

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/x/errors"
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v2"
 )

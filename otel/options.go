@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/otel/propagation"
-
 	"go.bryk.io/pkg/log"
+	apiErrors "go.bryk.io/pkg/otel/errors"
+	"go.opentelemetry.io/otel/propagation"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -148,6 +148,15 @@ func WithMetricPushPeriod(value time.Duration) OperatorOption {
 		if value != 0 {
 			op.metricsPushInt = value
 		}
+		return nil
+	}
+}
+
+// WithErrorReporter enables the operator to capture exceptions data and submit it
+// to an external service. If not provided, all output is discarded by default.
+func WithErrorReporter(rep apiErrors.Reporter) OperatorOption {
+	return func(op *Operator) error {
+		op.reporter = rep
 		return nil
 	}
 }

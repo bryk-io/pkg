@@ -4,10 +4,10 @@ import (
 	"context"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
-	"go.bryk.io/pkg/otel/extras"
+	otelProm "go.bryk.io/pkg/otel/prometheus"
+	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -241,7 +241,7 @@ func WithObservability(oop *otel.Operator) ServerOption {
 
 // WithPrometheus allows generating and consuming metrics from the server
 // instance using the Prometheus standards and tooling.
-func WithPrometheus(prometheus extras.PrometheusIntegration) ServerOption {
+func WithPrometheus(prometheus otelProm.Operator) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
 		defer srv.mu.Unlock()

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	driver "github.com/streadway/amqp"
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/x/errors"
 )
 
 // Return captures a flattened struct of fields returned by the server when a

@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/x/errors"
 )
 
 // RPC interface used to abstract additional functionality

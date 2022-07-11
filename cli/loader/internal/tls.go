@@ -7,10 +7,10 @@ import (
 	"io/ioutil"
 	"path"
 
-	"github.com/pkg/errors"
 	"go.bryk.io/pkg/cli"
 	"go.bryk.io/pkg/net/http"
 	"go.bryk.io/pkg/net/rpc"
+	"go.bryk.io/x/errors"
 )
 
 // TLS settings.

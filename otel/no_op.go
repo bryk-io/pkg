@@ -8,8 +8,8 @@ import (
 )
 
 // NoOpSpan returns a span interface that will not be reported and discard all output.
-func NoOpSpan() *Span {
-	sp := &Span{
+func NoOpSpan() Span {
+	sp := &span{
 		name:  "no-op",             // task name
 		kind:  SpanKindUnspecified, // default kind
 		cp:    nil,                 // inherit context propagation mechanism

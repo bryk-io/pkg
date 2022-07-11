@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/pkg/errors"
+	"go.bryk.io/x/errors"
 	"golang.org/x/term"
 )
 

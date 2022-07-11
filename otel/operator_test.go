@@ -2,19 +2,19 @@ package otel
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"testing"
 	"time"
 
-	"go.bryk.io/pkg/otel/extras"
-	"go.opentelemetry.io/contrib/propagators/b3"
-
 	"github.com/google/uuid"
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/log"
+	apiErrors "go.bryk.io/pkg/otel/errors"
+	otelHttp "go.bryk.io/pkg/otel/http"
+	"go.bryk.io/x/errors"
+	"go.opentelemetry.io/contrib/propagators/b3"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
@@ -51,12 +51,12 @@ func childOperation(ctx context.Context, oop *Operator, level int) <-chan bool {
 		ct := oop.Start(ctx, fmt.Sprintf("child-span-%d", level), WithSpanKind(SpanKindServer))
 
 		// Several operations with random latency
-		ct.Event(fmt.Sprintf("op-%d-1", level), nil)
-		<-time.After(time.Duration(rand.Intn(500)) * time.Millisecond)
-		ct.Event(fmt.Sprintf("op-%d-2", level), nil)
-		<-time.After(time.Duration(rand.Intn(500)) * time.Millisecond)
-		ct.Event(fmt.Sprintf("op-%d-3", level), nil)
-		<-time.After(time.Duration(rand.Intn(500)) * time.Millisecond)
+		ct.Event(fmt.Sprintf("op-%d-1", level))
+		<-time.After(time.Duration(rand.Intn(300)) * time.Millisecond)
+		ct.Event(fmt.Sprintf("op-%d-2", level))
+		<-time.After(time.Duration(rand.Intn(300)) * time.Millisecond)
+		ct.Event(fmt.Sprintf("op-%d-3", level))
+		<-time.After(time.Duration(rand.Intn(300)) * time.Millisecond)
 
 		// Go deep
 		rr := childOperation(ct.Context(), oop, level+1)
@@ -104,6 +104,9 @@ func TestNewOperator(t *testing.T) {
 	}
 	assert.Nil(err, "failed to create exporter")
 
+	// Error reporter
+	rep := apiErrors.NoOpReporter()
+
 	// Operator instance
 	settings := []OperatorOption{
 		WithServiceName("my-service"),
@@ -114,6 +117,7 @@ func TestNewOperator(t *testing.T) {
 		WithPropagator(b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))),
 		WithExporter(traceExp),
 		WithMetricExporter(metricExp),
+		WithErrorReporter(rep),
 		WithHostMetrics(),
 		WithRuntimeMetrics(time.Duration(10) * time.Second),
 		WithMetricPushPeriod(time.Duration(10) * time.Second),
@@ -132,6 +136,7 @@ func TestNewOperator(t *testing.T) {
 
 	// Operation fields
 	fields := Attributes{
+		"user.id":           "testing-user", // user details
 		"task.value.string": "bar",
 		"task.value.int":    120,
 		"task.value.bool":   true,
@@ -139,15 +144,59 @@ func TestNewOperator(t *testing.T) {
 		"task.value.list":   []string{"foo", "bar"},
 	}
 
+	// Example of using an error reporting instance independent of a OTEL
+	// operator.
+	t.Run("ReportError", func(t *testing.T) {
+		// start task
+		task := rep.Start(context.Background(), "report-test")
+		defer task.Finish()
+
+		// Associate the task with a particular user based on ID
+		task.User(apiErrors.User{ID: "testing-user"})
+
+		// adjust task metadata
+		task.Level("warning")
+		task.Segment("task", map[string]interface{}{
+			"task.value.string": "bar",
+			"task.value.int":    120,
+			"task.value.bool":   true,
+			"task.value.float":  1.456,
+			"task.value.list":   []string{"foo", "bar"},
+		})
+
+		// add events on the task, usually every message you want to log can be
+		// reported as an event during a task processing/execution
+		task.Event("starting a complex task") // using default parameters
+		task.Event("additional debugging information", Attributes{"event.kind": "info"})
+		task.Event("console output", Attributes{"event.category": "console"})
+		task.Event("database interactions", Attributes{"event.kind": "query", "event.category": "mongodb"})
+		task.Event("user interactions", Attributes{"event.kind": "user", "event.category": "auth"})
+		task.Event("outgoing HTTP request", Attributes{
+			"event.kind":     "http",
+			"event.category": "xhr",
+			"event.data": map[string]interface{}{
+				"method":      http.MethodPost,
+				"url":         "/api/method",
+				"status_code": http.StatusUnauthorized,
+			},
+		})
+		task.Event("error/warning occurring prior to a reported exception", Attributes{"event.kind": "error", "event.category": "warning"})
+
+		// report error
+		if err := sampleA(); err != nil {
+			task.Report(err)
+		}
+	})
+
 	t.Run("Basic", func(t *testing.T) {
 		// Root span
 		opts := []SpanOption{
 			WithSpanKind(SpanKindClient),
 			WithSpanAttributes(fields),
 			WithSpanBaggage(Attributes{
-				"baggage.user":       "rick",
-				"baggage.request.id": uuid.New().String(),
-			}, true),
+				"baggage.request.id":    uuid.New().String(),
+				"baggage.request.space": "foo-bar",
+			}),
 		}
 		rootSpan := op.Start(context.Background(), "basic-test", opts...)
 		rootSpan.Event("an event", Attributes{"event.tag": "bar"})
@@ -162,33 +211,48 @@ func TestNewOperator(t *testing.T) {
 
 	t.Run("Server", func(t *testing.T) {
 		// Get HTTP monitor provider from the extras package
-		monitor := extras.NewHTTPMonitor()
+		monitor := otelHttp.NewMonitor(otelHttp.WithErrorReporter(op.ErrorReporter()))
 
 		// Setup server
 		router := http.NewServeMux()
 
-		// Baggage send from the client to the server
-		var clientBaggage Attributes
-
 		// Simple request
 		router.HandleFunc("/ping", func(res http.ResponseWriter, req *http.Request) {
-			<-time.After(time.Duration(rand.Intn(100)) * time.Millisecond)
+			// Get a reference to the task generated by the instrumented HTTP server
+			task := op.SpanFromContext(req.Context())
+
+			// Add event on managed task
+			task.Event("about to start handler task")
+
+			// Start a new (non managed) task directly on the handler function
+			ht := op.Start(task.Context(), "handler operation")
+			defer ht.End()
+
+			delay := rand.Intn(100)
+			<-time.After(time.Duration(delay) * time.Millisecond)
+
+			// Add an event on the handler's own task
+			details := Attributes{"delay": delay}
+			ht.Event("handler completed", Attributes{"event.data": details})
+
 			res.WriteHeader(200)
 			_, _ = res.Write([]byte("pong"))
 		})
 
 		// Expensive request
 		router.HandleFunc("/expensive", func(res http.ResponseWriter, req *http.Request) {
-			// Start span from context
+			// Get a reference to the task generated by the instrumented HTTP server.
+			// We'll use it to add events and additional metadata to the task.
 			task := op.SpanFromContext(req.Context(), Attributes{"task.value": "added-on-handler"})
-			defer task.End()
-
-			// Verify baggage was properly propagated
-			assert.Equal(clientBaggage, task.GetBaggage(), "propagate baggage")
 
 			// Simulate wait for external response and complete root span
 			response := childOperation(task.Context(), op, 1)
 			<-response
+
+			// Add events to the operation
+			task.Event("sample debug event")
+			task.Event("this event reports as a warning", Attributes{"event.level": "warning"})
+			task.Event("with payload data", Attributes{"event.data": fields})
 
 			// Randomly fail half the time
 			n := rand.Intn(9)
@@ -200,7 +264,7 @@ func TestNewOperator(t *testing.T) {
 
 			// Annotate span with error details
 			err := errors.New("RANDOM_ERROR")
-			task.Error(log.Warning, err, Attributes{"value.n": n}, true)
+			task.Error(log.Warning, err, Attributes{"value.n": n})
 
 			// Return error code
 			res.WriteHeader(417)
@@ -220,14 +284,16 @@ func TestNewOperator(t *testing.T) {
 		// Run client requests
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
-			task := op.Start(context.TODO(), "http ping", WithSpanKind(SpanKindClient))
+			task := op.Start(context.TODO(), "http ping",
+				WithSpanAttributes(fields),
+				WithSpanKind(SpanKindClient))
 			defer task.End()
 
 			// Submit request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodGet, "http://localhost:8080/ping", nil)
 			res, err := cl.Do(req)
 			if err != nil {
-				task.Error(log.Error, err, nil, true)
+				task.Error(log.Error, err, nil)
 				t.Error(err)
 			}
 			_ = res.Body.Close()
@@ -237,18 +303,19 @@ func TestNewOperator(t *testing.T) {
 			// Start span
 			task := op.Start(context.TODO(), "http expensive",
 				WithSpanKind(SpanKindClient),
+				WithSpanAttributes(fields),
 				WithSpanBaggage(Attributes{
 					"baggage.request.id":    uuid.New().String(),
 					"baggage.request.space": "foo-bar",
-				}, true),
+				}),
 			)
-			clientBaggage = task.GetBaggage()
 			defer task.End()
 
 			// Submit request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodGet, "http://localhost:8080/expensive", nil)
 			res, err := cl.Do(req)
 			if err != nil {
+				task.Error(log.Error, err, nil)
 				t.Error(err)
 			}
 			_ = res.Body.Close()
@@ -268,7 +335,7 @@ func TestNewOperator(t *testing.T) {
 			WithSpanBaggage(Attributes{
 				"baggage.request.id":    uuid.New().String(),
 				"baggage.request.space": "foo-bar",
-			}, true),
+			}),
 		)
 		rootSpan.Event("an event", Attributes{"sample": "event"})
 		defer rootSpan.End()
@@ -313,4 +380,13 @@ func ExampleNewOperator() {
 	sp := op.Start(context.Background(), "task", WithSpanKind(SpanKindServer))
 	defer sp.End()
 	fmt.Println(sp.ID())
+}
+
+func sampleA() error { return errors.Wrap(sampleB(), "a") }
+func sampleB() error { return errors.Wrap(sampleC(), "b") }
+func sampleC() error { return errors.Wrap(sampleD(), "c") }
+func sampleD() error { return errors.Wrap(sampleE(), "d") }
+func sampleE() error {
+	msg := errors.SensitiveMessage("deep error with secret value: %s", "rick-c137")
+	return errors.New(msg)
 }
