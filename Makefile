@@ -37,11 +37,8 @@ codeql:
 
 ## deps: Verify dependencies and remove intermediary products
 deps:
-	@-rm -rf vendor
+	go clean
 	go mod tidy
-	GOWORK=off go mod verify
-	go mod download
-	go mod vendor
 
 ## docs: Display package documentation on local server
 docs:

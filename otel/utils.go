@@ -42,6 +42,32 @@ const (
 	lblDurationMS     = "duration_ms"
 )
 
+// WithExporterStdout is a utility method to automatically setup and attach
+// trace and metric exporters to send the generated telemetry data to standard
+// output.
+func WithExporterStdout(pretty bool) []OperatorOption {
+	var opts []OperatorOption
+	se, me, err := ExporterStdout(pretty)
+	if err == nil {
+		opts = append(opts, WithExporter(se))
+		opts = append(opts, WithMetricExporter(me))
+	}
+	return opts
+}
+
+// WithExporterOTLP is a utility method to automatically setup and attach
+// trace and metric exporters to send the generated telemetry data to an OTLP
+// exporter instance.
+func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string) []OperatorOption {
+	var opts []OperatorOption
+	se, me, err := ExporterOTLP(endpoint, insecure, headers)
+	if err == nil {
+		opts = append(opts, WithExporter(se))
+		opts = append(opts, WithMetricExporter(me))
+	}
+	return opts
+}
+
 // ExporterStdout returns a new trace exporter to send telemetry data
 // to standard output.
 func ExporterStdout(pretty bool) (*stdouttrace.Exporter, *stdoutmetric.Exporter, error) {
