@@ -390,7 +390,14 @@ func (srv *Server) setupGateway() error {
 
 	// Setup gateway server
 	srv.mu.Lock()
-	srv.gw = &http.Server{Handler: gwMuxH}
+	srv.gw = &http.Server{
+		Handler:           gwMuxH,
+		MaxHeaderBytes:    1024,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		IdleTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
 	srv.mu.Unlock()
 
 	// All good!

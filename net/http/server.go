@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	lib "net/http"
 	"sync"
+	"time"
 )
 
 // Server provides the main HTTP(S) service provider.
@@ -21,7 +22,13 @@ type Server struct {
 // provided configuration options.
 func NewServer(options ...Option) (*Server, error) {
 	srv := &Server{
-		nh: &lib.Server{},
+		nh: &lib.Server{
+			MaxHeaderBytes:    1024,
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			IdleTimeout:       10 * time.Second,
+			WriteTimeout:      10 * time.Second,
+		},
 		mw: []func(lib.Handler) lib.Handler{},
 	}
 

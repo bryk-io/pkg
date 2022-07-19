@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	srvmw "go.bryk.io/pkg/net/drpc/middleware/server"
 	"go.bryk.io/pkg/net/drpc/ws"
@@ -105,8 +106,15 @@ func (srv *Server) Start() error {
 			httpHandler = srv.wsp.Wrap(srvHandler, httpHandler)
 		}
 
-		// HTTP server
-		srv.hsv = http.Server{Handler: httpHandler}
+		// HTTP server (with some sane defaults)
+		srv.hsv = http.Server{
+			Handler:           httpHandler,
+			MaxHeaderBytes:    1024,
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			IdleTimeout:       10 * time.Second,
+			WriteTimeout:      10 * time.Second,
+		}
 		tasks.Go(func() error {
 			return srv.hsv.Serve(srv.dlm.Default())
 		})
