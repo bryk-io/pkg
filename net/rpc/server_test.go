@@ -367,6 +367,9 @@ func TestServer(t *testing.T) {
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
 			WithClientOptions(WithClientObservability(oop)),
+			WithSpanFormatter(func(r *http.Request) string {
+				return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+			}),
 		}
 		gw, err := NewGateway(gwOptions...)
 		if err != nil {

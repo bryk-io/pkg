@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	otelHttp "go.bryk.io/pkg/otel/http"
 	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 )
@@ -33,6 +34,7 @@ type Gateway struct {
 	handlerName   string                            // gateway server name, used for observability
 	conn          *grpc.ClientConn                  // internal connection to the underlying gRPC server
 	clientOptions []ClientOption                    // internal gRPC client connection settings
+	spanFormatter otelHttp.SpanNameFormatter        // otel span name formatter
 	mu            sync.Mutex
 }
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	otelHttp "go.bryk.io/pkg/otel/http"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -169,6 +170,15 @@ func WithPrettyJSON(mime string) GatewayOption {
 func WithHandlerName(name string) GatewayOption {
 	return func(gw *Gateway) error {
 		gw.handlerName = name
+		return nil
+	}
+}
+
+// WithSpanFormatter allows to adjust how a given transaction is reported
+// on the server side when observability is enabled.
+func WithSpanFormatter(sf otelHttp.SpanNameFormatter) GatewayOption {
+	return func(gw *Gateway) error {
+		gw.spanFormatter = sf
 		return nil
 	}
 }

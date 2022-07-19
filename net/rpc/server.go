@@ -372,7 +372,11 @@ func (srv *Server) setupGateway() error {
 	var gmw []func(http.Handler) http.Handler
 	if srv.oop != nil {
 		// Add OTEL as the first middleware in the chain automatically
-		hm := otelHttp.NewMonitor(otelHttp.WithErrorReporter(srv.oop.ErrorReporter()))
+		hmOpts := []otelHttp.Option{otelHttp.WithErrorReporter(srv.oop.ErrorReporter())}
+		if srv.gateway.spanFormatter != nil {
+			hmOpts = append(hmOpts, otelHttp.WithSpanNameFormatter(srv.gateway.spanFormatter))
+		}
+		hm := otelHttp.NewMonitor(hmOpts...)
 		gmw = append(gmw, hm.ServerMiddleware(srv.gateway.handlerName))
 	}
 	for _, m := range append(gmw, srv.gateway.middleware...) {
