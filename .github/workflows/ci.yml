@@ -30,15 +30,24 @@ jobs:
           GITHUB_USER: ${{ github.actor }}
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
 
+      # Get commit message
+      - name: Get commit message
+        run: |
+          echo 'commit_msg<<EOF' >> $GITHUB_ENV
+          git log --format=%B -n 1 ${{ github.sha }} >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+
       # List direct dependencies
       - name: List dependencies
         run: go list -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' -m all > go.list
 
       # Scan dependencies using Nancy
+      # Can be excluded if the commit message contains: [scan-deps skip]
       # https://github.com/sonatype-nexus-community/nancy-github-action
       - name: Scan dependencies
+        if: ${{ !contains(env.commit_msg, '[scan-deps skip]') }}
         uses: sonatype-nexus-community/nancy-github-action@v1.0.2
-  
+
   # Validate the protocol buffer definitions on the project
   # using 'buf'. Remove if not required.
   protos:
