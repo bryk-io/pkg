@@ -8,8 +8,8 @@ import (
 	"time"
 
 	driver "github.com/streadway/amqp"
+	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
-	"go.bryk.io/x/errors"
 )
 
 // Return captures a flattened struct of fields returned by the server when a

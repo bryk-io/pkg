@@ -3,8 +3,8 @@ package rpc
 import (
 	"time"
 
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/otel"
-	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"

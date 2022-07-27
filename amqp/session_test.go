@@ -8,8 +8,8 @@ import (
 	"time"
 
 	tdd "github.com/stretchr/testify/assert"
+	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
-	"go.bryk.io/x/errors"
 	"go.uber.org/goleak"
 	"gopkg.in/yaml.v2"
 )

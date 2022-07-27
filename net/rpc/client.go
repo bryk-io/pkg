@@ -9,9 +9,9 @@ import (
 	"time"
 
 	mw "github.com/grpc-ecosystem/go-grpc-middleware"
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/otel"
 	otelGrpc "go.bryk.io/pkg/otel/grpc"
-	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"

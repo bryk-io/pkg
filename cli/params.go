@@ -3,7 +3,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"go.bryk.io/x/errors"
+	"go.bryk.io/pkg/errors"
 )
 
 // Param represents an individual CLI parameter.

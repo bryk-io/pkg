@@ -10,10 +10,10 @@ import (
 
 	"github.com/google/uuid"
 	tdd "github.com/stretchr/testify/assert"
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/log"
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	otelHttp "go.bryk.io/pkg/otel/http"
-	"go.bryk.io/x/errors"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"

@@ -5,9 +5,9 @@ import (
 	"io"
 	"net/http"
 
+	"go.bryk.io/pkg/errors"
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.bryk.io/pkg/otel/sentry/internal"
-	"go.bryk.io/x/errors"
 	"go.opentelemetry.io/otel/propagation"
 )
 

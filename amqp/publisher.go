@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	driver "github.com/streadway/amqp"
+	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
-	"go.bryk.io/x/errors"
 )
 
 // MessageOptions allow a publisher to adjust the expected behavior when

@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.bryk.io/pkg/errors"
 	otelHttp "go.bryk.io/pkg/otel/http"
-	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 )
 

@@ -4,10 +4,10 @@ import (
 	"context"
 	"syscall"
 
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
-	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

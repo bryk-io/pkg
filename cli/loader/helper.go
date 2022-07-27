@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"go.bryk.io/pkg/cli"
-	"go.bryk.io/x/errors"
+	"go.bryk.io/pkg/errors"
 )
 
 // Component elements represent discrete configuration portions of a larger

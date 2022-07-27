@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"go.bryk.io/x/errors"
+	"go.bryk.io/pkg/errors"
 )
 
 // ClientTLSConfig defines the configuration options available when establishing

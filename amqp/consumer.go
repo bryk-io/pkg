@@ -6,8 +6,8 @@ import (
 	"time"
 
 	driver "github.com/streadway/amqp"
+	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
-	"go.bryk.io/x/errors"
 )
 
 // Delivery instances represent a message received from the broker server.

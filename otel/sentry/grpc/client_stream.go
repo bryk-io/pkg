@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
+	"go.bryk.io/pkg/errors"
 	apiErrors "go.bryk.io/pkg/otel/errors"
-	"go.bryk.io/x/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
