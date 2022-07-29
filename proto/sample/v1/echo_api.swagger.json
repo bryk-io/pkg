@@ -117,6 +117,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "Sample request for the \"echo\" service.",
             "in": "body",
             "required": true,
             "schema": {

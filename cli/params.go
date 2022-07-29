@@ -48,6 +48,10 @@ func SetupCommandParams(c *cobra.Command, params []Param, vp *viper.Viper) error
 			err = loadInt32(v, c, p)
 		case int64:
 			err = loadInt64(v, c, p)
+		case float32:
+			err = loadFloat32(v, c, p)
+		case float64:
+			err = loadFloat64(v, c, p)
 		case uint32:
 			err = loadUnit32(v, c, p)
 		case uint64:
@@ -111,6 +115,32 @@ func loadInt64(v int64, c *cobra.Command, p Param) error {
 		c.Flags().Int64VarP(&h, p.Name, p.Short, v, p.Usage)
 	} else {
 		c.Flags().Int64Var(&h, p.Name, v, p.Usage)
+	}
+	return nil
+}
+
+func loadFloat32(v float32, c *cobra.Command, p Param) error {
+	h, ok := p.ByDefault.(float32)
+	if !ok {
+		return errors.New("failed to parse float32 value")
+	}
+	if p.Short != "" {
+		c.Flags().Float32VarP(&h, p.Name, p.Short, v, p.Usage)
+	} else {
+		c.Flags().Float32Var(&h, p.Name, v, p.Usage)
+	}
+	return nil
+}
+
+func loadFloat64(v float64, c *cobra.Command, p Param) error {
+	h, ok := p.ByDefault.(float64)
+	if !ok {
+		return errors.New("failed to parse float64 value")
+	}
+	if p.Short != "" {
+		c.Flags().Float64VarP(&h, p.Name, p.Short, v, p.Usage)
+	} else {
+		c.Flags().Float64Var(&h, p.Name, v, p.Usage)
 	}
 	return nil
 }
