@@ -4,7 +4,6 @@ import (
 	mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	sentrygrpc "go.bryk.io/pkg/otel/sentry/grpc"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -29,30 +28,18 @@ func NewMonitor(rep apiErrors.Reporter) Monitor {
 	return &grpcMonitor{rep: rep}
 }
 
-func (e *grpcMonitor) settings() []otelgrpc.Option {
-	// Propagator, metric provider and trace provider are taking from globals
-	// setup during the otel.Operator initialization.
-	return []otelgrpc.Option{}
-}
-
 func (e *grpcMonitor) Client() (grpc.UnaryClientInterceptor, grpc.StreamClientInterceptor) {
-	// Settings
-	opts := e.settings()
-
 	// Build client interceptors
 	sui, ssi := sentrygrpc.Client(e.rep)
-	ui := mw.ChainUnaryClient(otelgrpc.UnaryClientInterceptor(opts...), sui)
-	si := mw.ChainStreamClient(otelgrpc.StreamClientInterceptor(opts...), ssi)
+	ui := mw.ChainUnaryClient(unaryClientInterceptor(), sui)
+	si := mw.ChainStreamClient(streamClientInterceptor(), ssi)
 	return ui, si
 }
 
 func (e *grpcMonitor) Server() (grpc.UnaryServerInterceptor, grpc.StreamServerInterceptor) {
-	// Settings
-	opts := e.settings()
-
 	// Build server interceptors
 	sui, ssi := sentrygrpc.Server(e.rep)
-	ui := mw.ChainUnaryServer(otelgrpc.UnaryServerInterceptor(opts...), sui)
-	si := mw.ChainStreamServer(otelgrpc.StreamServerInterceptor(opts...), ssi)
+	ui := mw.ChainUnaryServer(unaryServerInterceptor(), sui)
+	si := mw.ChainStreamServer(streamServerInterceptor(), ssi)
 	return ui, si
 }

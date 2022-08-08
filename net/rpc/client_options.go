@@ -159,7 +159,6 @@ func WithKeepalive(t int) ClientOption {
 //
 // More information:
 // 	https://kubernetes.io/docs/concepts/services-networking/service/#headless-services/,/
-// 	https://www.marwan.io/blog/grpc-dns-load-balancing
 func WithLoadBalancer() ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()

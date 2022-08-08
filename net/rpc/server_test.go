@@ -63,19 +63,6 @@ func TestServer(t *testing.T) {
 		sampleCounter.With(prometheus.Labels{"foo": "bar"}).Inc()
 	}
 
-	// OTEL Exporters
-	var (
-		traceExp  sdkTrace.SpanExporter
-		metricExp sdkMetric.Exporter
-		err       error
-	)
-	if isCollectorAvailable() {
-		traceExp, metricExp, err = otel.ExporterOTLP("localhost:4317", true, nil)
-	} else {
-		traceExp, metricExp, err = otel.ExporterStdout(true)
-	}
-	assert.Nil(err, "failed to create exporter")
-
 	// Prometheus integration
 	prom, err := otelProm.NewOperator(prometheus.NewRegistry(), sampleCounter)
 	assert.Nil(err, "failed to enable prometheus, support")
@@ -83,16 +70,24 @@ func TestServer(t *testing.T) {
 	// Error reporter
 	rep := apiErrors.NoOpReporter()
 
-	// Observability operator
-	oop, err := otel.NewOperator(
-		otel.WithExporter(traceExp),
-		otel.WithMetricExporter(metricExp),
+	// OTEL Exporters
+	otelOpts := []otel.OperatorOption{
 		otel.WithServiceName("rpc-test"),
 		otel.WithServiceVersion("0.1.0"),
 		otel.WithLogger(ll),
 		otel.WithHostMetrics(),
 		otel.WithErrorReporter(rep),
-	)
+	}
+	if isCollectorAvailable() {
+		traceExp, metricExp, err := otel.ExporterOTLP("localhost:4317", true, nil)
+		if err == nil {
+			otelOpts = append(otelOpts, otel.WithExporter(traceExp))
+			otelOpts = append(otelOpts, otel.WithMetricExporter(metricExp))
+		}
+	}
+
+	// Observability operator
+	oop, err := otel.NewOperator(otelOpts...)
 	assert.Nil(err, "initialize operator")
 	defer oop.Shutdown(context.TODO())
 

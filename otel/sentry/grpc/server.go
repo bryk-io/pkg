@@ -2,11 +2,13 @@ package sentrygrpc
 
 import (
 	"context"
+	"net"
 
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.bryk.io/pkg/otel/sentry/internal"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 )
 
@@ -36,6 +38,7 @@ func unaryServerInterceptor(rep apiErrors.Reporter) grpc.UnaryServerInterceptor 
 		// start new operation
 		op := rep.Start(ctx, "grpc.server", opts...)
 		op.Tags(tags)
+		setOperationDetails(ctx, op)
 		defer op.Finish()
 
 		// propagate operation in context
@@ -80,6 +83,7 @@ func streamServerInterceptor(rep apiErrors.Reporter) grpc.StreamServerIntercepto
 		// start new operation
 		op := rep.Start(ctx, "grpc.server", opts...)
 		op.Tags(tags)
+		setOperationDetails(ctx, op)
 		defer op.Finish()
 
 		// create wrapped stream handler
@@ -89,5 +93,38 @@ func streamServerInterceptor(rep apiErrors.Reporter) grpc.StreamServerIntercepto
 			op.Report(err)
 		}
 		return err
+	}
+}
+
+func setOperationDetails(ctx context.Context, op apiErrors.Operation) {
+	io, ok := op.(*internal.Operation)
+	if !ok {
+		return
+	}
+
+	// Get peer IP
+	p, ok := peer.FromContext(ctx)
+	if !ok {
+		return
+	}
+	ip, _, err := net.SplitHostPort(p.Addr.String())
+	if err != nil {
+		return
+	}
+
+	// Look for proxy protocol details propagated as metadata
+	md, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		if addr := md.Get("x-forwarded-for"); len(addr) > 0 {
+			ip = addr[0]
+		}
+		if addr := md.Get("x-real-ip"); len(addr) > 0 {
+			ip = addr[0]
+		}
+	}
+
+	// Set user IP on operation
+	if ip != "" && ip != "127.0.0.1" {
+		io.User(apiErrors.User{IPAddress: ip})
 	}
 }

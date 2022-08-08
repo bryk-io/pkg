@@ -37,8 +37,8 @@ codeql:
 
 ## deps: Verify dependencies and remove intermediary products
 deps:
-	go clean
 	go mod tidy
+	go clean
 
 ## docs: Display package documentation on local server
 docs:
@@ -98,6 +98,9 @@ proto-build:
 
 	# Generate package code using buf.gen.yaml
 	$(buf) generate --output proto --path proto/$(pkg)
+
+	# Add compiler version to generated files
+	@-sed -i.bak 's/(unknown)/buf-v$(shell buf --version)/g' proto/$(pkg)/*.pb.go
 
 	# Remove package comment added by the gateway generator to avoid polluting
 	# the package documentation.

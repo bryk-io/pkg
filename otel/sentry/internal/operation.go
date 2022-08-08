@@ -28,6 +28,7 @@ type Operation struct {
 	Hub    *sdk.Hub               // operation hub
 	Scope  *sdk.Scope             // operation scope
 	Submit func(err error) string // report function
+	usr    *apiErrors.User        // user data associated with the operation
 	done   bool
 	mu     sync.Mutex
 }
@@ -60,9 +61,14 @@ func (op *Operation) Status(status string) {
 }
 
 // User can be used to declare the user associated with the operation. If used,
-// at least an ID or an IP address should be provided.
+// at least an ID or an IP address should be provided. If called multiple times
+// the user data will be merged/updated.
 func (op *Operation) User(usr apiErrors.User) {
-	op.Scope.SetUser(sdk.User(usr))
+	if op.usr == nil {
+		op.usr = new(apiErrors.User)
+	}
+	mergeUserData(op.usr, usr)
+	op.Scope.SetUser(sdk.User(*op.usr))
 }
 
 // Tags adds/updates a group of key/value pairs as operation's metadata.
@@ -155,4 +161,19 @@ func (op *Operation) TraceID() string {
 // to propagate operation details across service boundaries.
 func (op *Operation) Inject(mc apiErrors.Carrier) {
 	mc.Set("sentry-trace", op.TraceID())
+}
+
+func mergeUserData(sink *apiErrors.User, update apiErrors.User) {
+	if update.ID != "" {
+		sink.ID = update.ID
+	}
+	if update.Email != "" {
+		sink.Email = update.Email
+	}
+	if update.IPAddress != "" {
+		sink.IPAddress = update.IPAddress
+	}
+	if update.Username != "" {
+		sink.Username = update.Username
+	}
 }
