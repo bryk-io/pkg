@@ -24,7 +24,7 @@ output prevent manipulation (tamper attempts) of the produced cipher text.
 	// header:
 	version (1) | cipher (1) | payload length (2) | seq (4) | nonce (8)
 
-Usage
+# Usage
 
 To facilitate the integration of the protocol with higher level components and primitives this
 package introduces a 'Worker' component with a simple interface.

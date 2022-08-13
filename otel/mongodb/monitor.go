@@ -10,8 +10,9 @@ import (
 // the monitor, simply set it in the 'Monitor' client parameter.
 //
 // For example:
-//   opts := mongodb_options.Client()
-//   opts.Monitor = MongoMonitor()
+//
+//	opts := mongodb_options.Client()
+//	opts.Monitor = MongoMonitor()
 func Monitor() *event.CommandMonitor {
 	return mt.NewMonitor()
 }

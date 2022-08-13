@@ -21,6 +21,5 @@ https://cs.jhu.edu/~sdoshi/crypto/papers/shamirturing.pdf
 
 Based on the original implementation by Hashicorp:
 https://www.hashicorp.com/
-
 */
 package shamir

@@ -3,7 +3,6 @@ package internal
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -151,7 +150,7 @@ func (sr *sourceReader) readContextLines(filename string, line, context int) ([]
 
 	lines, ok := sr.cache[filename]
 	if !ok {
-		data, err := ioutil.ReadFile(filepath.Clean(filename))
+		data, err := os.ReadFile(filepath.Clean(filename))
 		if err != nil {
 			sr.cache[filename] = nil
 			return nil, 0

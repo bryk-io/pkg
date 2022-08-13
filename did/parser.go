@@ -46,11 +46,12 @@ type parserStep func() parserStep
 
 // checkLength is a parserStep that checks if the input length is at least 7
 // the grammar requires.
-//   `did:` prefix (4 chars)
-//   + at least one methodchar (1 char)
-//   + `:` (1 char)
-//   + at least one idchar (1 char)
-// i.e at least 7 chars
+//
+//	`did:` prefix (4 chars)
+//	+ at least one methodchar (1 char)
+//	+ `:` (1 char)
+//	+ at least one idchar (1 char)
+//
 // The current specification does not take a position on maximum length of a DID.
 // https://w3c-ccg.github.io/did-spec/#upper-limits-on-did-character-length
 func (p *parser) checkLength() parserStep {
@@ -72,9 +73,10 @@ func (p *parser) parseScheme() parserStep {
 
 // parseMethod is a parserStep that extracts the DID Method.
 // from the grammar:
-//   did        = "did:" method ":" specific-idstring
-//   method     = 1*methodchar
-//   methodchar = %x61-7A / DIGIT ; 61-7A is a-z in US-ASCII
+//
+//	did        = "did:" method ":" specific-idstring
+//	method     = 1*methodchar
+//	methodchar = %x61-7A / DIGIT ; 61-7A is a-z in US-ASCII
 func (p *parser) parseMethod() parserStep {
 	input := p.input
 	inputLength := len(input)
@@ -122,9 +124,11 @@ func (p *parser) parseMethod() parserStep {
 // parseID is a parserStep that extracts : separated idstrings that are part of
 // a specific-idstring and adds them to p.out.IDStrings.
 // from the grammar:
-//   specific-idstring = idstring *( ":" idstring )
-//   idstring          = 1*idchar
-//   idchar            = ALPHA / DIGIT / "." / "-"
+//
+//	specific-idstring = idstring *( ":" idstring )
+//	idstring          = 1*idchar
+//	idchar            = ALPHA / DIGIT / "." / "-"
+//
 // p.out.IDStrings is later concatenated by the Parse function before it returns.
 func (p *parser) parseID() parserStep {
 	input := p.input
@@ -201,9 +205,10 @@ func (p *parser) parseID() parserStep {
 // parseParamName is a parserStep that extracts a did-url param-name.
 // A Param struct is created for each param name that is encountered.
 // from the grammar:
-//   param              = param-name [ "=" param-value ]
-//   param-name         = 1*param-char
-//   param-char         = ALPHA / DIGIT / "." / "-" / "_" / ":" / pct-encoded
+//
+//	param              = param-name [ "=" param-value ]
+//	param-name         = 1*param-char
+//	param-char         = ALPHA / DIGIT / "." / "-" / "_" / ":" / pct-encoded
 func (p *parser) parseParamName() parserStep {
 	input := p.input
 	startIndex := p.currentIndex + 1
@@ -228,9 +233,10 @@ func (p *parser) parseParamName() parserStep {
 // parseParamValue is a parserStep that extracts a did-url param-value.
 // A parsed Param value requires that a Param was previously created when parsing a param-name.
 // from the grammar:
-//   param              = param-name [ "=" param-value ]
-//   param-value         = 1*param-char
-//   param-char         = ALPHA / DIGIT / "." / "-" / "_" / ":" / pct-encoded
+//
+//	param              = param-name [ "=" param-value ]
+//	param-value         = 1*param-char
+//	param-char         = ALPHA / DIGIT / "." / "-" / "_" / ":" / pct-encoded
 func (p *parser) parseParamValue() parserStep {
 	input := p.input
 	startIndex := p.currentIndex + 1
@@ -331,13 +337,14 @@ func (p *parser) paramTransition() parserStep {
 
 // parsePath is a parserStep that extracts a DID Path from a DID Reference
 // from the grammar:
-//   did-path      = segment-nz *( "/" segment )
-//   segment       = *pchar
-//   segment-nz    = 1*pchar
-//   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
-//   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-//   pct-encoded   = "%" HEXDIG HEXDIG
-//   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+//
+//	did-path      = segment-nz *( "/" segment )
+//	segment       = *pchar
+//	segment-nz    = 1*pchar
+//	pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+//	unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+//	pct-encoded   = "%" HEXDIG HEXDIG
+//	sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
 func (p *parser) parsePath() parserStep {
 	input := p.input
 	inputLength := len(input)
@@ -409,11 +416,12 @@ func (p *parser) parsePath() parserStep {
 
 // parseQuery is a parserStep that extracts a DID Query from a DID Reference
 // from the grammar:
-//   did-query     = *( pchar / "/" / "?" )
-//   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
-//   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-//   pct-encoded   = "%" HEXDIG HEXDIG
-//   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+//
+//	did-query     = *( pchar / "/" / "?" )
+//	pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+//	unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+//	pct-encoded   = "%" HEXDIG HEXDIG
+//	sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
 func (p *parser) parseQuery() parserStep {
 	input := p.input
 	inputLength := len(input)
@@ -475,11 +483,12 @@ func (p *parser) parseQuery() parserStep {
 
 // parseFragment is a parserStep that extracts a DID Fragment from a DID Reference
 // from the grammar:
-//   did-fragment  = *( pchar / "/" / "?" )
-//   pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
-//   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-//   pct-encoded   = "%" HEXDIG HEXDIG
-//   sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+//
+//	did-fragment  = *( pchar / "/" / "?" )
+//	pchar         = unreserved / pct-encoded / sub-delims / ":" / "@"
+//	unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
+//	pct-encoded   = "%" HEXDIG HEXDIG
+//	sub-delims    = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
 func (p *parser) parseFragment() parserStep {
 	input := p.input
 	inputLength := len(input)

@@ -4,7 +4,7 @@ Package ed25519 provides a EdDSA (Edwards-curve Digital Signature Algorithm) han
 The main component in the package is the 'KeyPair' instance. All functionality
 to generate and validate digital signatures is available by its methods.
 
-Key Creation
+# Key Creation
 
 There are 3 mechanisms to create a new key pair.
 
@@ -24,7 +24,7 @@ using the key by calling the 'Destroy' method.
 	// Securely release in-memory secrets
 	kp.Destroy()
 
-Key Usage
+# Key Usage
 
 A key pair can be used to produce and verify digital signatures.
 
@@ -32,6 +32,5 @@ A key pair can be used to produce and verify digital signatures.
 	kp, _ := New()
 	signature := kp.Sign(msg)
 	log.Printf("verification result: %v", kp.Verify(msg, signature))
-
 */
 package ed25519

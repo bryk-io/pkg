@@ -48,7 +48,7 @@ data sources into a single interface with the following characteristics:
 	defer sp.End()
 	fmt.Println(sp.ID())
 
-Traces
+# Traces
 
 Instrumentation is collected at transaction level. A transaction is a unit of
 work relevant enough to be registered, measured for performance and observed
@@ -86,7 +86,7 @@ As spans are created and completed, the Tracer dispatches them to the OpenTeleme
 SDK’s Exporter, which is responsible for sending your spans to a backend system
 for analysis.
 
-Metrics
+# Metrics
 
 Metrics allow capturing measurements about the execution of a computer program
 at run time. In OpenTelemetry, the Metrics API provides six metric instruments.
@@ -95,7 +95,7 @@ the user-facing entry point to the SDK. Each instrument supports a single functi
 named to help convey the instrument's semantics, and is either synchronous or
 asynchronous.
 
-Exporter
+# Exporter
 
 The trace and metric data that your service or its dependencies emit are of
 limited use unless you can actually collect that data somewhere for analysis
@@ -112,7 +112,7 @@ provide utilities to your service. These will deploy their own copy of OpenTelem
 independent of your actions, but will also emit trace context that your service will
 find useful.
 
-Context
+# Context
 
 The ability to correlate events across service boundaries is one of the principle
 concepts behind distributed tracing. To find these correlations, components in a

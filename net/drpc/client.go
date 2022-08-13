@@ -104,10 +104,11 @@ func (cl *Client) Transport() drpc.Transport {
 // Middleware is executed before the processing of RPC requests is started.
 // When providing middleware the ordering is very important; middleware will be
 // applied in the same order provided.
-//   For example:
-//     Use(foo bar baz)
-//   Will be applied as:
-//     baz( bar( foo(handler) ) )
+//
+//	For example:
+//	  Use(foo bar baz)
+//	Will be applied as:
+//	  baz( bar( foo(handler) ) )
 func (cl *Client) Use(mw ...clmw.Middleware) {
 	cl.mtx.Lock()
 	for _, m := range mw {

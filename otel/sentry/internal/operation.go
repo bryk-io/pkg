@@ -104,6 +104,7 @@ func (op *Operation) Segment(key string, data interface{}) {
 //   - http: http requests started from the app; `event.data` can include `http.request`
 //   - query: describe and report database interactions
 //   - user: describe user interactions
+//
 // https://develop.sentry.dev/sdk/event-payloads/breadcrumbs/#breadcrumb-types
 func (op *Operation) Event(msg string, attributes ...map[string]interface{}) {
 	attrs := join(attributes...)

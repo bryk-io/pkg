@@ -25,9 +25,9 @@ func init() {
 // be specially formatted using the standard escape codes defined by
 // `fmt.Formatter`. The following verbs are supported:
 //
-//     %s   return the redacted version of the message.
-//     %v   return the redacted version of the message.
-//     %+v  return the full version of the message.
+//	%s   return the redacted version of the message.
+//	%v   return the redacted version of the message.
+//	%+v  return the full version of the message.
 func SensitiveMessage(format string, args ...interface{}) Redactable {
 	return pii{
 		format:   format,
@@ -66,9 +66,9 @@ func (m pii) Disclose() string {
 // Format the message using the escape codes defined by fmt.Formatter.
 // The following verbs are supported:
 //
-//     %s   return the redacted version of the message.
-//     %v   return the redacted version of the message.
-//     %+v  return the full version of the message.
+//	%s   return the redacted version of the message.
+//	%v   return the redacted version of the message.
+//	%+v  return the full version of the message.
 func (m pii) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 'v':

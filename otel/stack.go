@@ -51,13 +51,13 @@ type stackFrame struct {
 // Format error values using the escape codes defined by fmt.Formatter.
 // The following verbs are supported:
 //
-//     %v   see '%s'
-//     %s   basic format. Returns the stackframe formatted as in the
-//          standard library `runtime/debug.Stack()`.
-//     %+v  extended format. Returns the stackframe formatted as in the
-//          standard library `runtime/debug.Stack()` but replacing the values
-//          for `GOPATH` and `GOROOT` on file paths. This makes the traces
-//          more portable and avoid exposing (noisy) local system details.
+//	%v   see '%s'
+//	%s   basic format. Returns the stackframe formatted as in the
+//	     standard library `runtime/debug.Stack()`.
+//	%+v  extended format. Returns the stackframe formatted as in the
+//	     standard library `runtime/debug.Stack()` but replacing the values
+//	     for `GOPATH` and `GOROOT` on file paths. This makes the traces
+//	     more portable and avoid exposing (noisy) local system details.
 func (sf *stackFrame) Format(s fmt.State, verb rune) {
 	file := sf.File
 	switch verb {

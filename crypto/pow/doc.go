@@ -10,19 +10,20 @@ but parameterizable expensive to compute.
 Formally, our implementation provides a non-interactive, publicly auditable, trapdoor-free
 cost function with unbounded probabilistic cost.
 
-- Non-interactive: The client chose it’s own challenge or random start value
+  - Non-interactive: The client chose its own challenge or random start value
 
-- Publicly Auditable: The produced result can be efficiently verified by any third
-party without access to any trapdoor or secret information.
+  - Publicly Auditable: The produced result can be efficiently verified by any third
+    party without access to any trapdoor or secret information.
 
-- Trapdoor-free:  The server has no advantage in producing (minting) correct and verifiable
-solutions (tokens) to the challenge (cost-function).
+  - Trapdoor-free:  The server has no advantage in producing (minting) correct and verifiable
+    solutions (tokens) to the challenge (cost-function).
 
-- Unbounded Probabilistic Cost: The challenge (cost-function) can in theory take forever
+  - Unbounded Probabilistic Cost: The challenge (cost-function) can in theory take forever
+
 to compute, though the probability of taking significantly longer than expected decreases
 rapidly towards zero.
 
-Usage
+# Usage
 
 The package can be used as a library to either produce (mint) correct results to a Proof-of-Work
 challenge, or to verify (audit) the correctness of previously generated values (tokens).
@@ -41,8 +42,8 @@ the challenge.
 	// The solution will be similar to:
 	// 0000ff54fb17895b926a1c52efa92d0c86636194612cbbd527d8c931024e5fc6
 
-More information:
-http://www.hashcash.org/hashcash.pdf
+More information can be found in the original [HashCash Paper].
 
+[HashCash Paper]: http://www.hashcash.org/hashcash.pdf
 */
 package pow

@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 
 	"go.bryk.io/pkg/cli"
@@ -145,7 +145,7 @@ func loadPEM(value string) ([]byte, error) {
 	}
 
 	// Load file
-	return ioutil.ReadFile(path.Clean(value))
+	return os.ReadFile(path.Clean(value))
 }
 
 // Validates a certificate/private key pair from it's PEM-encoded byte arrays.

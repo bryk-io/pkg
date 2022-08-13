@@ -1,7 +1,7 @@
 /*
 Package orm provides a simple "Object-Relational Mapping" style library for MongoDB.
 
-Operator
+# Operator
 
 The main entrypoint to use the package is an 'Operator' instance. An operator
 provides a handler for a MongoDB database and manage the required client
@@ -33,7 +33,7 @@ connection to it.
 		panic(err)
 	}
 
-Model
+# Model
 
 The most common use of an operator instance is to create Models. A model
 instance serves as a "wrapper" to a MongoDB collection and provides an
@@ -57,7 +57,7 @@ https://pkg.go.dev/go.mongodb.org/mongo-driver/bson
 This allows to easily store complex types without the need to modify the code
 to include `bson` tags, for example, when using Protobuf Messages.
 
-Transactions
+# Transactions
 
 In MongoDB, an operation on a single document is atomic. Because you can
 use embedded documents and arrays to capture relationships between data in
@@ -107,7 +107,7 @@ be set on any models used inside the transaction body.
 
 More information: https://docs.mongodb.com/manual/core/transactions/
 
-Streams
+# Streams
 
 Change streams allow applications to access real-time data changes without
 the complexity and risk of tailing the oplog. Applications can use change

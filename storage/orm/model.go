@@ -17,7 +17,7 @@ import (
 // provide an easy-to-use API on top of it to greatly simplify common
 // tasks.
 type Model struct {
-	// MongoDB collection backing the model.
+	// MongoDB's collection backing the model.
 	Collection *mongo.Collection
 
 	// Name of the model. Used also as collection name.
@@ -77,12 +77,12 @@ func (m *Model) Count(filter map[string]interface{}) (int64, error) {
 
 // Distinct allows to find the unique values for a specified field in the
 // collection. If no 'filter' is specified a full scan of the collection
-// is performed.
-//    var list []string
-//    err := mod.Distinct("user_type", Filter(), &list)
+// is performed. [Command documentation].
 //
-// For more information:
-// https://docs.mongodb.com/manual/reference/command/distinct/
+//	var list []string
+//	err := mod.Distinct("user_type", Filter(), &list)
+//
+// [Command documentation]: https://docs.mongodb.com/manual/reference/command/distinct/
 func (m *Model) Distinct(field string, filter map[string]interface{}, result interface{}) error {
 	f, err := doc(filter)
 	if err != nil {
@@ -270,7 +270,7 @@ func (m *Model) Find(filter map[string]interface{}, result interface{}, opts ...
 	return mc.All(m.ctx(), result)
 }
 
-// Subscribe will setup and return an stream instance that can used to
+// Subscribe will set up and return a stream instance that can used to
 // receive change events based on the parameters provided.
 func (m *Model) Subscribe(pipeline mongo.Pipeline, opts *options.ChangeStreamOptions) (*Stream, error) {
 	cs, err := m.Collection.Watch(context.Background(), pipeline, opts)

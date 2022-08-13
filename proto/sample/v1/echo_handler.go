@@ -24,8 +24,9 @@ func (x *FaultyError) Error() string {
 }
 
 // toStatus converts a `FaultyError` instance to a grpc.Status compatible error.
-// All errors returned by gRPC servers are expected to be of type grpc.Status
-//   More information: https://godoc.org/google.golang.org/grpc/status
+// All errors returned by gRPC servers are expected to be of type [grpc.Status].
+//
+// [grpc.Status]: https://godoc.org/google.golang.org/grpc/status
 func (x *FaultyError) toStatus() error {
 	st := status.New(codes.Code(x.Code), x.Desc)
 	rs, err := st.WithDetails(x)

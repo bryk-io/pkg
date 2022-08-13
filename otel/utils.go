@@ -247,10 +247,10 @@ func kvAny(k string, value interface{}) attribute.KeyValue {
 }
 
 // Extract user data of the provided attribute set.
-//  - user.id
-//  - user.ip
-//  - user.email
-//  - user.username
+//   - user.id
+//   - user.ip
+//   - user.email
+//   - user.username
 func extractUser(attrs Attributes) (apiErrors.User, bool) {
 	report := false
 	usr := apiErrors.User{}

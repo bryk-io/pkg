@@ -7,7 +7,8 @@ import (
 type headerBlock []byte
 
 // Retrieve the header section from a byte array.
-// 	version (1) | cipher (1) | payload length (2) | seq (4) | nonce (8)
+//
+//	version (1) | cipher (1) | payload length (2) | seq (4) | nonce (8)
 func header(b []byte) headerBlock {
 	return b[:headerSize]
 }

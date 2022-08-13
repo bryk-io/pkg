@@ -13,6 +13,7 @@ import (
 //   - An `error` value, will be set as the root cause for the new error instance.
 //   - Any other value, will be passed to fmt.Errorf("%v") and the resulting error
 //     value set as the root cause for the new error instance.
+//
 // The stacktrace will point to the line of code that called this function.
 func New(e interface{}) error {
 	if e == nil {

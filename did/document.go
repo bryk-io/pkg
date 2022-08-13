@@ -136,8 +136,9 @@ type Document struct {
 // https://www.w3.org/TR/did-core/#metadata-structure
 //
 // Additional details:
-//   https://github.com/w3c/did-core/issues/65
-//   https://github.com/w3c/did-core/issues/203
+//
+//	https://github.com/w3c/did-core/issues/65
+//	https://github.com/w3c/did-core/issues/203
 type DocumentMetadata struct {
 	// Timestamp of the original creation, normalized to UTC 00:00.
 	// https://w3c-ccg.github.io/did-spec/#created-optional

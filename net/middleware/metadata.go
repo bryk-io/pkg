@@ -26,7 +26,8 @@ type ContextMetadataOptions struct {
 // allows other extensions and resolvers to have access to required information.
 //
 // Upstream elements can retrieve available metadata with:
-//   md, ok := MetadataFromContext(ctx)
+//
+//	md, ok := MetadataFromContext(ctx)
 func ContextMetadata(options ContextMetadataOptions) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {

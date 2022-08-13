@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -282,7 +281,7 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithUnixSocket", func(t *testing.T) {
 		// Prepare socket file
-		socket, err := ioutil.TempFile("", "server-test")
+		socket, err := os.CreateTemp("", "server-test")
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -410,7 +409,7 @@ func TestServer(t *testing.T) {
 			defer func() {
 				_ = res.Body.Close()
 			}()
-			b, _ := ioutil.ReadAll(res.Body)
+			b, _ := io.ReadAll(res.Body)
 			ll.Printf(log.Debug, "%s", b)
 		})
 
@@ -434,7 +433,7 @@ func TestServer(t *testing.T) {
 			defer func() {
 				_ = res.Body.Close()
 			}()
-			b, _ := ioutil.ReadAll(res.Body)
+			b, _ := io.ReadAll(res.Body)
 			ll.Printf(log.Debug, "%s", b)
 			ll.Printf(log.Debug, "status: %d", res.StatusCode)
 			for h := range res.Header {
@@ -458,7 +457,7 @@ func TestServer(t *testing.T) {
 			defer func() {
 				_ = res.Body.Close()
 			}()
-			b, _ := ioutil.ReadAll(res.Body)
+			b, _ := io.ReadAll(res.Body)
 			ll.Printf(log.Debug, "%s", b)
 		})
 
@@ -480,7 +479,7 @@ func TestServer(t *testing.T) {
 			}()
 
 			// Dump metrics data
-			data, _ := ioutil.ReadAll(res.Body)
+			data, _ := io.ReadAll(res.Body)
 			ll.Debugf("%s", data)
 		})
 
@@ -554,9 +553,9 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("WithTLS", func(t *testing.T) {
-		ca, _ := ioutil.ReadFile("testdata/ca.sample_cer")
-		cert, _ := ioutil.ReadFile("testdata/server.sample_cer")
-		key, _ := ioutil.ReadFile("testdata/server.sample_key")
+		ca, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
 
 		options := append(serverOpts[:],
 			WithNetworkInterface(NetworkInterfaceAll),
@@ -607,9 +606,9 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithTLSAndGateway", func(t *testing.T) {
 		ss := new(barProvider)
-		ca, _ := ioutil.ReadFile("testdata/ca.sample_cer")
-		cert, _ := ioutil.ReadFile("testdata/server.sample_cer")
-		key, _ := ioutil.ReadFile("testdata/server.sample_key")
+		ca, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
 
 		// Setup HTTP gateway
 		gwOptions := []GatewayOption{
@@ -672,7 +671,7 @@ func TestServer(t *testing.T) {
 			defer func() {
 				_ = res.Body.Close()
 			}()
-			b, _ := ioutil.ReadAll(res.Body)
+			b, _ := io.ReadAll(res.Body)
 			ll.Printf(log.Debug, "%s", b)
 		})
 
@@ -692,7 +691,7 @@ func TestServer(t *testing.T) {
 			defer func() {
 				_ = res.Body.Close()
 			}()
-			b, _ := ioutil.ReadAll(res.Body)
+			b, _ := io.ReadAll(res.Body)
 			ll.Printf(log.Debug, "%s", b)
 		})
 
@@ -783,9 +782,9 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithAuthByCertificate", func(t *testing.T) {
 		ss := new(barProvider)
-		ca, _ := ioutil.ReadFile("testdata/ca.sample_cer")
-		cert, _ := ioutil.ReadFile("testdata/server.sample_cer")
-		key, _ := ioutil.ReadFile("testdata/server.sample_key")
+		ca, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
 
 		// Setup HTTP gateway
 		gwOptions := []GatewayOption{
@@ -849,7 +848,7 @@ func TestServer(t *testing.T) {
 		defer func() {
 			_ = res.Body.Close()
 		}()
-		b, _ := ioutil.ReadAll(res.Body)
+		b, _ := io.ReadAll(res.Body)
 		ll.Printf(log.Debug, "%s", b)
 
 		// Get client connection
@@ -926,9 +925,9 @@ func TestServer(t *testing.T) {
 		}
 
 		// Server configuration options
-		ca, _ := ioutil.ReadFile("testdata/ca.sample_cer")
-		cert, _ := ioutil.ReadFile("testdata/server.sample_cer")
-		key, _ := ioutil.ReadFile("testdata/server.sample_key")
+		ca, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
 		options := append(serverOpts[:],
 			WithServiceProvider(ss),
 			WithNetworkInterface(NetworkInterfaceAll),
@@ -1178,7 +1177,7 @@ func TestEchoServer(t *testing.T) {
 				assert.NotEmpty(res.Header.Get("x-faulty-error-foo"), "missing header")
 				assert.NotEmpty(res.Header.Get("x-faulty-error-x-value"), "missing header")
 				assert.Equal("application/json", res.Header.Get("content-type"))
-				b, _ := ioutil.ReadAll(res.Body)
+				b, _ := io.ReadAll(res.Body)
 				ll.Debugf("custom error: %s", b)
 				done = true
 			}

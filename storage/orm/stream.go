@@ -80,7 +80,8 @@ func (ce *ChangeEvent) empty() bool {
 
 // Stream provides a simple interface to listen for change events.
 // More information:
-// 	https://docs.mongodb.com/manual/changeStreams/
+//
+//	https://docs.mongodb.com/manual/changeStreams/
 type Stream struct {
 	cs    *mongo.ChangeStream
 	ctx   context.Context
@@ -94,7 +95,8 @@ type Stream struct {
 // and any error produced when closing the stream.
 // The resume token can later be used when opening a new stream
 // using the 'SetResumeAfter' configuration option.
-// 	conf.SetResumeAfter(rt)
+//
+//	conf.SetResumeAfter(rt)
 func (s *Stream) Close() (bson.Raw, error) {
 	s.halt()
 	<-s.done

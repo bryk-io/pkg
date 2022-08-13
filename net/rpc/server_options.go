@@ -113,7 +113,8 @@ func WithResourceLimits(limits ResourceLimits) ServerOption {
 // with an `InvalidArgument` status code.
 //
 // To further automate input validation use:
-// 	https://github.com/envoyproxy/protoc-gen-validate
+//
+//	https://github.com/envoyproxy/protoc-gen-validate
 func WithInputValidation() ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -154,8 +155,9 @@ func WithAuthByCertificate(clientCA []byte) ServerOption {
 // authentication for all methods enabled on the server. When a server requires to
 // support both authenticated and unauthenticated methods, the verification process
 // can be performed manually per-method.
-// 	token, err := GetAuthToken(ctx, "bearer")
-// 	... validate token ...
+//
+//	token, err := GetAuthToken(ctx, "bearer")
+//	... validate token ...
 func WithAuthByToken(tv TokenValidator) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
@@ -256,10 +258,12 @@ func WithPrometheus(prometheus otelProm.Operator) ServerOption {
 // used to introspect server protos and send/receive test RPCs.
 //
 // More information about the reflection protocol:
-// 	https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
+//
+//	https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
 //
 // More information about the gRPC CLI tool:
-// 	https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
+//
+//	https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
 func WithReflection() ServerOption {
 	return func(srv *Server) error {
 		srv.reflection = true

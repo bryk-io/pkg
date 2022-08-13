@@ -7,11 +7,13 @@ import (
 type manifestBlock []byte
 
 // Length in bytes for the output manifestBlock.
-// 	version | cipher | length | checksum
+//
+//	version | cipher | length | checksum
 const manifestSize = 38
 
 // Retrieve the manifest section from a byte array.
-// 	version (1) | cipher (1) | length (4) | checksum (32)
+//
+//	version (1) | cipher (1) | length (4) | checksum (32)
 func manifest(b []byte) manifestBlock {
 	return b[:manifestSize]
 }

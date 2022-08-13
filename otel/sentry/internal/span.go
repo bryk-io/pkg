@@ -33,11 +33,11 @@ func (s *Span) TraceID() string {
 }
 
 // Status sets the span current status value. Valid values:
-//  - ok (default)
-//  - error
-//  - aborted
-//  - canceled
-//  - unauthenticated
+//   - ok (default)
+//   - error
+//   - aborted
+//   - canceled
+//   - unauthenticated
 func (s *Span) Status(status string) {
 	s.sp.Status = getStatus(status)
 }

@@ -52,9 +52,12 @@ func WithTLS(settings TLS) Option {
 // processing of HTTP requests. When applying middleware the ordering is very
 // important, in this case it will be applied in the same order provided.
 // For example:
-//    Use(foo bar baz)
+//
+//	Use(foo bar baz)
+//
 // Will be applied as:
-//    baz( bar( foo(handler) ) )
+//
+//	baz( bar( foo(handler) ) )
 func WithMiddleware(md ...func(lib.Handler) lib.Handler) Option {
 	return func(srv *Server) error {
 		srv.mu.Lock()

@@ -2,8 +2,9 @@ package http
 
 import (
 	"crypto/tls"
-	"io/ioutil"
+	"io"
 	lib "net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -69,7 +70,7 @@ func TestNewServer(t *testing.T) {
 			assert.Nil(err, "panic")
 			assert.Equal(lib.StatusInternalServerError, res.StatusCode, "wrong status")
 
-			data, err := ioutil.ReadAll(res.Body)
+			data, err := io.ReadAll(res.Body)
 			assert.Nil(err, "panic response")
 			assert.Equal(string(data), "cool services never panic!!!")
 			_ = res.Body.Close()
@@ -81,9 +82,9 @@ func TestNewServer(t *testing.T) {
 
 	t.Run("HTTPS", func(t *testing.T) {
 		// Add TLS settings
-		ca, _ := ioutil.ReadFile("testdata/ca.sample_cer")
-		cert, _ := ioutil.ReadFile("testdata/server.sample_cer")
-		key, _ := ioutil.ReadFile("testdata/server.sample_key")
+		ca, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
 		opts = append(opts, WithTLS(TLS{
 			IncludeSystemCAs: true,
 			Cert:             cert,
@@ -112,7 +113,7 @@ func TestNewServer(t *testing.T) {
 			assert.Nil(err, "panic")
 			assert.Equal(lib.StatusInternalServerError, res.StatusCode, "wrong status")
 
-			data, err := ioutil.ReadAll(res.Body)
+			data, err := io.ReadAll(res.Body)
 			assert.Nil(err, "panic response")
 			assert.Equal(string(data), "cool services never panic!!!")
 			_ = res.Body.Close()

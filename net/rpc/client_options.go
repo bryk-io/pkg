@@ -155,10 +155,9 @@ func WithKeepalive(t int) ClientOption {
 // default the "round-robin" strategy is used to choose a backend for RPC requests.
 // When enabling this option the provided endpoint is expected to be a DNS record that
 // returns a set of reachable IP addresses.
-// When deploying with Kubernetes this is done by using a "headless" service.
+// When deploying with Kubernetes this is done by using a [Headless Service].
 //
-// More information:
-// 	https://kubernetes.io/docs/concepts/services-networking/service/#headless-services/,/
+// [Headless Service]: https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
 func WithLoadBalancer() ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()

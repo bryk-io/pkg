@@ -51,13 +51,13 @@ type StackFrame struct {
 // Format error values using the escape codes defined by fmt.Formatter.
 // The following verbs are supported:
 //
-//     %v   see '%s'
-//     %s   basic format. Returns the stackframe formatted as in the
-//          standard library `runtime/debug.Stack()`.
-//     %+v  extended format. Returns the stackframe formatted as in the
-//          standard library `runtime/debug.Stack()` but replacing the values
-//          for `GOPATH` and `GOROOT` on file paths. This makes the traces
-//          more portable and avoid exposing (noisy) local system details.
+//	%v   see '%s'
+//	%s   basic format. Returns the stackframe formatted as in the
+//	     standard library `runtime/debug.Stack()`.
+//	%+v  extended format. Returns the stackframe formatted as in the
+//	     standard library `runtime/debug.Stack()` but replacing the values
+//	     for `GOPATH` and `GOROOT` on file paths. This makes the traces
+//	     more portable and avoid exposing (noisy) local system details.
 func (sf StackFrame) Format(s fmt.State, verb rune) {
 	file := sf.File
 	switch verb {
@@ -70,15 +70,6 @@ func (sf StackFrame) Format(s fmt.State, verb rune) {
 		str := fmt.Sprintf("%s:%d (0x%x)\n", file, sf.LineNumber, sf.ProgramCounter)
 		_, _ = io.WriteString(s, str+fmt.Sprintf("\t%s: %s\n", sf.Function, sf.SourceLine))
 	}
-}
-
-// Convert a standard `runtime.Frame` to our custom representation.
-func (sf *StackFrame) load(fr runtime.Frame) {
-	sf.File = fr.File
-	sf.LineNumber = fr.Line
-	sf.SourceLine = sourceLine(sf.File, sf.LineNumber)
-	sf.Package, sf.Function = packageAndName(fr.Function)
-	sf.ProgramCounter = fr.PC
 }
 
 // Utility method that returns a properly formatted stack trace.
@@ -96,12 +87,23 @@ func getStack(skip int) []StackFrame {
 	i := 0
 	frames := make([]StackFrame, length-1)
 	for frame, more := cf.Next(); more; frame, more = cf.Next() {
-		sf := &StackFrame{}
-		sf.load(frame)
-		frames[i] = *sf
+		frames[i] = convertFrame(frame)
 		i++
 	}
 	return frames
+}
+
+// Convert a frame from its native `runtime.Frame` representation.
+func convertFrame(rf runtime.Frame) StackFrame {
+	fnc, pkg := packageAndName(rf.Function)
+	return StackFrame{
+		File:           rf.File,
+		LineNumber:     rf.Line,
+		Function:       fnc,
+		Package:        pkg,
+		SourceLine:     sourceLine(rf.File, rf.Line),
+		ProgramCounter: rf.PC,
+	}
 }
 
 // Return the line of source code from the specified file, if available.

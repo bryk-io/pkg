@@ -14,7 +14,7 @@ the process of properly configuring and running a production grade RPC service.
 More information:
 https://grpc.io/
 
-Server
+# Server
 
 For the server implementation the main component is using a 'Server' instance. The server is
 configured, using functional style parameters, by providing a list of options to the 'NewServer'
@@ -44,7 +44,7 @@ For example, let's create and start a server using some common configuration opt
 
 	// Server is ready now
 
-Services
+# Services
 
 The most important configuration setting for a server instance are the "Services" it
 supports. You can provide services by implementing the "ServiceProvider" interface in
@@ -67,7 +67,7 @@ your application and passing it along using the "WithServiceProvider" option.
 		WithServiceProvider(&echoProvider{}),
 	}
 
-Client
+# Client
 
 In order to interact with an RPC server and access the provided functionality you need
 to set up and establish a client connection. A client connection should be closed when
@@ -136,6 +136,5 @@ the provided context.
 
 For more information about functional style configuration options check the original article
 by Dave Cheney: https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis.
-
 */
 package rpc

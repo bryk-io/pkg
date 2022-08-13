@@ -62,7 +62,7 @@ Once resolved, the DID must provide it's corresponding DID Document.
 	  }
 	}
 
-Usage
+# Usage
 
 A new identifier instance can be created either randomly from scratch or by parsing an existing
 DID Document. Once created, a DID instance can be used to perform management tasks using the
@@ -84,7 +84,7 @@ easily obtained from the instance for storage or publish.
 	js, _ := json.MarshalIndent(doc, "", "  ")
 	fmt.Printf("%s", js)
 
-Sign and Verify
+# Sign and Verify
 
 A DID instance can be used to produce and verify digitally signed messages. The signature can be
 produced as either a JSON-LD document or a raw binary value.
@@ -121,6 +121,5 @@ JSON-LD signatures produce a document similar to the following.
 
 More information:
 https://w3c-ccg.github.io/did-spec/
-
 */
 package did

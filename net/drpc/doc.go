@@ -9,15 +9,15 @@ existing Protobuf definition files.
 
 More information: https://github.com/storj/drpc
 
-Server
+# Server
 
 This package simplifies the process of running a DRPC server in production
 by providing often required additional functionality, for example:
-	- Properly setup TLS to provide secure communication channels
-	- Protect against `panics` produced by external services
-	- Generate structured logs for all processed requests
-	- Request authentication/authorization (authN, authZ)
-	- Rate limiting requests to avoid resource exhaustion attacks
+  - Properly setup TLS to provide secure communication channels
+  - Protect against `panics` produced by external services
+  - Generate structured logs for all processed requests
+  - Request authentication/authorization (authN, authZ)
+  - Rate limiting requests to avoid resource exhaustion attacks
 
 For example, to start a typical production server.
 
@@ -75,15 +75,15 @@ For example, to start a typical production server.
 	}
 	srv.Start()
 
-Client
+# Client
 
 This package simplifies the process of running a DRPC client in production
 by providing often required additional functionality, for example:
-	- Concurrent RPC requests (using connection pools)
-	- Properly setup TLS to provide secure communication channels
-	- Protect against `panics` produced by external services
-	- Generate structured logs for all processed requests
-	- Provide custom metadata on all requests send to the server (e.g. credentials)
+  - Concurrent RPC requests (using connection pools)
+  - Properly setup TLS to provide secure communication channels
+  - Protect against `panics` produced by external services
+  - Generate structured logs for all processed requests
+  - Provide custom metadata on all requests send to the server (e.g. credentials)
 
 For example, to start a typical production client.
 
@@ -136,12 +136,11 @@ For example, to start a typical production client.
 	mySvc := samplev1.NewDRPCFooAPIClient(cl)
 	res, _ := mySvc.Ping(context.TODO(), &emptypb.Empty{})
 
-Custom Middleware
+# Custom Middleware
 
 You can provide your own custom middleware to extend/adjust the processing
 of RPC requests on both server and client using the decorator pattern. You
 can then use the `WithMiddleware` and `WithClientMiddleware` options when
 creating a new server or client instance.
-
 */
 package drpc

@@ -8,14 +8,16 @@ import (
 // See output of `go build -gcflags -m` to confirm
 
 // Returns true if a byte is not allowed in a ID from the grammar:
-//   idchar = ALPHA / DIGIT / "." / "-"
+//
+//	idchar = ALPHA / DIGIT / "." / "-"
 func isNotValidIDChar(char byte) bool {
 	return isNotAlpha(char) && isNotDigit(char) && char != '.' && char != '-'
 }
 
 // isNotValidParamChar returns true if a byte is not allowed in a param-name
 // or param-value from the grammar:
-//   idchar = ALPHA / DIGIT / "." / "-" / "_" / ":"
+//
+//	idchar = ALPHA / DIGIT / "." / "-" / "_" / ":"
 func isNotValidParamChar(char byte) bool {
 	return isNotAlpha(char) && isNotDigit(char) &&
 		char != '.' && char != '-' && char != '_' && char != ':'
@@ -23,24 +25,28 @@ func isNotValidParamChar(char byte) bool {
 
 // isNotValidQueryOrFragmentChar returns true if a byte is not allowed in a Fragment
 // from the grammar:
-//   did-fragment = *( pchar / "/" / "?" )
-//   pchar        = unreserved / pct-encoded / sub-delims / ":" / "@"
+//
+//	did-fragment = *( pchar / "/" / "?" )
+//	pchar        = unreserved / pct-encoded / sub-delims / ":" / "@"
 func isNotValidQueryOrFragmentChar(char byte) bool {
 	return isNotValidPathChar(char) && char != '/' && char != '?'
 }
 
 // Returns true if a byte is not allowed in Path
-//   did-path    = segment-nz *( "/" segment )
-//   segment     = *pchar
-//   segment-nz  = 1*pchar
-//   pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
+//
+//	did-path    = segment-nz *( "/" segment )
+//	segment     = *pchar
+//	segment-nz  = 1*pchar
+//	pchar       = unreserved / pct-encoded / sub-delims / ":" / "@"
 func isNotValidPathChar(char byte) bool {
 	return isNotUnreservedOrSubdelim(char) && char != ':' && char != '@'
 }
 
 // Returns true if a byte is not unreserved or sub-delims from the grammar:
-//   unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-//   sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+//
+//	unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
+//	sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+//
 // https://tools.ietf.org/html/rfc3986#appendix-A
 func isNotUnreservedOrSubdelim(char byte) bool {
 	switch char {

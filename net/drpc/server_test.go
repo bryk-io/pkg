@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -235,9 +234,9 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("WithTLS", func(t *testing.T) {
-		caCert, _ := ioutil.ReadFile("testdata/ca.sample_cer")
-		cert, _ := ioutil.ReadFile("testdata/server.sample_cer")
-		key, _ := ioutil.ReadFile("testdata/server.sample_key")
+		caCert, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
 
 		// RPC server
 		opts := []Option{
@@ -317,9 +316,9 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("WithHTTPAndTLS", func(t *testing.T) {
-		caCert, _ := ioutil.ReadFile("testdata/ca.sample_cer")
-		cert, _ := ioutil.ReadFile("testdata/server.sample_cer")
-		key, _ := ioutil.ReadFile("testdata/server.sample_key")
+		caCert, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
 
 		// RPC server
 		opts := []Option{
@@ -674,7 +673,9 @@ func ExampleNewServer() {
 	}
 
 	// Wait for requests in the background
-	go srv.Start()
+	go func() {
+		_ = srv.Start()
+	}()
 
 	// ... do something else ...
 }

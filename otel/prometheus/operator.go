@@ -59,8 +59,8 @@ type handler struct {
 // don't provide a prometheus registry `reg`, a new empty one will be created by
 // default.
 //
-//   prom, _ := pkg.NewOperator(prometheus.NewRegistry())
-//   opts := []rpc.ServerOption{WithPrometheus(prom)}
+//	prom, _ := pkg.NewOperator(prometheus.NewRegistry())
+//	opts := []rpc.ServerOption{WithPrometheus(prom)}
 func NewOperator(reg *prometheus.Registry, cols ...prometheus.Collector) (Operator, error) {
 	if reg == nil {
 		reg = prometheus.NewRegistry()

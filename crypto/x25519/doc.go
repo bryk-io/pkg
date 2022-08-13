@@ -4,7 +4,7 @@ Package x25519 provides a ECDH (Elliptic Curve Diffie-Hellman) wrapper for curve
 The main component in the package is the 'KeyPair' instance. Each key pair needs to be
 securely removed from memory by calling the "Destroy" method.
 
-Key Creation
+# Key Creation
 
 There are 3 mechanisms to create a new key pair.
 
@@ -24,7 +24,7 @@ using the key by calling the 'Destroy' method.
 	// Securely release in-memory secrets
 	kp.Destroy()
 
-Key Usage
+# Key Usage
 
 Diffie-Hellman is a shared key creation mechanism. The main use of a key pair is to
 generate a shared secret with a provided public key.

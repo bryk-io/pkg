@@ -41,10 +41,11 @@ func WithPoolCapacity(limit int) ClientOption {
 // WithClientMiddleware register the provided middleware to customize/extend
 // the processing of RPC requests. When providing middleware the ordering is very
 // important; middleware will be applied in the same order provided.
-//   For example:
-//     Use(foo bar baz)
-//   Will be applied as:
-//     baz( bar( foo(handler) ) )
+//
+//	For example:
+//	  Use(foo bar baz)
+//	Will be applied as:
+//	  baz( bar( foo(handler) ) )
 func WithClientMiddleware(mw ...clmw.Middleware) ClientOption {
 	return func(cl *Client) error {
 		cl.Use(mw...)

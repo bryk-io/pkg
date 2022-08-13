@@ -1,7 +1,6 @@
 package log
 
 import (
-	"io/ioutil"
 	stdL "log"
 	"os"
 	"testing"
@@ -120,7 +119,7 @@ func ExampleComposite() {
 	})
 
 	// Send structured (JSON) logs to a file
-	lf, _ := ioutil.TempFile("", "_logs")
+	lf, _ := os.CreateTemp("", "_logs")
 	l2 := WithZero(ZeroOptions{
 		PrettyPrint: false,
 		ErrorField:  "error",

@@ -144,14 +144,14 @@ func (e *Error) Events() []Event {
 // Format error values using the escape codes defined by fmt.Formatter.
 // The following verbs are supported:
 //
-//     %s   error message. Simply prints the basic error message as a
-//          string representation.
-//     %v   basic format. Print the error including its stackframe formatted
-//          as in the standard library `runtime/debug.Stack()`.
-//     %+v  extended format. Returns the stackframe formatted as in the
-//          standard library `runtime/debug.Stack()` but replacing the values
-//          for `GOPATH` and `GOROOT` on file paths. This makes the traces
-//          more portable and avoid exposing (noisy) local system details.
+//	%s   error message. Simply prints the basic error message as a
+//	     string representation.
+//	%v   basic format. Print the error including its stackframe formatted
+//	     as in the standard library `runtime/debug.Stack()`.
+//	%+v  extended format. Returns the stackframe formatted as in the
+//	     standard library `runtime/debug.Stack()` but replacing the values
+//	     for `GOPATH` and `GOROOT` on file paths. This makes the traces
+//	     more portable and avoid exposing (noisy) local system details.
 func (e *Error) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 's':

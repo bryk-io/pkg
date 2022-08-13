@@ -70,9 +70,12 @@ func WithTLS(opts ServerTLS) Option {
 // processing of RPC requests. When applying middleware the ordering is very
 // important, in this case it will be applied in the same order provided.
 // For example:
-//    Use(foo bar baz)
+//
+//	Use(foo bar baz)
+//
 // Will be applied as:
-//    baz( bar( foo(handler) ) )
+//
+//	baz( bar( foo(handler) ) )
 func WithMiddleware(mw ...srvMW.Middleware) Option {
 	return func(srv *Server) error {
 		srv.Use(mw...)
@@ -87,7 +90,8 @@ func WithMiddleware(mw ...srvMW.Middleware) Option {
 // new connection.
 //
 // When exposing services via HTTP the default routes are set as:
-//   POST: {server_url}/{proto_package}.{service}/{method}
+//
+//	POST: {server_url}/{proto_package}.{service}/{method}
 func WithHTTP() Option {
 	return func(srv *Server) error {
 		srv.http = true

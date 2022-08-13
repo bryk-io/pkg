@@ -30,8 +30,8 @@ type Component struct {
 // mark the span as completed. All spans are initialized with an "OK" status code
 // by default.
 //
-//    task := op.Span(context.Background(), "my-task")
-//    defer task.End()
+//	task := op.Span(context.Background(), "my-task")
+//	defer task.End()
 func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOption) Span {
 	// bare span instance
 	sp := cmp.newSpan(name)

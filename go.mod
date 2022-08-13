@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/awnumar/memguard v0.22.3
 	github.com/briandowns/spinner v1.19.0
-	github.com/btcsuite/btcd/btcec/v2 v2.2.0
+	github.com/btcsuite/btcd/btcec/v2 v2.2.1
 	github.com/chzyer/readline v1.5.1
 	github.com/getsentry/sentry-go v0.13.0
 	github.com/golang/snappy v0.0.4 // indirect
@@ -50,7 +50,7 @@ require (
 	go.uber.org/goleak v1.1.12
 	go.uber.org/zap v1.21.0
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
-	golang.org/x/net v0.0.0-20220805013720-a33c5aa5df48
+	golang.org/x/net v0.0.0-20220812174116-3211cb980234
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9

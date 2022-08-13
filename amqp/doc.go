@@ -26,7 +26,7 @@ to publishers, dropped, or handled in some other specified way.
 For more information:
 https://www.rabbitmq.com/tutorials/amqp-concepts.html
 
-Topology
+# Topology
 
 Exchanges, Queues and Bindings are entities that describe the architecture and
 expected behavior of an AMQP environment. This is often refer to as the "Topology"
@@ -57,7 +57,7 @@ format.
 	    routing_key:
 	      - stock.nyc.#
 
-Publishers
+# Publishers
 
 Publishers are applications that send messages to an exchange in the broker server.
 When creating a new publisher, the instance will automatically monitor and handle
@@ -127,7 +127,7 @@ a large number of messages, is through the use of "Dispatcher" instances.
 	<-time.After(10 * time.Second)
 	cancel()
 
-Consumers
+# Consumers
 
 Consumers are applications that asynchronously receive messages published to
 queues they are interested in. Each consumer instance will automatically monitor
@@ -169,6 +169,5 @@ is opened with the "AutoAck" option).
 	if err = consumer.Close(); err != nil {
 		panic(err)
 	}
-
 */
 package amqp
