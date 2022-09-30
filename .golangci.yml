@@ -3,13 +3,7 @@ run:
   issues-exit-code: 1
   tests: true
   build-tags: []
-  skip-dirs:
-    - vendor$
-    - third_party$
-    - testdata$
-    - examples$
-    - Godeps$
-    - builtin$
+  skip-dirs-use-default: true
   skip-files:
     - ".*\\.pb\\.go$"
     - ".*\\.pb\\.gw\\.go$"
@@ -28,7 +22,6 @@ linters:
     - gofmt
     - ineffassign
     - staticcheck
-    - structcheck
     - typecheck
     - varcheck
     - gocyclo
@@ -52,7 +45,6 @@ linters:
     - noctx
     - predeclared
     - exportloopref
-    - wastedassign
     - whitespace
     #- wrapcheck
     #- nestif
@@ -62,6 +54,9 @@ linters:
     - deadcode
     - unused
     - dupl
+    # https://github.com/golangci/golangci-lint/issues/2649
+    - structcheck
+    - wastedassign
 issues:
   exclude-use-default: false
   exclude-rules:

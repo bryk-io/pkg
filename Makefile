@@ -9,7 +9,7 @@ LD_FLAGS += -s -w
 # locally (on a dev container) or using a builder image.
 buf:=buf
 ifndef REMOTE_CONTAINERS_SOCKETS
-	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.7.0 buf
+	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.8.0 buf
 endif
 
 # For commands that require a specific package path, default to all local
@@ -74,7 +74,7 @@ test:
 ## updates: List available updates for direct dependencies
 # https://github.com/golang/go/wiki/Modules#how-to-upgrade-and-downgrade-dependencies
 updates:
-	@GOWORK=off go list -u -f '{{if (and (not (or .Main .Indirect)) .Update)}}{{.Path}}: [{{.Version}} -> {{.Update.Version}}]{{end}}' -m all 2> /dev/null
+	@GOWORK=off go list -u -f '{{if (and (not (or .Main .Indirect)) .Update)}}{{.Path}} [{{.Version}} -> {{.Update.Version}}]{{end}}' -m all 2> /dev/null
 
 ## protos: Compile all protobuf definitions and RPC services
 protos:
