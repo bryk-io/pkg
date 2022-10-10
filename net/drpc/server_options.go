@@ -66,6 +66,17 @@ func WithTLS(opts ServerTLS) Option {
 	}
 }
 
+// WithAuthByCertificate enables certificate-based authentication on the server.
+// It can be used multiple times to allow for several certificate authorities.
+// This requires the client and the server to use a TLS communication channel,
+// otherwise this option will be ignored.
+func WithAuthByCertificate(clientCA []byte) Option {
+	return func(srv *Server) error {
+		srv.clientCAs = append(srv.clientCAs, clientCA)
+		return nil
+	}
+}
+
 // WithMiddleware register the provided middleware to customize/extend the
 // processing of RPC requests. When applying middleware the ordering is very
 // important, in this case it will be applied in the same order provided.

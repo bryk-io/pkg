@@ -3,11 +3,13 @@ package drpc
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"net"
 	"net/http"
 	"sync"
 	"time"
 
+	"go.bryk.io/pkg/errors"
 	srvmw "go.bryk.io/pkg/net/drpc/middleware/server"
 	"go.bryk.io/pkg/net/drpc/ws"
 	"golang.org/x/sync/errgroup"
@@ -21,22 +23,23 @@ import (
 // Server instances are intended to expose DRPC services for network-based
 // consumption.
 type Server struct {
-	ntp  string                 // network protocol used
-	tls  *tls.Config            // TLS settings
-	net  net.Listener           // main network interface
-	mux  *drpcmux.Mux           // main routes mux
-	dlm  *drpcmigrate.ListenMux // HTTP-support mux
-	dsv  *drpcserver.Server     // DRPC server
-	hsv  http.Server            // HTTP server
-	sps  []ServiceProvider      // registered services
-	bgt  sync.WaitGroup         // background tasks
-	mdw  []srvmw.Middleware     // middleware set
-	wsp  *ws.Proxy              // web-socket proxy
-	mtx  sync.RWMutex           // concurrency access lock
-	ctx  context.Context        // main context
-	halt context.CancelFunc     // halt notification trigger
-	addr string                 // user-provided network address
-	http bool                   // HTTP support-enabled flag
+	ntp       string                 // network protocol used
+	tls       *tls.Config            // TLS settings
+	clientCAs [][]byte               // Custom CAs used for client authentication
+	net       net.Listener           // main network interface
+	mux       *drpcmux.Mux           // main routes mux
+	dlm       *drpcmigrate.ListenMux // HTTP-support mux
+	dsv       *drpcserver.Server     // DRPC server
+	hsv       http.Server            // HTTP server
+	sps       []ServiceProvider      // registered services
+	bgt       sync.WaitGroup         // background tasks
+	mdw       []srvmw.Middleware     // middleware set
+	wsp       *ws.Proxy              // web-socket proxy
+	mtx       sync.RWMutex           // concurrency access lock
+	ctx       context.Context        // main context
+	halt      context.CancelFunc     // halt notification trigger
+	addr      string                 // user-provided network address
+	http      bool                   // HTTP support-enabled flag
 }
 
 // ServiceProvider elements define the services that are to be exposed through
@@ -178,6 +181,17 @@ func (srv *Server) networkInterface() (err error) {
 	srv.net, err = net.Listen(srv.ntp, srv.addr)
 	if err != nil {
 		return
+	}
+	// Additional TLS configuration
+	if srv.tls != nil && len(srv.clientCAs) > 0 {
+		cp := x509.NewCertPool()
+		for _, c := range srv.clientCAs {
+			if !cp.AppendCertsFromPEM(c) {
+				return errors.New("failed to append provided CA certificates")
+			}
+		}
+		srv.tls.ClientAuth = tls.RequireAndVerifyClientCert
+		srv.tls.ClientCAs = cp
 	}
 	if srv.tls != nil {
 		srv.net = tls.NewListener(srv.net, srv.tls)

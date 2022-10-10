@@ -2,8 +2,10 @@ package drpc
 
 import (
 	"context"
+	"crypto/tls"
 	"os"
 
+	"go.bryk.io/pkg/errors"
 	"storj.io/drpc/drpcmetadata"
 )
 
@@ -11,6 +13,13 @@ import (
 func exists(name string) bool {
 	info, err := os.Stat(name)
 	return err == nil && !info.IsDir()
+}
+
+// LoadCertificate provides a helper method to conveniently parse and existing
+// certificate and corresponding private key.
+func LoadCertificate(cert []byte, key []byte) (tls.Certificate, error) {
+	c, err := tls.X509KeyPair(cert, key)
+	return c, errors.Wrap(err, "failed to load key pair")
 }
 
 // ContextWithMetadata adds custom data to a given context. This is particularly

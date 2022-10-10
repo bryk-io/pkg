@@ -21,6 +21,7 @@ const invalidConnectionErr = "invalid connection type"
 type Client struct {
 	ntp      string             // network protocol used
 	tls      *tls.Config        // TLS settings
+	cert     *tls.Certificate   // client certificate
 	mtx      sync.Mutex         // concurrent access lock
 	ctx      context.Context    // main context
 	log      xlog.Logger        // client logger
@@ -179,14 +180,14 @@ func (cl *Client) dial() (nc net.Conn, err error) {
 	if err != nil {
 		return
 	}
-
+	if cl.tls != nil && cl.cert != nil {
+		cl.tls.Certificates = []tls.Certificate{*cl.cert}
+	}
 	if cl.tls != nil {
 		nc = tls.Client(nc, cl.tls)
 	}
-
 	if cl.http {
 		nc = drpcmigrate.NewHeaderConn(nc, drpcmigrate.DRPCHeader)
 	}
-
 	return
 }

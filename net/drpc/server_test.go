@@ -359,7 +359,7 @@ func TestServer(t *testing.T) {
 		assert.True(res.Ok, "ping result")
 
 		// HTTP request
-		hcl := getHTTPClient()
+		hcl := getHTTPClient(nil)
 		hr, err := hcl.Post("https://localhost:8080/sample.v1.FooAPI/Ping", "application/json", strings.NewReader(`{}`))
 		assert.Nil(err, "POST request")
 		assert.Equal(hr.StatusCode, http.StatusOK, "HTTP status")
@@ -372,7 +372,7 @@ func TestServer(t *testing.T) {
 		_ = srv.Stop()
 	})
 
-	t.Run("WithAuth", func(t *testing.T) {
+	t.Run("WithAuthToken", func(t *testing.T) {
 		// Auth middleware
 		auth := srvMW.AuthByToken("auth.token", func(token string) bool {
 			return token == "super-secure-credentials"
@@ -424,6 +424,69 @@ func TestServer(t *testing.T) {
 			_, err := client.Ping(ctx, &emptypb.Empty{})
 			assert.Nil(err, "invalid auth")
 		})
+
+		// Close client connection
+		assert.Nil(cl.Close(), "close client connection")
+
+		// Stop server
+		_ = srv.Stop()
+	})
+
+	t.Run("WithAuthByCertificate", func(t *testing.T) {
+		// Load sample credentials
+		caCert, _ := os.ReadFile("testdata/ca.sample_cer")
+		cert, _ := os.ReadFile("testdata/server.sample_cer")
+		key, _ := os.ReadFile("testdata/server.sample_key")
+
+		// RPC server
+		opts := []Option{
+			WithHTTP(),
+			WithPort(8080),
+			WithServiceProvider(sampleServiceProvider()),
+			WithMiddleware(smw...),
+			WithAuthByCertificate(caCert), // the server will require a client certificate
+			WithTLS(ServerTLS{
+				Cert:             cert,
+				PrivateKey:       key,
+				CustomCAs:        [][]byte{caCert},
+				IncludeSystemCAs: true,
+			}),
+		}
+		srv, err := NewServer(opts...)
+		assert.Nil(err, "new server")
+		go func() {
+			_ = srv.Start()
+		}()
+
+		// Client connection
+		clientOpts := []ClientOption{
+			WithAuthCertificate(cert, key), // client certificate
+			WithProtocolHeader(),
+			WithClientTLS(ClientTLS{
+				IncludeSystemCAs: true,
+				CustomCAs:        [][]byte{caCert},
+				ServerName:       "node-01",
+				SkipVerify:       false,
+			}),
+		}
+		cl, err := NewClient("tcp", ":8080", clientOpts...)
+		assert.Nil(err, "client connection")
+
+		// RPC request
+		client := sampleV1.NewDRPCFooAPIClient(cl)
+		res, err := client.Ping(context.TODO(), &emptypb.Empty{})
+		assert.Nil(err, "ping")
+		assert.True(res.Ok, "ping result")
+
+		// HTTP request.
+		// The HTTP client also present the required client
+		// credentials.
+		clientCertCreds, _ := LoadCertificate(cert, key)
+		hcl := getHTTPClient(&clientCertCreds)
+		hr, err := hcl.Post("https://localhost:8080/sample.v1.FooAPI/Ping", "application/json", strings.NewReader(`{}`))
+		assert.Nil(err, "POST request")
+		assert.Equal(hr.StatusCode, http.StatusOK, "HTTP status")
+		_ = hr.Body.Close()
 
 		// Close client connection
 		assert.Nil(cl.Close(), "close client connection")
@@ -756,10 +819,15 @@ func sampleServiceProvider() *fooServiceProvider {
 	}
 }
 
-func getHTTPClient() http.Client {
+func getHTTPClient(creds *tls.Certificate) http.Client {
+	var certs []tls.Certificate
+	if creds != nil {
+		certs = append(certs, *creds)
+	}
 	return http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
+			Certificates:       certs,
 		},
 	}}
 }

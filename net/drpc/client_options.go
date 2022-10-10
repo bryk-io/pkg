@@ -1,6 +1,7 @@
 package drpc
 
 import (
+	"go.bryk.io/pkg/errors"
 	clmw "go.bryk.io/pkg/net/drpc/middleware/client"
 )
 
@@ -16,6 +17,20 @@ func WithClientTLS(opts ClientTLS) ClientOption {
 			return err
 		}
 		cl.tls = tc
+		return nil
+	}
+}
+
+// WithAuthCertificate enabled certificate-based client authentication with the
+// provided credentials. This requires the client and the server to use a TLS
+// communication channel, otherwise this option will be ignored.
+func WithAuthCertificate(cert, key []byte) ClientOption {
+	return func(c *Client) error {
+		ct, err := LoadCertificate(cert, key)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		c.cert = &ct
 		return nil
 	}
 }
