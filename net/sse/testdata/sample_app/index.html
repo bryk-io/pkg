@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Sample SSE Client</title>
+    <script type="application/javascript">
+      window.addEventListener('DOMContentLoaded', () => {
+        let app = {
+          feed: null,
+          statusLbl: document.getElementById("status"),
+          messageBox: document.getElementById("messages"),
+          eventBox: document.getElementById("events"),
+
+          disconnect: function() {
+            this.statusLbl.textContent = "disconnected";
+            this.feed.close();
+          },
+
+          clear: function () {
+            this.eventBox.value = "";
+            this.messageBox.value = "";
+          },
+
+          connect: function() {
+            this.feed = new EventSource("/sse");
+            this.statusLbl.textContent = "connected";
+            this.feed.onerror = (error) => {
+              console.error(error);
+            }
+            this.feed.onmessage = (msg) => {
+              this.messageBox.value += JSON.stringify(msg.data) + "\n";
+              this.messageBox.scrollTop = this.messageBox.scrollHeight;
+            }
+            this.feed.addEventListener("ping", (ev) => {
+              this.eventBox.value += "ping: " + JSON.stringify(ev.data) + "\n";
+              this.eventBox.scrollTop = this.eventBox.scrollHeight;
+            });
+          },
+        }
+        document.getElementById("connectBtn").addEventListener("click", () => {
+          app.connect();
+        });
+        document.getElementById("disconnectBtn").addEventListener("click", () => {
+          app.disconnect();
+        });
+        document.getElementById("clearBtn").addEventListener("click", () => {
+          app.clear();
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <h1>SSE client application.</h1>
+    <div>
+      <button id="connectBtn">Connect</button>
+      <button id="disconnectBtn">Disconnect</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+    <pre id="status">disconnected</pre>
+    <div>
+      <h2>Events</h2>
+      <textarea id="events" rows="12" cols="60" disabled></textarea>
+    </div>
+    <div>
+      <h2>Messages</h2>
+      <textarea id="messages" rows="12" cols="60" disabled></textarea>
+    </div>
+  </body>
+</html>

@@ -16,19 +16,22 @@ import (
 func Logging(ll xlog.Logger, hook LoggingHook) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			// Process request
+			// Get base message details
 			start := time.Now().UTC()
+			fields := getFields(r)
+
+			// Process request
 			lrw := &loggingRW{
 				ResponseWriter: w,
 				code:           http.StatusOK,
 				size:           0,
+				log:            ll.Sub(fields),
 			}
 			next.ServeHTTP(lrw, r)
+
+			// Add additional message details
 			end := time.Now().UTC()
 			lapse := end.Sub(start)
-
-			// Get message details
-			fields := getFields(r)
 			fields.Set("duration", lapse.String())
 			fields.Set("duration_ms", fmt.Sprintf("%.3f", lapse.Seconds()*1000))
 			fields.Set("event.start", start.Nanosecond())
@@ -53,6 +56,7 @@ type LoggingHook func(fields *xlog.Fields, r http.Request)
 
 // Custom response writer to collect additional details.
 type loggingRW struct {
+	log xlog.Logger
 	http.ResponseWriter
 	size int
 	code int
@@ -69,6 +73,13 @@ func (lrw *loggingRW) Write(content []byte) (int, error) {
 		lrw.size += s
 	}
 	return s, err
+}
+
+func (lrw *loggingRW) Flush() {
+	if f, ok := lrw.ResponseWriter.(http.Flusher); ok {
+		lrw.log.Debug("flush event")
+		f.Flush()
+	}
 }
 
 func getLevel(status int) xlog.Level {

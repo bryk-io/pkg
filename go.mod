@@ -18,7 +18,7 @@ require (
 	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mr-tron/base58 v1.2.0
-	github.com/piprate/json-gold v0.4.1
+	github.com/piprate/json-gold v0.4.2
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
@@ -30,7 +30,7 @@ require (
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.8.0
 	go.bryk.io/miracl v0.4.2
-	go.mongodb.org/mongo-driver v1.10.2
+	go.mongodb.org/mongo-driver v1.10.3
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.34.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.34.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.34.0
@@ -49,8 +49,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.10.0
 	go.uber.org/goleak v1.2.0
 	go.uber.org/zap v1.23.0
-	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be
-	golang.org/x/net v0.0.0-20220927171203-f486391704dc
+	golang.org/x/crypto v0.0.0-20221005025214-4161e89ecf1b
+	golang.org/x/net v0.0.0-20221004154528-8021a29435af
 	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
 	golang.org/x/term v0.0.0-20220919170432-7a66f970e087
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af

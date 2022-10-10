@@ -19,10 +19,14 @@ func WithPort(port int) Option {
 }
 
 // WithIdleTimeout sets the maximum amount of time to wait for the
-// next request when "keep-alive" is enabled.
+// next request when "keep-alive" is enabled. You can use `0` to
+// disable all the server's timeouts.
 func WithIdleTimeout(timeout time.Duration) Option {
 	return func(srv *Server) error {
 		srv.nh.IdleTimeout = timeout
+		srv.nh.WriteTimeout = timeout
+		srv.nh.ReadTimeout = timeout
+		srv.nh.ReadHeaderTimeout = timeout
 		return nil
 	}
 }

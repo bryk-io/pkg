@@ -127,9 +127,14 @@ func TestNewServer(t *testing.T) {
 func ExampleNewServer() {
 	// Server options
 	options := []Option{
+		WithHandler(mux),
 		WithPort(8080),
 		WithIdleTimeout(5 * time.Second),
-		WithHandler(mux),
+		WithMiddleware(
+			mw.PanicRecovery(),
+			mw.ProxyHeaders(),
+			mw.GzipCompression(9),
+		),
 	}
 
 	// Create and start the server in the background
