@@ -82,7 +82,7 @@ func (op *Operation) Tags(tags map[string]interface{}) {
 }
 
 // Segment registers additional contextual data under `key`.
-func (op *Operation) Segment(key string, data interface{}) {
+func (op *Operation) Segment(key string, data map[string]interface{}) {
 	op.Scope.SetContext(key, data)
 }
 

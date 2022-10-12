@@ -35,7 +35,7 @@ type noOp struct{}
 
 func (n *noOp) Level(_ string)                              {}
 func (n *noOp) Tags(_ map[string]interface{})               {}
-func (n *noOp) Segment(_ string, _ interface{})             {}
+func (n *noOp) Segment(_ string, _ map[string]interface{})  {}
 func (n *noOp) Event(_ string, _ ...map[string]interface{}) {}
 func (n *noOp) Context() context.Context                    { return context.Background() }
 func (n *noOp) Report(_ error) string                       { return "" }

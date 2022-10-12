@@ -51,7 +51,7 @@ type Operation interface {
 	User(usr User)
 
 	// Segment registers additional contextual data under `key`.
-	Segment(key string, data interface{})
+	Segment(key string, data map[string]interface{})
 
 	// Event can be used to register activity worth reporting; this usually
 	// provides a progression of activity/tasks leading to a potential error

@@ -119,8 +119,9 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithPort", func(t *testing.T) {
 		// RPC server
+		port, endpoint := getRandomPort()
 		opts := []Option{
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(smw...),
 		}
@@ -137,7 +138,7 @@ func TestServer(t *testing.T) {
 		}
 
 		// Client connection
-		cl, err := NewClient("tcp", ":8080", clOpts...)
+		cl, err := NewClient("tcp", endpoint, clOpts...)
 		assert.Nil(err, "client connection")
 
 		// RPC client
@@ -237,10 +238,11 @@ func TestServer(t *testing.T) {
 		caCert, _ := os.ReadFile("testdata/ca.sample_cer")
 		cert, _ := os.ReadFile("testdata/server.sample_cer")
 		key, _ := os.ReadFile("testdata/server.sample_key")
+		port, endpoint := getRandomPort()
 
 		// RPC server
 		opts := []Option{
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(smw...),
 			WithTLS(ServerTLS{
@@ -257,7 +259,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Client connection
-		cl, err := NewClient("tcp", ":8080", WithClientTLS(ClientTLS{
+		cl, err := NewClient("tcp", endpoint, WithClientTLS(ClientTLS{
 			IncludeSystemCAs: true,
 			CustomCAs:        [][]byte{caCert},
 			ServerName:       "node-01",
@@ -280,8 +282,9 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithHTTP", func(t *testing.T) {
 		// RPC server
+		port, endpoint := getRandomPort()
 		opts := []Option{
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(smw...),
 			WithHTTP(),
@@ -293,7 +296,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Client connection
-		cl, err := NewClient("tcp", ":8080", WithProtocolHeader())
+		cl, err := NewClient("tcp", endpoint, WithProtocolHeader())
 		assert.Nil(err, "client connection")
 
 		// RPC client
@@ -303,7 +306,7 @@ func TestServer(t *testing.T) {
 		assert.True(res.Ok, "ping result")
 
 		// HTTP request
-		hr, err := http.Post("http://localhost:8080/sample.v1.FooAPI/Ping", "application/json", strings.NewReader(`{}`))
+		hr, err := http.Post(fmt.Sprintf("http://localhost:%d/sample.v1.FooAPI/Ping", port), "application/json", strings.NewReader(`{}`))
 		assert.Nil(err, "POST request")
 		assert.Equal(hr.StatusCode, http.StatusOK, "HTTP status")
 		_ = hr.Body.Close()
@@ -321,9 +324,10 @@ func TestServer(t *testing.T) {
 		key, _ := os.ReadFile("testdata/server.sample_key")
 
 		// RPC server
+		port, endpoint := getRandomPort()
 		opts := []Option{
 			WithHTTP(),
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(smw...),
 			WithTLS(ServerTLS{
@@ -349,7 +353,7 @@ func TestServer(t *testing.T) {
 				SkipVerify:       false,
 			}),
 		}
-		cl, err := NewClient("tcp", ":8080", clientOpts...)
+		cl, err := NewClient("tcp", endpoint, clientOpts...)
 		assert.Nil(err, "new client")
 
 		// RPC request
@@ -360,7 +364,7 @@ func TestServer(t *testing.T) {
 
 		// HTTP request
 		hcl := getHTTPClient(nil)
-		hr, err := hcl.Post("https://localhost:8080/sample.v1.FooAPI/Ping", "application/json", strings.NewReader(`{}`))
+		hr, err := hcl.Post(fmt.Sprintf("https://localhost:%d/sample.v1.FooAPI/Ping", port), "application/json", strings.NewReader(`{}`))
 		assert.Nil(err, "POST request")
 		assert.Equal(hr.StatusCode, http.StatusOK, "HTTP status")
 		_ = hr.Body.Close()
@@ -379,8 +383,9 @@ func TestServer(t *testing.T) {
 		})
 
 		// RPC server
+		port, endpoint := getRandomPort()
 		opts := []Option{
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(append(smw, auth)...),
 		}
@@ -391,7 +396,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Client connection
-		cl, err := NewClient("tcp", ":8080")
+		cl, err := NewClient("tcp", endpoint)
 		assert.Nil(err, "client connection")
 
 		// RPC client
@@ -434,6 +439,7 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithAuthByCertificate", func(t *testing.T) {
 		// Load sample credentials
+		port, endpoint := getRandomPort()
 		caCert, _ := os.ReadFile("testdata/ca.sample_cer")
 		cert, _ := os.ReadFile("testdata/server.sample_cer")
 		key, _ := os.ReadFile("testdata/server.sample_key")
@@ -441,7 +447,7 @@ func TestServer(t *testing.T) {
 		// RPC server
 		opts := []Option{
 			WithHTTP(),
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(smw...),
 			WithAuthByCertificate(caCert), // the server will require a client certificate
@@ -469,7 +475,7 @@ func TestServer(t *testing.T) {
 				SkipVerify:       false,
 			}),
 		}
-		cl, err := NewClient("tcp", ":8080", clientOpts...)
+		cl, err := NewClient("tcp", endpoint, clientOpts...)
 		assert.Nil(err, "client connection")
 
 		// RPC request
@@ -483,7 +489,7 @@ func TestServer(t *testing.T) {
 		// credentials.
 		clientCertCreds, _ := LoadCertificate(cert, key)
 		hcl := getHTTPClient(&clientCertCreds)
-		hr, err := hcl.Post("https://localhost:8080/sample.v1.FooAPI/Ping", "application/json", strings.NewReader(`{}`))
+		hr, err := hcl.Post(fmt.Sprintf("https://localhost:%d/sample.v1.FooAPI/Ping", port), "application/json", strings.NewReader(`{}`))
 		assert.Nil(err, "POST request")
 		assert.Equal(hr.StatusCode, http.StatusOK, "HTTP status")
 		_ = hr.Body.Close()
@@ -497,8 +503,9 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithRetry", func(t *testing.T) {
 		// RPC server
+		port, endpoint := getRandomPort()
 		opts := []Option{
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 		}
 		srv, err := NewServer(opts...)
@@ -509,7 +516,7 @@ func TestServer(t *testing.T) {
 
 		// Client connection
 		clm := append(cmw, clMW.Retry(5, ll.Sub(xlog.Fields{"component": "client"})))
-		cl, err := NewClient("tcp", ":8080", WithClientMiddleware(clm...))
+		cl, err := NewClient("tcp", endpoint, WithClientMiddleware(clm...))
 		assert.Nil(err, "client connection")
 
 		// RPC client
@@ -528,8 +535,9 @@ func TestServer(t *testing.T) {
 
 	t.Run("WithRateLimit", func(t *testing.T) {
 		// RPC server, enforce a limit of 1 request per-second
+		port, endpoint := getRandomPort()
 		opts := []Option{
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(append(smw, srvMW.RateLimit(1))...),
 		}
@@ -540,7 +548,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Client connection
-		cl, err := NewClient("tcp", ":8080")
+		cl, err := NewClient("tcp", endpoint)
 		assert.Nil(err, "client connection")
 
 		// RPC client
@@ -566,8 +574,9 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("Streaming", func(t *testing.T) {
+		port, endpoint := getRandomPort()
 		opts := []Option{
-			WithPort(8080),
+			WithPort(port),
 			WithServiceProvider(sampleServiceProvider()),
 			WithMiddleware(smw...),
 			WithHTTP(),
@@ -592,7 +601,7 @@ func TestServer(t *testing.T) {
 		}
 
 		// Client connection
-		cl, err := NewClient("tcp", ":8080", clOpts...)
+		cl, err := NewClient("tcp", endpoint, clOpts...)
 		assert.Nil(err, "client connection")
 
 		// RPC client
@@ -647,7 +656,7 @@ func TestServer(t *testing.T) {
 				headers.Set("Content-Type", "application/json")
 
 				// Open websocket connection
-				endpoint := "ws://127.0.0.1:8080/sample.v1.FooAPI/OpenServerStream"
+				endpoint := fmt.Sprintf("ws://127.0.0.1:%d/sample.v1.FooAPI/OpenServerStream", port)
 				wc, rr, err := websocket.DefaultDialer.Dial(endpoint, headers)
 				if err != nil {
 					assert.Fail(err.Error(), "websocket dial")
@@ -677,7 +686,7 @@ func TestServer(t *testing.T) {
 				headers.Set("Content-Type", "application/json")
 
 				// Open websocket connection
-				endpoint := "ws://127.0.0.1:8080/sample.v1.FooAPI/OpenClientStream"
+				endpoint := fmt.Sprintf("ws://127.0.0.1:%d/sample.v1.FooAPI/OpenClientStream", port)
 				wc, rr, err := websocket.DefaultDialer.Dial(endpoint, headers)
 				if err != nil {
 					assert.Fail(err.Error(), "websocket dial")
@@ -830,4 +839,10 @@ func getHTTPClient(creds *tls.Certificate) http.Client {
 			Certificates:       certs,
 		},
 	}}
+}
+
+func getRandomPort() (uint, string) {
+	var port uint = 8080
+	port += uint(rand.Intn(10))
+	return port, fmt.Sprintf(":%d", port)
 }
