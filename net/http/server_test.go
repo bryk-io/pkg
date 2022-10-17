@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"io"
 	lib "net/http"
+	"net/http/httputil"
 	"os"
 	"testing"
 	"time"
@@ -37,6 +38,10 @@ func TestNewServer(t *testing.T) {
 			mw.ProxyHeaders(),
 			mw.GzipCompression(9),
 			mw.Logging(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
+			mw.Headers(map[string]string{
+				"x-bar": "bar",
+				"x-foo": "foo",
+			}),
 		),
 	}
 
@@ -62,6 +67,8 @@ func TestNewServer(t *testing.T) {
 			res, err := cl.Get("http://localhost:8080/ping")
 			assert.Nil(err, "ping")
 			assert.Equal(lib.StatusOK, res.StatusCode, "wrong status")
+			dump, _ := httputil.DumpResponse(res, true)
+			t.Logf("%s", dump)
 			_ = res.Body.Close()
 		})
 
@@ -73,6 +80,8 @@ func TestNewServer(t *testing.T) {
 			data, err := io.ReadAll(res.Body)
 			assert.Nil(err, "panic response")
 			assert.Equal(string(data), "cool services never panic!!!")
+			dump, _ := httputil.DumpResponse(res, true)
+			t.Logf("%s", dump)
 			_ = res.Body.Close()
 		})
 

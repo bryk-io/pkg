@@ -2,10 +2,10 @@ name: ci
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
   workflow_dispatch: {}
 jobs:
   # Scan direct Go dependencies for known vulnerabilities
@@ -99,7 +99,7 @@ jobs:
         uses: bufbuild/buf-breaking-action@v1.1.1
         if: steps.buf-lint.outcome == 'success' && !contains(env.commit_msg, '[buf-breaking skip]')
         with:
-          against: 'https://github.com/${{ github.repository }}.git#branch=master'
+          against: 'https://github.com/${{ github.repository }}.git#branch=main'
         env:
           BUF_INPUT_HTTPS_USERNAME: ${{ github.actor }}
           BUF_INPUT_HTTPS_PASSWORD: ${{ secrets.ACCESS_TOKEN }}

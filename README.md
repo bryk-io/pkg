@@ -1,6 +1,6 @@
 # Public Packages
 
-[![Build Status](https://github.com/bryk-io/pkg/workflows/ci/badge.svg?branch=master)](https://github.com/bryk-io/pkg/actions)
+[![Build Status](https://github.com/bryk-io/pkg/workflows/ci/badge.svg?branch=main)](https://github.com/bryk-io/pkg/actions)
 [![Version](https://img.shields.io/github/tag/bryk-io/pkg.svg)](https://github.com/bryk-io/pkg/releases)
 [![Software License](https://img.shields.io/badge/license-BSD3-red.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bryk-io/pkg?style=flat)](https://goreportcard.com/report/github.com/bryk-io/pkg)
