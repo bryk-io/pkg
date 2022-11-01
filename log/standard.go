@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-// WithStandard provides a log handler using the standard library packages.
+// WithStandard provides a log handler using only standard library packages.
 func WithStandard(log *stdL.Logger) Logger {
 	return &stdLogger{log: log}
 }
@@ -16,14 +16,20 @@ func WithStandard(log *stdL.Logger) Logger {
 type stdLogger struct {
 	mu      sync.Mutex
 	log     *stdL.Logger
+	lvl     Level
 	tags    *Fields
 	fields  *Fields
 	discard bool
 }
 
+func (sl *stdLogger) SetLevel(lvl Level) {
+	sl.lvl = lvl
+}
+
 func (sl *stdLogger) Sub(tags Fields) Logger {
 	return &stdLogger{
 		log:     sl.log,
+		lvl:     sl.lvl,
 		tags:    &tags,
 		discard: sl.discard,
 	}
@@ -47,51 +53,81 @@ func (sl *stdLogger) WithField(key string, value interface{}) Logger {
 }
 
 func (sl *stdLogger) Debug(args ...interface{}) {
+	if sl.lvl > Debug {
+		return
+	}
 	args = sanitize(args...)
 	sl.Debugf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Debugf(format string, args ...interface{}) {
+	if sl.lvl > Debug {
+		return
+	}
 	args = sanitize(args...)
 	sl.print("DEBUG", format, args...)
 }
 
 func (sl *stdLogger) Info(args ...interface{}) {
+	if sl.lvl > Info {
+		return
+	}
 	args = sanitize(args...)
 	sl.Infof(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Infof(format string, args ...interface{}) {
+	if sl.lvl > Info {
+		return
+	}
 	args = sanitize(args...)
 	sl.print("INFO", format, args...)
 }
 
 func (sl *stdLogger) Warning(args ...interface{}) {
+	if sl.lvl > Warning {
+		return
+	}
 	args = sanitize(args...)
 	sl.Warningf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Warningf(format string, args ...interface{}) {
+	if sl.lvl > Warning {
+		return
+	}
 	args = sanitize(args...)
 	sl.print("WARNING", format, args...)
 }
 
 func (sl *stdLogger) Error(args ...interface{}) {
+	if sl.lvl > Error {
+		return
+	}
 	args = sanitize(args...)
 	sl.Errorf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Errorf(format string, args ...interface{}) {
+	if sl.lvl > Error {
+		return
+	}
 	args = sanitize(args...)
 	sl.print("ERROR", format, args...)
 }
 
 func (sl *stdLogger) Panic(args ...interface{}) {
+	if sl.lvl > Panic {
+		return
+	}
 	args = sanitize(args...)
 	sl.Panicf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Panicf(format string, args ...interface{}) {
+	if sl.lvl > Panic {
+		return
+	}
 	if sl.discard {
 		return
 	}
@@ -101,11 +137,17 @@ func (sl *stdLogger) Panicf(format string, args ...interface{}) {
 }
 
 func (sl *stdLogger) Fatal(args ...interface{}) {
+	if sl.lvl > Fatal {
+		return
+	}
 	args = sanitize(args...)
 	sl.Fatalf(defaultFormat, args...)
 }
 
 func (sl *stdLogger) Fatalf(format string, args ...interface{}) {
+	if sl.lvl > Fatal {
+		return
+	}
 	if sl.discard {
 		return
 	}

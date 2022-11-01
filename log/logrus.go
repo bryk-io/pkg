@@ -16,12 +16,20 @@ func WithLogrus(log logrus.FieldLogger) Logger {
 
 type logrusHandler struct {
 	log    logrus.FieldLogger
+	lvl    Level
 	fields *Fields
 	mu     sync.Mutex
 }
 
+func (lh *logrusHandler) SetLevel(lvl Level) {
+	lh.lvl = lvl
+}
+
 func (lh *logrusHandler) Sub(tags Fields) Logger {
-	return &logrusHandler{log: lh.log.WithFields(logrus.Fields(tags))}
+	return &logrusHandler{
+		log: lh.log.WithFields(logrus.Fields(tags)),
+		lvl: lh.lvl,
+	}
 }
 
 func (lh *logrusHandler) WithFields(fields Fields) Logger {
@@ -42,6 +50,9 @@ func (lh *logrusHandler) WithField(key string, value interface{}) Logger {
 }
 
 func (lh *logrusHandler) Debug(args ...interface{}) {
+	if lh.lvl > Debug {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -55,6 +66,9 @@ func (lh *logrusHandler) Debug(args ...interface{}) {
 }
 
 func (lh *logrusHandler) Debugf(format string, args ...interface{}) {
+	if lh.lvl > Debug {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -68,6 +82,9 @@ func (lh *logrusHandler) Debugf(format string, args ...interface{}) {
 }
 
 func (lh *logrusHandler) Info(args ...interface{}) {
+	if lh.lvl > Info {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -81,6 +98,9 @@ func (lh *logrusHandler) Info(args ...interface{}) {
 }
 
 func (lh *logrusHandler) Infof(format string, args ...interface{}) {
+	if lh.lvl > Info {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -94,6 +114,9 @@ func (lh *logrusHandler) Infof(format string, args ...interface{}) {
 }
 
 func (lh *logrusHandler) Warning(args ...interface{}) {
+	if lh.lvl > Warning {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -107,6 +130,9 @@ func (lh *logrusHandler) Warning(args ...interface{}) {
 }
 
 func (lh *logrusHandler) Warningf(format string, args ...interface{}) {
+	if lh.lvl > Warning {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -120,6 +146,9 @@ func (lh *logrusHandler) Warningf(format string, args ...interface{}) {
 }
 
 func (lh *logrusHandler) Error(args ...interface{}) {
+	if lh.lvl > Error {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -133,6 +162,9 @@ func (lh *logrusHandler) Error(args ...interface{}) {
 }
 
 func (lh *logrusHandler) Errorf(format string, args ...interface{}) {
+	if lh.lvl > Error {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -146,6 +178,9 @@ func (lh *logrusHandler) Errorf(format string, args ...interface{}) {
 }
 
 func (lh *logrusHandler) Panic(args ...interface{}) {
+	if lh.lvl > Panic {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -159,6 +194,9 @@ func (lh *logrusHandler) Panic(args ...interface{}) {
 }
 
 func (lh *logrusHandler) Panicf(format string, args ...interface{}) {
+	if lh.lvl > Panic {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -172,6 +210,9 @@ func (lh *logrusHandler) Panicf(format string, args ...interface{}) {
 }
 
 func (lh *logrusHandler) Fatal(args ...interface{}) {
+	if lh.lvl > Fatal {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {
@@ -185,6 +226,9 @@ func (lh *logrusHandler) Fatal(args ...interface{}) {
 }
 
 func (lh *logrusHandler) Fatalf(format string, args ...interface{}) {
+	if lh.lvl > Fatal {
+		return
+	}
 	args = sanitize(args...)
 	lh.mu.Lock()
 	if lh.fields != nil {

@@ -7,14 +7,19 @@ type composite struct {
 	list []Logger
 }
 
-// Composite allows to combine an control multiple logger instances
-// through a single common interface. This is useful, for example, when
-// you wanna save structured logs to a file while at same time displaying
-// textual messages to standard output and/or sending messages to some
-// aggregation system.
+// Composite allows to combine and control multiple logger instances through
+// a single common interface. This is useful, for example, when you want to
+// save structured logs to a file while at same time displaying textual messages
+// to standard output and/or sending messages to some aggregation system.
 func Composite(ll ...Logger) Logger {
 	return &composite{
 		list: ll,
+	}
+}
+
+func (c *composite) SetLevel(lvl Level) {
+	for _, el := range c.list {
+		el.SetLevel(lvl)
 	}
 }
 

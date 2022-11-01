@@ -18,13 +18,19 @@ func WithZap(log *zap.Logger) Logger {
 type zapHandler struct {
 	mu     sync.Mutex
 	log    *zap.SugaredLogger
+	lvl    Level
 	tags   *Fields
 	fields *Fields
+}
+
+func (zh *zapHandler) SetLevel(lvl Level) {
+	zh.lvl = lvl
 }
 
 func (zh *zapHandler) Sub(tags Fields) Logger {
 	return &zapHandler{
 		log:    zh.log,
+		lvl:    zh.lvl,
 		tags:   &tags,
 		fields: nil,
 	}
@@ -48,6 +54,9 @@ func (zh *zapHandler) WithField(key string, value interface{}) Logger {
 }
 
 func (zh *zapHandler) Debug(args ...interface{}) {
+	if zh.lvl > Debug {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -58,6 +67,9 @@ func (zh *zapHandler) Debug(args ...interface{}) {
 }
 
 func (zh *zapHandler) Debugf(format string, args ...interface{}) {
+	if zh.lvl > Debug {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -68,6 +80,9 @@ func (zh *zapHandler) Debugf(format string, args ...interface{}) {
 }
 
 func (zh *zapHandler) Info(args ...interface{}) {
+	if zh.lvl > Info {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -78,6 +93,9 @@ func (zh *zapHandler) Info(args ...interface{}) {
 }
 
 func (zh *zapHandler) Infof(format string, args ...interface{}) {
+	if zh.lvl > Info {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -88,6 +106,9 @@ func (zh *zapHandler) Infof(format string, args ...interface{}) {
 }
 
 func (zh *zapHandler) Warning(args ...interface{}) {
+	if zh.lvl > Warning {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -98,6 +119,9 @@ func (zh *zapHandler) Warning(args ...interface{}) {
 }
 
 func (zh *zapHandler) Warningf(format string, args ...interface{}) {
+	if zh.lvl > Warning {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -108,6 +132,9 @@ func (zh *zapHandler) Warningf(format string, args ...interface{}) {
 }
 
 func (zh *zapHandler) Error(args ...interface{}) {
+	if zh.lvl > Error {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -118,6 +145,9 @@ func (zh *zapHandler) Error(args ...interface{}) {
 }
 
 func (zh *zapHandler) Errorf(format string, args ...interface{}) {
+	if zh.lvl > Error {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -128,6 +158,9 @@ func (zh *zapHandler) Errorf(format string, args ...interface{}) {
 }
 
 func (zh *zapHandler) Panic(args ...interface{}) {
+	if zh.lvl > Panic {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -138,6 +171,9 @@ func (zh *zapHandler) Panic(args ...interface{}) {
 }
 
 func (zh *zapHandler) Panicf(format string, args ...interface{}) {
+	if zh.lvl > Panic {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()
@@ -148,6 +184,9 @@ func (zh *zapHandler) Panicf(format string, args ...interface{}) {
 }
 
 func (zh *zapHandler) Fatal(args ...interface{}) {
+	if zh.lvl > Fatal {
+		return
+	}
 	if zh.hasFields() {
 		defer zh.clearFields()
 		zh.log.With(zh.getFields()...).Fatal(sanitize(args...)...)
@@ -157,6 +196,9 @@ func (zh *zapHandler) Fatal(args ...interface{}) {
 }
 
 func (zh *zapHandler) Fatalf(format string, args ...interface{}) {
+	if zh.lvl > Fatal {
+		return
+	}
 	args = sanitize(args...)
 	if zh.hasFields() {
 		defer zh.clearFields()

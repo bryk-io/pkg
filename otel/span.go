@@ -161,7 +161,7 @@ func (s *span) Error(level log.Level, err error, attributes Attributes) {
 
 	// Report error
 	if s.IsSampled() {
-		s.op.Level(string(level))
+		s.op.Level(level.String())
 		s.op.Tags(join(s.GetAttributes(), attributes))
 		if bgg := s.GetBaggage(); len(bgg) > 0 {
 			s.op.Segment("Baggage", bgg)

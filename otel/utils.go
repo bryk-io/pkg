@@ -272,3 +272,22 @@ func extractUser(attrs Attributes) (apiErrors.User, bool) {
 	}
 	return usr, report
 }
+
+func levelFromString(val string) log.Level {
+	switch val {
+	case "debug":
+		return log.Debug
+	case "info":
+		return log.Info
+	case "warning":
+		return log.Warning
+	case "error":
+		return log.Error
+	case "panic":
+		return log.Panic
+	case "fatal":
+		return log.Fatal
+	default:
+		return log.Debug
+	}
+}

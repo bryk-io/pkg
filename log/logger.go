@@ -2,8 +2,8 @@ package log
 
 import "strings"
 
-// Fields allow to provide additional information to logged messages.
-// Particularly useful when supporting structured logging.
+// Fields provide additional information to logged messages. Particularly
+// useful when supporting structured logging.
 type Fields map[string]interface{}
 
 // Get the value of a single data entry, return nil if no value is set.
@@ -21,35 +21,55 @@ func (f Fields) Set(key string, value interface{}) {
 }
 
 // Level values assign a severity value to logged messages.
-type Level string
+type Level uint
 
 const (
 	// Debug level should be use for information broadly interesting to developers
 	// and system administrators. Might include minor (recoverable) failures and
 	// issues indicating potential performance problems.
-	Debug Level = "debug"
+	Debug Level = 0
 
 	// Info level should be used for informational messages that might make sense
 	// to end users and system administrators, and highlight the progress of the
 	// application.
-	Info Level = "info"
+	Info Level = 1
 
 	// Warning level should be used for potentially harmful situations of interest
 	// to end users or system managers that indicate potential problems.
-	Warning Level = "warning"
+	Warning Level = 2
 
 	// Error events of considerable importance that will prevent normal program
 	// execution, but might still allow the application to continue running.
-	Error Level = "error"
+	Error Level = 3
 
 	// Panic level should be used for very severe error events that might cause the
 	// application to terminate. Usually by calling panic() after logging.
-	Panic Level = "panic"
+	Panic Level = 4
 
 	// Fatal level should be used for very severe error events that WILL cause the
 	// application to terminate. Usually by calling os.Exit(1) after logging.
-	Fatal Level = "fatal"
+	Fatal Level = 5
 )
+
+// String returns a textual representation of a level value.
+func (l Level) String() string {
+	switch l {
+	case Debug:
+		return "debug"
+	case Info:
+		return "info"
+	case Warning:
+		return "warning"
+	case Error:
+		return "error"
+	case Panic:
+		return "panic"
+	case Fatal:
+		return "fatal"
+	default:
+		return "invalid-level"
+	}
+}
 
 // Default formatting string.
 const defaultFormat string = "%v"
@@ -59,60 +79,95 @@ const defaultFormat string = "%v"
 // on a specific implementation. Logs are managed at 6 distinct levels:
 // Debug, Info, Warning, Error, Panic and Fatal.
 type SimpleLogger interface {
+	// Debug logs a basic 'debug' level message.
 	// Information broadly interesting to developers and system administrators.
 	// Might include minor (recoverable) failures and issues indicating potential
 	// performance problems.
 	Debug(args ...interface{})
+
+	// Debugf logs a formatted 'debug' level message.
+	// Information broadly interesting to developers and system administrators.
+	// Might include minor (recoverable) failures and issues indicating potential
+	// performance problems.
 	Debugf(format string, args ...interface{})
 
+	// Info logs a basic 'info' level message.
 	// Informational messages that might make sense to end users and system
 	// administrators, and highlight the progress of the application.
 	Info(args ...interface{})
+
+	// Infof logs a formatted 'info' level message.
+	// Informational messages that might make sense to end users and system
+	// administrators, and highlight the progress of the application.
 	Infof(format string, args ...interface{})
 
+	// Warning logs a 'warning' level message.
 	// Potentially harmful situations of interest to end users or system managers
 	// that indicate potential problems.
 	Warning(args ...interface{})
+
+	// Warningf logs a formatted 'warning' level message.
+	// Potentially harmful situations of interest to end users or system managers
+	// that indicate potential problems.
 	Warningf(format string, args ...interface{})
 
-	// Error events of considerable importance that will prevent normal program
-	// execution, but might still allow the application to continue running.
+	// Error logs an 'error' level message.
+	// Events of considerable importance that will prevent normal program execution,
+	// but might still allow the application to continue running.
 	Error(args ...interface{})
+
+	// Errorf logs a formatted 'error' level message.
+	// Events of considerable importance that will prevent normal program execution,
+	// but might still allow the application to continue running.
 	Errorf(format string, args ...interface{})
 
+	// Panic logs a 'panic' level message.
 	// Very severe error events that might cause the application to terminate.
 	// Usually by calling panic() after logging.
 	Panic(args ...interface{})
+
+	// Panicf logs a formatted 'panic' level message.
+	// Very severe error events that might cause the application to terminate.
+	// Usually by calling panic() after logging.
 	Panicf(format string, args ...interface{})
 
+	// Fatal logs a 'fatal' level message.
 	// Very severe error events that WILL cause the application to terminate.
 	// Usually by calling os.Exit(1) after logging.
 	Fatal(args ...interface{})
+
+	// Fatalf logs a formatted 'fatal' level message.
+	// Very severe error events that WILL cause the application to terminate.
+	// Usually by calling os.Exit(1) after logging.
 	Fatalf(format string, args ...interface{})
 }
 
 // Logger instances provide additional functionality to the base simple logger.
 type Logger interface {
-	// Base leveled logging support.
-	SimpleLogger
+	SimpleLogger // include leveled logging support
 
-	// Add additional tags to a message to support structured logging.
+	// WithFields adds additional tags to a message to support structured logging.
 	// This method should be chained with any print-style message.
 	// For example: log.WithFields(fields).Debug("message")
 	WithFields(fields Fields) Logger
 
-	// Add a key/value pair to the next chained message.
+	// WithField adds a key/value pair to the next chained message.
 	// log.WithField("foo", "bar").Debug("message")
 	WithField(key string, value interface{}) Logger
 
-	// Returns a new logger instance using the provided tags. Every message
-	// generated by the sub-logger will include the fields set on tags.
+	// SetLevel adjust the "verbosity" of the logger instance. Once a level is set,
+	// all messages from "lower" levels will be discarded. Log messages are managed
+	// at 6 distinct levels: Debug, Info, Warning, Error, Panic and Fatal.
+	SetLevel(lvl Level)
+
+	// Sub returns a new logger instance using the provided tags. Every message
+	// generated by the sub-logger will include the fields set on `tags`.
 	Sub(tags Fields) Logger
 
-	// Single point to print a message at the specified level.
+	// Print logs a message at the specified `level`.
 	Print(level Level, args ...interface{})
 
-	// Single point to print a formatted message at the specified level.
+	// Printf logs a formatted message at the specified `level`.
 	Printf(level Level, format string, args ...interface{})
 }
 

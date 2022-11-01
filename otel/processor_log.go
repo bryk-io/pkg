@@ -93,7 +93,7 @@ func (f logSpans) event(event sdkTrace.Event, fields log.Fields) (log.Level, log
 		}
 	}
 	if lvl := attrs.Get("error.level"); lvl != nil {
-		eventLvl = log.Level(fmt.Sprintf("%s", lvl))
+		eventLvl = levelFromString(fmt.Sprintf("%s", lvl))
 	}
 	return eventLvl, log.Fields(attrs)
 }
