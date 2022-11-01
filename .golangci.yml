@@ -23,7 +23,6 @@ linters:
     - ineffassign
     - staticcheck
     - typecheck
-    - varcheck
     - gocyclo
     - goconst
     - depguard
@@ -46,10 +45,12 @@ linters:
     - predeclared
     - exportloopref
     - whitespace
+    # Deprecated linters
     #- wrapcheck
     #- nestif
     #- funlen
     #- ifshort
+    #- varcheck
   disable:
     - deadcode
     - unused
