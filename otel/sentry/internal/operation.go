@@ -68,7 +68,7 @@ func (op *Operation) User(usr apiErrors.User) {
 		op.usr = new(apiErrors.User)
 	}
 	mergeUserData(op.usr, usr)
-	op.Scope.SetUser(sdk.User(*op.usr))
+	op.Scope.SetUser(sdkUser(*op.usr))
 }
 
 // Tags adds/updates a group of key/value pairs as operation's metadata.
@@ -176,5 +176,26 @@ func mergeUserData(sink *apiErrors.User, update apiErrors.User) {
 	}
 	if update.Username != "" {
 		sink.Username = update.Username
+	}
+	if update.Name != "" {
+		sink.Name = update.Name
+	}
+	if update.Segment != "" {
+		sink.Segment = update.Segment
+	}
+	for k, v := range update.Data {
+		sink.Data[k] = v
+	}
+}
+
+func sdkUser(usr apiErrors.User) sdk.User {
+	return sdk.User{
+		ID:        usr.ID,
+		Email:     usr.Email,
+		IPAddress: usr.IPAddress,
+		Username:  usr.Username,
+		Name:      usr.Name,
+		Segment:   usr.Segment,
+		Data:      usr.Data,
 	}
 }

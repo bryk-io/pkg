@@ -106,18 +106,20 @@ func (p *Policy) Compile() string {
 func (p *Policy) Handler() func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			// set the CSP definition
-			w.Header().Set("Content-Security-Policy", p.Compile())
+			// don't enforce the CSP policy but still report policy violations
+			if p.reportOnly {
+				w.Header().Set("Content-Security-Policy-Report-Only", "true")
+			}
 
 			// add CSP reports 'report-to' target
 			if len(p.reportTo) > 0 {
 				w.Header().Set("Report-To", sink(p.reportTo))
 			}
 
-			// don't enforce the CSP policy but still report policy violations
-			if p.reportOnly {
-				w.Header().Set("Content-Security-Policy-Report-Only", "true")
-			}
+			// set the CSP definition
+			w.Header().Set("Content-Security-Policy", p.Compile())
+
+			// continue request processing
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)

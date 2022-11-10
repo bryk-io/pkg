@@ -97,6 +97,15 @@ type User struct {
 
 	// Username; must be unique and free from PII.
 	Username string `json:"username,omitempty"`
+
+	// Actual user name or legal identifier.
+	Name string `json:"name,omitempty"`
+
+	// Breakdown the user on different groups.
+	Segment string `json:"segment,omitempty"`
+
+	// Additional metadata.
+	Data map[string]string `json:"data,omitempty"`
 }
 
 // Carrier elements can be used to transfer cross-cutting concerns about an operation
