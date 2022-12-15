@@ -7,7 +7,7 @@ import (
 	"go.bryk.io/pkg/log"
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/otel/propagation"
-	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
+	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -84,7 +84,7 @@ func WithLogger(ll log.Logger) OperatorOption {
 // If no exporter is set, all traces are discarded by default.
 func WithExporter(exp sdkTrace.SpanExporter) OperatorOption {
 	return func(op *Operator) error {
-		op.exporter = exp
+		op.traceExporter = exp
 		return nil
 	}
 }
@@ -100,9 +100,20 @@ func WithSampler(ss sdkTrace.Sampler) OperatorOption {
 	}
 }
 
-// WithMetricExporter enables a metric exporter as data sink for the operator.
-// If no exporter is set, all metrics are discarded by default.
-func WithMetricExporter(exp sdkMetric.Exporter) OperatorOption {
+// WithErrorReporter enables the operator to capture exceptions data and submit it
+// to an external service. If not provided, all output is discarded by default.
+func WithErrorReporter(rep apiErrors.Reporter) OperatorOption {
+	return func(op *Operator) error {
+		op.reporter = rep
+		return nil
+	}
+}
+
+// WithMetricReader configures the operator's meter provider to export the measured
+// data. Readers take two forms: ones that push to an endpoint (NewPeriodicReader),
+// and ones that an endpoint pulls from. See the `go.opentelemetry.io/otel/exporters`
+// package for exporters that can be used as or with these Readers.
+func WithMetricReader(exp sdkMetric.Reader) OperatorOption {
 	return func(op *Operator) error {
 		op.metricExporter = exp
 		return nil
@@ -134,29 +145,6 @@ func WithRuntimeMetrics(interval time.Duration) OperatorOption {
 		if interval != 0 {
 			op.runtimeMetricsInt = interval
 		}
-		return nil
-	}
-}
-
-// WithMetricPushPeriod sets the time interval between each push operation for collected
-// metrics. If no value is provided (i.e., 0) the default period is set to 5 seconds.
-func WithMetricPushPeriod(value time.Duration) OperatorOption {
-	return func(op *Operator) error {
-		if value.Seconds() < 0 {
-			return errors.New("negative metric push period")
-		}
-		if value != 0 {
-			op.metricsPushInt = value
-		}
-		return nil
-	}
-}
-
-// WithErrorReporter enables the operator to capture exceptions data and submit it
-// to an external service. If not provided, all output is discarded by default.
-func WithErrorReporter(rep apiErrors.Reporter) OperatorOption {
-	return func(op *Operator) error {
-		op.reporter = rep
 		return nil
 	}
 }

@@ -24,8 +24,6 @@ import (
 	otelHttp "go.bryk.io/pkg/otel/http"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
 	samplev1 "go.bryk.io/pkg/proto/sample/v1"
-	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
-	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/goleak"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -78,17 +76,13 @@ func TestServer(t *testing.T) {
 		otel.WithErrorReporter(rep),
 	}
 	if isCollectorAvailable() {
-		traceExp, metricExp, err := otel.ExporterOTLP("localhost:4317", true, nil)
-		if err == nil {
-			otelOpts = append(otelOpts, otel.WithExporter(traceExp))
-			otelOpts = append(otelOpts, otel.WithMetricExporter(metricExp))
-		}
+		otelOpts = append(otelOpts, otel.WithExporterOTLP("localhost:4317", true, nil)...)
 	}
 
 	// Observability operator
 	oop, err := otel.NewOperator(otelOpts...)
 	assert.Nil(err, "initialize operator")
-	defer oop.Shutdown(context.TODO())
+	defer oop.Shutdown(context.Background())
 
 	// HTTP monitor
 	spanNameFormatter := func(req *http.Request) string {
@@ -170,12 +164,12 @@ func TestServer(t *testing.T) {
 		cl := samplev1.NewFooAPIClient(conn)
 
 		t.Run("Ping", func(t *testing.T) {
-			_, err = cl.Ping(context.TODO(), &empty.Empty{})
+			_, err = cl.Ping(context.Background(), &empty.Empty{})
 			assert.Nil(err, "ping error")
 		})
 
 		t.Run("Health", func(t *testing.T) {
-			_, err = cl.Health(context.TODO(), &empty.Empty{})
+			_, err = cl.Health(context.Background(), &empty.Empty{})
 			assert.Nil(err, "health error")
 		})
 
@@ -194,7 +188,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("Streaming", func(t *testing.T) {
 			t.Run("ServerSide", func(t *testing.T) {
-				ss, err := cl.OpenServerStream(context.TODO(), &empty.Empty{})
+				ss, err := cl.OpenServerStream(context.Background(), &empty.Empty{})
 				assert.Nil(err, "failed to open server stream")
 				counter := 0
 				for {
@@ -213,7 +207,7 @@ func TestServer(t *testing.T) {
 			})
 
 			t.Run("ClientSide", func(t *testing.T) {
-				cs, err := cl.OpenClientStream(context.TODO())
+				cs, err := cl.OpenClientStream(context.Background())
 				assert.Nil(err, "failed to open client stream")
 				for i := 0; i < 10; i++ {
 					t := <-time.After(100 * time.Millisecond) // random latency
@@ -268,7 +262,7 @@ func TestServer(t *testing.T) {
 
 		// Prepare request context with custom data
 		md := metadata.Pairs("custom-tag", "sample-field")
-		ctx := metadata.NewOutgoingContext(context.TODO(), md)
+		ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 		// Sample request
 		cl := samplev1.NewFooAPIClient(conn)
@@ -315,7 +309,7 @@ func TestServer(t *testing.T) {
 
 		// Consume API
 		cl := samplev1.NewFooAPIClient(conn)
-		_, err = cl.Ping(context.TODO(), &empty.Empty{})
+		_, err = cl.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 
 		// Stop server
@@ -395,7 +389,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.TODO(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.Background(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
 			defer task.End()
 
 			// Prepare HTTP request
@@ -415,7 +409,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("Request", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.TODO(), "/foo/request", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.Background(), "/foo/request", otel.WithSpanKind(otel.SpanKindClient))
 			defer task.End()
 
 			// Prepare request
@@ -443,7 +437,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("CustomPath", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.TODO(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.Background(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
 			defer task.End()
 
 			// Prepare request
@@ -464,7 +458,7 @@ func TestServer(t *testing.T) {
 		t.Run("Metrics", func(t *testing.T) {
 			t.SkipNow()
 			// Start span
-			task := oop.Start(context.TODO(), "/instrumentation", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.Background(), "/instrumentation", otel.WithSpanKind(otel.SpanKindClient))
 			defer task.End()
 
 			// Prepare request
@@ -486,7 +480,7 @@ func TestServer(t *testing.T) {
 		t.Run("Streaming", func(t *testing.T) {
 			t.Run("ServerSide", func(t *testing.T) {
 				// Start span
-				task := oop.Start(context.TODO(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := oop.Start(context.Background(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
 				defer task.End()
 
 				// Open websocket connection
@@ -515,7 +509,7 @@ func TestServer(t *testing.T) {
 
 			t.Run("ClientSide", func(t *testing.T) {
 				// Start span
-				task := oop.Start(context.TODO(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := oop.Start(context.Background(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
 				defer task.End()
 
 				// Open websocket connection
@@ -597,7 +591,7 @@ func TestServer(t *testing.T) {
 
 		// Request
 		cl := samplev1.NewFooAPIClient(conn)
-		_, err = cl.Ping(context.TODO(), &empty.Empty{})
+		_, err = cl.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 
 		// Stop server
@@ -657,7 +651,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.TODO(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.Background(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
 			defer task.End()
 
 			// Prepare HTTPS request
@@ -677,7 +671,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("CustomPath", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.TODO(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.Background(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
 			defer task.End()
 
 			// Prepare HTTPS request
@@ -707,7 +701,7 @@ func TestServer(t *testing.T) {
 				}
 
 				// Start span
-				task := oop.Start(context.TODO(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := oop.Start(context.Background(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
 				defer task.End()
 
 				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/server_stream", task.Headers())
@@ -745,7 +739,7 @@ func TestServer(t *testing.T) {
 				}
 
 				// Start span
-				task := oop.Start(context.TODO(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := oop.Start(context.Background(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
 				defer task.End()
 
 				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/client_stream", task.Headers())
@@ -834,7 +828,7 @@ func TestServer(t *testing.T) {
 		hcl := getHTTPClient(srv, &clientCert)
 
 		// Start span
-		task := oop.Start(context.TODO(), "/bar/ping", otel.WithSpanKind(otel.SpanKindClient))
+		task := oop.Start(context.Background(), "/bar/ping", otel.WithSpanKind(otel.SpanKindClient))
 
 		// Prepare HTTPS request
 		req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "https://127.0.0.1:12137/bar/ping", nil)
@@ -872,7 +866,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Monitor client connection
-		ctx, monitorClose := context.WithCancel(context.TODO())
+		ctx, monitorClose := context.WithCancel(context.Background())
 		defer monitorClose()
 		monitor := MonitorClientConnection(ctx, conn, 100*time.Millisecond)
 		go func() {
@@ -882,15 +876,15 @@ func TestServer(t *testing.T) {
 		}()
 
 		foo := samplev1.NewFooAPIClient(conn)
-		_, err = foo.Ping(context.TODO(), &empty.Empty{})
+		_, err = foo.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
-		_, err = foo.Request(context.TODO(), &empty.Empty{})
+		_, err = foo.Request(context.Background(), &empty.Empty{})
 		assert.Nil(err, "request error")
 
 		bar := samplev1.NewBarAPIClient(conn)
-		_, err = bar.Ping(context.TODO(), &empty.Empty{})
+		_, err = bar.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
-		_, err = bar.Request(context.TODO(), &empty.Empty{})
+		_, err = bar.Request(context.Background(), &empty.Empty{})
 		assert.Nil(err, "request error")
 
 		// Stop server
@@ -974,9 +968,9 @@ func TestServer(t *testing.T) {
 
 		// Use client connection
 		foo := samplev1.NewFooAPIClient(conn)
-		_, err = foo.Ping(context.TODO(), &empty.Empty{})
+		_, err = foo.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
-		_, err = foo.Health(context.TODO(), &empty.Empty{})
+		_, err = foo.Health(context.Background(), &empty.Empty{})
 		assert.Nil(err, "health error")
 
 		// Stop server
@@ -999,32 +993,25 @@ func TestEchoServer(t *testing.T) {
 		ErrorField:  "error.message",
 	})
 
-	// OTEL Exporters
-	var (
-		traceExp  sdkTrace.SpanExporter
-		metricExp sdkMetric.Exporter
-		err       error
-	)
-	if isCollectorAvailable() {
-		traceExp, metricExp, err = otel.ExporterOTLP("localhost:4317", true, nil)
-	} else {
-		traceExp, metricExp, err = otel.ExporterStdout(true)
-	}
-	assert.Nil(err, "failed to create exporter")
-
-	// Observability operator
-	oop, err := otel.NewOperator(
+	// OTEL options
+	opts := []otel.OperatorOption{
 		otel.WithServiceName("echo-server"),
 		otel.WithServiceVersion("0.1.0"),
 		otel.WithLogger(ll),
-		otel.WithExporter(traceExp),
-		otel.WithMetricExporter(metricExp),
 		otel.WithResourceAttributes(otel.Attributes{
 			"custom.field": "foo",
 		}),
-	)
+	}
+	if isCollectorAvailable() {
+		opts = append(opts, otel.WithExporterOTLP("localhost:4317", true, nil)...)
+	} else {
+		opts = append(opts, otel.WithExporterStdout(true)...)
+	}
+
+	// Observability operator
+	oop, err := otel.NewOperator(opts...)
 	assert.Nil(err, "initialize observability operator")
-	defer oop.Shutdown(context.TODO())
+	defer oop.Shutdown(context.Background())
 
 	// Custom HTTP error handler
 	eh := func(
@@ -1115,17 +1102,17 @@ func TestEchoServer(t *testing.T) {
 	cl := samplev1.NewEchoAPIClient(conn)
 
 	t.Run("Ping", func(t *testing.T) {
-		_, err = cl.Ping(context.TODO(), &empty.Empty{})
+		_, err = cl.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 	})
 
 	t.Run("EchoRequest", func(t *testing.T) {
-		r, err := cl.Echo(context.TODO(), &samplev1.EchoRequest{Value: "hi there"})
+		r, err := cl.Echo(context.Background(), &samplev1.EchoRequest{Value: "hi there"})
 		assert.Nil(err, "request error")
 		assert.Equal("you said: hi there", r.Result, "invalid response")
 
 		// Invalid argument
-		r2, err := cl.Echo(context.TODO(), &samplev1.EchoRequest{Value: ""})
+		r2, err := cl.Echo(context.Background(), &samplev1.EchoRequest{Value: ""})
 		assert.Nil(r2, "unexpected result")
 		assert.NotNil(err, "unexpected result")
 	})
@@ -1134,7 +1121,7 @@ func TestEchoServer(t *testing.T) {
 		var avg int64
 		for i := 0; i < 5; i++ {
 			start := time.Now()
-			_, err = cl.Slow(context.TODO(), &empty.Empty{})
+			_, err = cl.Slow(context.Background(), &empty.Empty{})
 			if err == nil {
 				avg += int64(time.Since(start) / time.Millisecond)
 			}
@@ -1145,7 +1132,7 @@ func TestEchoServer(t *testing.T) {
 	t.Run("Faulty", func(t *testing.T) {
 		errCount := 0
 		for i := 0; i < 10; i++ {
-			_, err := cl.Faulty(context.TODO(), &empty.Empty{})
+			_, err := cl.Faulty(context.Background(), &empty.Empty{})
 			if err != nil {
 				errCount++
 			}
@@ -1162,7 +1149,7 @@ func TestEchoServer(t *testing.T) {
 		// Submit requests until one fails
 		for {
 			// Start span
-			task := oop.Start(context.TODO(), "/echo/faulty", otel.WithSpanKind(otel.SpanKindClient))
+			task := oop.Start(context.Background(), "/echo/faulty", otel.WithSpanKind(otel.SpanKindClient))
 
 			// Prepare HTTP request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:7878/echo/faulty", nil)
@@ -1227,7 +1214,7 @@ func ExampleNewServer() {
 func ExampleContextWithMetadata() {
 	data := make(map[string]string)
 	data["foo"] = "your-value"
-	ctx := ContextWithMetadata(context.TODO(), metadata.New(data))
+	ctx := ContextWithMetadata(context.Background(), metadata.New(data))
 
 	// Access the metadata in the context instance
 	md, _ := metadata.FromOutgoingContext(ctx)
@@ -1285,7 +1272,7 @@ func ExampleNewClientConnection() {
 // Verify a local collector instance is available using its `health check`
 // endpoint.
 func isCollectorAvailable() bool {
-	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
 	res, err := http.DefaultClient.Do(req)

@@ -79,7 +79,7 @@ func open(name string, addr string, options ...Option) (*session, error) {
 		halt:          halt,
 		ctx:           ctx,
 		log:           xlog.Discard(),
-		wg:            &sync.WaitGroup{},
+		wg:            new(sync.WaitGroup),
 		mc:            []chan<- bool{},
 		mr:            []chan<- Return{},
 	}

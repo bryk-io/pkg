@@ -36,8 +36,8 @@ type SubscribeOptions struct {
 }
 
 // Consumer instances can receive or pull messages from a broker
-// server. The consumer is responsible for letting know the broker
-// when the message can be considered as handled.
+// server. The consumer is responsible for letting the broker know
+// when the message should be considered as handled.
 type Consumer struct {
 	subs    []string    // open subscriptions
 	log     xlog.Logger // internal logger

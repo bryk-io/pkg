@@ -11,13 +11,10 @@ import (
 	"go.opentelemetry.io/otel"
 	metricGlobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
-	metricController "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	metricExport "go.opentelemetry.io/otel/sdk/metric/export"
-	metricProcessor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	metricSelector "go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkResource "go.opentelemetry.io/otel/sdk/resource"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -30,17 +27,16 @@ type Operator struct {
 	coreAttributes    Attributes                      // resource attributes
 	userAttributes    Attributes                      // user-provided additional attributes
 	resource          *sdkResource.Resource           // OTEL resource definition
-	exporter          sdkTrace.SpanExporter           // trace sync components
-	metricExporter    metricExport.Exporter           // metric sync components
+	traceExporter     sdkTrace.SpanExporter           // trace sink components
+	metricExporter    sdkMetric.Reader                // metric sink components
 	traceProvider     *sdkTrace.TracerProvider        // main traces provider
-	metricProvider    *metricController.Controller    // main metrics provider
+	metricProvider    *sdkMetric.MeterProvider        // main metrics provider
 	propagator        propagation.TextMapPropagator   // default composite propagator
 	tracerName        string                          // name for the internal default tracer
 	tracer            apiTrace.Tracer                 // default internal tracer
 	hostMetrics       bool                            // capture standard host metrics
 	runtimeMetrics    bool                            // capture standard runtime metrics
 	runtimeMetricsInt time.Duration                   // runtime memory capture interval
-	metricsPushInt    time.Duration                   // push metrics interval
 	spanLimits        sdkTrace.SpanLimits             // default span limits
 	props             []propagation.TextMapPropagator // list of individual text map propagators
 	sampler           sdkTrace.Sampler                // trace sampler strategy used
@@ -55,12 +51,11 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 		reporter:          apiErrors.NoOpReporter(), // discard reported errors
 		coreAttributes:    coreAttributes(),         // standard env attributes
 		userAttributes:    Attributes{},             // no custom attributes
-		exporter:          new(noOpExporter),        // discard traces and metrics
+		traceExporter:     new(noOpExporter),        // discard traces and metrics
 		tracerName:        "go.bryk.io/pkg/otel",    // default value for `otel.library.name`
 		sampler:           sdkTrace.AlwaysSample(),  // track all traces by default
 		spanLimits:        sdkTrace.NewSpanLimits(),
 		runtimeMetricsInt: time.Duration(10) * time.Second,
-		metricsPushInt:    time.Duration(5) * time.Second,
 		props: []propagation.TextMapPropagator{
 			propagation.Baggage{},      // baggage
 			propagation.TraceContext{}, // tracecontext
@@ -85,9 +80,7 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	op.propagator = propagation.NewCompositeTextMapPropagator(op.props...)
 
 	// Prepare traces and metrics providers.
-	if err := op.setupProviders(); err != nil {
-		return nil, err
-	}
+	op.setupProviders()
 
 	// Default internal tracer.
 	op.tracer = op.traceProvider.Tracer(op.tracerName)
@@ -111,7 +104,6 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	otel.SetTextMapPropagator(op.propagator) // propagator(s)
 	otel.SetTracerProvider(op.traceProvider) // trace provider
 	if op.metricProvider != nil {            // meter provider
-		metricGlobal.SetMeterProvider(op.metricProvider)
 		op.captureStandardMetrics() // start collecting common metrics
 	}
 	return op, nil
@@ -127,11 +119,11 @@ func (op *Operator) Shutdown(ctx context.Context) {
 	// Stop trace provider and exporter
 	_ = op.traceProvider.ForceFlush(ctx)
 	_ = op.traceProvider.Shutdown(ctx)
-	_ = op.exporter.Shutdown(ctx)
+	_ = op.traceExporter.Shutdown(ctx)
 
 	// Stop metric provider
 	if op.metricProvider != nil {
-		_ = op.metricProvider.Stop(ctx)
+		_ = op.metricProvider.Shutdown(ctx)
 	}
 }
 
@@ -159,11 +151,11 @@ func (op *Operator) setup(options ...OperatorOption) error {
 }
 
 // Create the metrics and traces provider elements for the operator instance.
-func (op *Operator) setupProviders() error {
+func (op *Operator) setupProviders() {
 	// Build a span processing chain.
 	spc := logSpans{
-		log:  op.log,                                      // custom `SpanProcessor` to generate logs
-		Next: sdkTrace.NewBatchSpanProcessor(op.exporter), // submit completed spans to the exporter
+		log:  op.log,                                           // custom `SpanProcessor` to generate logs
+		Next: sdkTrace.NewBatchSpanProcessor(op.traceExporter), // submit completed spans to the exporter
 	}
 
 	// Trace provider.
@@ -178,22 +170,16 @@ func (op *Operator) setupProviders() error {
 
 	// If no metrics exporter was provided, skip provider setup.
 	if op.metricExporter == nil {
-		return nil
+		return
 	}
 
-	// Metrics provider.
-	op.metricProvider = metricController.New(
-		metricProcessor.NewFactory(
-			metricSelector.NewWithHistogramDistribution(),
-			op.metricExporter,
-		),
-		metricController.WithExporter(op.metricExporter),
-		metricController.WithCollectPeriod(op.metricsPushInt),
-	)
-
-	// Since we are using a push metrics controller, start the provider
-	// automatically here.
-	return op.metricProvider.Start(context.Background())
+	// Create meter provider instance using the provided "reader".
+	metricProviderOpts := []sdkMetric.Option{
+		sdkMetric.WithReader(op.metricExporter),
+		sdkMetric.WithResource(op.resource),
+	}
+	op.metricProvider = sdkMetric.NewMeterProvider(metricProviderOpts...)
+	metricGlobal.SetMeterProvider(op.metricProvider)
 }
 
 // Start collection of host and runtime metrics, if enabled.

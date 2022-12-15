@@ -15,14 +15,14 @@ import (
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	otelHttp "go.bryk.io/pkg/otel/http"
 	"go.opentelemetry.io/contrib/propagators/b3"
-	sdkMetric "go.opentelemetry.io/otel/sdk/metric/export"
+	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // Verify a local collector instance is available using its `health check`
 // endpoint.
 func isCollectorAvailable() bool {
-	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
 	res, err := http.DefaultClient.Do(req)
@@ -116,11 +116,10 @@ func TestNewOperator(t *testing.T) {
 		WithSampler(sdkTrace.ParentBased(sdkTrace.TraceIDRatioBased(0.9))),
 		WithPropagator(b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))),
 		WithExporter(traceExp),
-		WithMetricExporter(metricExp),
+		WithMetricReader(sdkMetric.NewPeriodicReader(metricExp)),
 		WithErrorReporter(rep),
 		WithHostMetrics(),
 		WithRuntimeMetrics(time.Duration(10) * time.Second),
-		WithMetricPushPeriod(time.Duration(10) * time.Second),
 		WithResourceAttributes(Attributes{"resource.level.field": "bar"}),
 		WithLogger(log.WithZero(log.ZeroOptions{
 			PrettyPrint: true,
@@ -284,7 +283,7 @@ func TestNewOperator(t *testing.T) {
 		// Run client requests
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
-			task := op.Start(context.TODO(), "http ping",
+			task := op.Start(context.Background(), "http ping",
 				WithSpanAttributes(fields),
 				WithSpanKind(SpanKindClient))
 			defer task.End()
@@ -301,7 +300,7 @@ func TestNewOperator(t *testing.T) {
 
 		t.Run("Expensive", func(t *testing.T) {
 			// Start span
-			task := op.Start(context.TODO(), "http expensive",
+			task := op.Start(context.Background(), "http expensive",
 				WithSpanKind(SpanKindClient),
 				WithSpanAttributes(fields),
 				WithSpanBaggage(Attributes{

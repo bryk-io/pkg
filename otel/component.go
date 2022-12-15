@@ -116,7 +116,7 @@ func (cmp *Component) Export(ctx context.Context) ([]byte, error) {
 
 // Restore previously exported span context data.
 func (cmp *Component) Restore(data []byte) (context.Context, error) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	md := propagation.MapCarrier{}
 	if err := json.Unmarshal(data, &md); err != nil {
 		return ctx, err
