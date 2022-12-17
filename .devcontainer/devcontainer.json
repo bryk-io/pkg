@@ -8,6 +8,7 @@
     "seccomp=unconfined"
   ],
   "features": {
+    // base OS utils
     "ghcr.io/devcontainers/features/common-utils:1": {
       "installZsh": "true",
       "username": "vscode",
@@ -15,12 +16,24 @@
       "gid": "1000",
       "upgradePackages": "false"
     },
+    // install Go 1.19.x
     "ghcr.io/devcontainers/features/go:1": {
       "version": "1.19"
     },
+    // install 'gh'
     "ghcr.io/devcontainers/features/github-cli:1": {
       "version": "latest"
     },
+    // required to connect remotely to the devcontainer
+    "ghcr.io/devcontainers/features/sshd:1": {
+        "version": "latest"
+    },
+    // required to enable "live share" capabilities
+    "ghcr.io/bryk-io/devcontainers-features/live-share:1": {},
+    // protobuf compiler and plugins
+    "ghcr.io/bryk-io/devcontainers-features/protobuf-tools:1": {
+      "bufVersion": "1.9.0"
+    }
     // "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
     //   "version": "latest",
     //   "minikube": "none"
@@ -28,10 +41,6 @@
     // "ghcr.io/devcontainers/features/node:1": {
     //   "version": "lts"
     // },
-    "ghcr.io/bryk-io/devcontainers-features/live-share:1": {},
-    "ghcr.io/bryk-io/devcontainers-features/protobuf-tools:1": {
-      "bufVersion": "1.9.0"
-    }
   },
   "customizations": {
     "vscode": {
