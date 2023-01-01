@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/awnumar/memguard v0.22.3
-	github.com/briandowns/spinner v1.19.0
+	github.com/briandowns/spinner v1.20.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2
 	github.com/chzyer/readline v1.5.1
 	github.com/getsentry/sentry-go v0.16.0
