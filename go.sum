@@ -399,8 +399,8 @@ github.com/yusufpapurcu/wmi v1.2.2/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQ
 github.com/zeebo/assert v1.3.0 h1:g7C04CbJuIDKNPFHmsk4hwZDO5O+kntRxzaUoNXj+IQ=
 github.com/zeebo/errs v1.2.2 h1:5NFypMTuSdoySVTqlNs1dEoU21QVamMQJxW/Fii5O7g=
 github.com/zeebo/errs v1.2.2/go.mod h1:sgbWHsvVuTPHcqJJGQ1WhI5KbWlHYz+2+2C/LSEtCw4=
-go.bryk.io/miracl v0.4.2 h1:58lGheYty6RMisK3R0DGwrXqCCGmftJgDmsmXvbVJag=
-go.bryk.io/miracl v0.4.2/go.mod h1:AdsKWBu3X75H4KRElYk5QNoZ8WX+IsylqsUq3tS7kKM=
+go.bryk.io/miracl v0.5.0 h1:hXbMRoZoBJFhCPOZ8eMT+Gr25qrJvn82Np73tP3HLKA=
+go.bryk.io/miracl v0.5.0/go.mod h1:AdsKWBu3X75H4KRElYk5QNoZ8WX+IsylqsUq3tS7kKM=
 go.mongodb.org/mongo-driver v1.11.1 h1:QP0znIRTuL0jf1oBQoAoM0C6ZJfBK4kx0Uumtv1A7w8=
 go.mongodb.org/mongo-driver v1.11.1/go.mod h1:s7p5vEtfbeR1gYi6pnj3c3/urpbLv2T5Sfd6Rp2HBB8=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
