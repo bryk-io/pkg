@@ -1,0 +1,53 @@
+name: "\U0001F41E Bug report"
+description: Report an issue
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! **Before you start, make sure you have the latest versions of the packages you're using.**
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the bug
+      description: Please provide a clear and concise description of what the bug is. If you intend to submit a PR for this issue, tell us in the description. Thanks!
+      placeholder: Bug description
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: A link to a repository that reproduces the issue. Reproductions must be [short, self-contained and correct](http://sscce.org/) and must not contain files or code that aren't relevant to the issue — please do NOT just paste a link to your project. Explaining how to reproduce is generally not enough. It pushes the burden of creating a reproduction project onto a small set of volunteer maintainers and isn't scalable. If no reproduction is provided, the issue will be closed.
+      placeholder: Reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Please include available logs around the time this bug occurred. Please try not to insert an image but copy and paste the actual log text.
+      render: Shell
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info
+      description: Include the output of `go env`; and any additional contextual details. For example if your are using Docker or Kubernetes, make sure to specify the details here.
+      render: Shell
+      placeholder: System, Binaries, Browsers
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Annoyance
+        - Serious, but I can work around it
+        - Blocking an upgrade
+        - Blocking all usage of the package
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional information

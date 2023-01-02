@@ -616,7 +616,7 @@ func ExampleIdentifier_Document() {
 }
 
 // Produce and verify singed messages.
-func ExamplePublicKey_Sign() {
+func ExampleVerificationKey_Sign() {
 	id, _ := NewIdentifierWithMode("bryk", "", ModeUUID)
 	_ = id.AddNewVerificationMethod("master", KeyTypeEd)
 	_ = id.AddVerificationRelationship(id.GetReference("master"), AuthenticationVM)

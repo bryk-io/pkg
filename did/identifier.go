@@ -70,7 +70,7 @@ type identifierData struct {
 	Context []interface{} `json:"@context" yaml:"-"`
 
 	// Cryptographic keys associated with the subject.
-	VerificationMethods []*PublicKey
+	VerificationMethods []*VerificationKey
 
 	// Enabled authentication mechanisms.
 	// https://w3c.github.io/did-core/#authentication
@@ -157,7 +157,7 @@ func FromDocument(doc *Document) (*Identifier, error) {
 
 	// Restore public keys
 	for _, k := range doc.VerificationMethod {
-		rk := &PublicKey{}
+		rk := &VerificationKey{}
 		*rk = k
 		id.data.VerificationMethods = append(id.data.VerificationMethods, rk)
 	}
@@ -411,7 +411,7 @@ func (d *Identifier) RemoveVerificationMethod(id string) error {
 
 // VerificationMethod retrieve a key based on it's id (fragment value), "nil"
 // is returned if the identifier is invalid.
-func (d *Identifier) VerificationMethod(id string) *PublicKey {
+func (d *Identifier) VerificationMethod(id string) *VerificationKey {
 	if !strings.HasPrefix(id, prefix) {
 		id = d.GetReference(id)
 	}
@@ -508,8 +508,8 @@ func (d *Identifier) GetProof(keyID, domain string) (*ProofLD, error) {
 
 // VerificationMethods returns the registered verification methods on
 // the identifier instance.
-func (d *Identifier) VerificationMethods() []PublicKey {
-	keys := make([]PublicKey, len(d.data.VerificationMethods))
+func (d *Identifier) VerificationMethods() []VerificationKey {
+	keys := make([]VerificationKey, len(d.data.VerificationMethods))
 	for i, k := range d.data.VerificationMethods {
 		keys[i] = *k
 	}

@@ -53,7 +53,7 @@ type Document struct {
 	// subject or associated parties.
 	//
 	// https://w3c.github.io/did-core/#verification-methods
-	VerificationMethod []PublicKey `json:"verificationMethod,omitempty" yaml:"verificationMethod,omitempty"`
+	VerificationMethod []VerificationKey `json:"verificationMethod,omitempty" yaml:"verificationMethod,omitempty"`
 
 	// The authentication verification relationship is used to specify how the DID subject
 	// is expected to be authenticated, for purposes such as logging into a website or

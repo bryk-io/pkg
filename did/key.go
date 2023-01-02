@@ -21,10 +21,10 @@ import (
 	e "golang.org/x/crypto/ed25519"
 )
 
-// PublicKey represents a cryptographic key according to the "Linked Data
+// VerificationKey represents a cryptographic key according to the "Linked Data
 // Cryptographic Suites".
 // https://w3c-ccg.github.io/ld-cryptosuite-registry/
-type PublicKey struct {
+type VerificationKey struct {
 	// Unique identifier for the key reference.
 	ID string `json:"id" yaml:"id"`
 
@@ -50,13 +50,13 @@ type PublicKey struct {
 }
 
 // String uses the key ID value as its textual representation.
-func (k *PublicKey) String() string {
+func (k *VerificationKey) String() string {
 	return k.ID
 }
 
 // Bytes returns the byte representation of the public key properly decoding
 // it from a value entry.
-func (k *PublicKey) Bytes() ([]byte, error) {
+func (k *VerificationKey) Bytes() ([]byte, error) {
 	if k.Type == KeyTypeEd {
 		return multibaseDecode(k.Public)
 	}
@@ -64,19 +64,19 @@ func (k *PublicKey) Bytes() ([]byte, error) {
 }
 
 // Sign the provided input and return the generated signature value.
-func (k *PublicKey) Sign(data []byte) ([]byte, error) {
+func (k *VerificationKey) Sign(data []byte) ([]byte, error) {
 	return k.sign(data)
 }
 
 // Verify the validity of the provided input and signature values.
-func (k *PublicKey) Verify(data, signature []byte) bool {
+func (k *VerificationKey) Verify(data, signature []byte) bool {
 	return k.verify(data, signature)
 }
 
 // ProduceSignatureLD generates a valid linked data signature for the provided
 // data, usually a canonicalized version of JSON-LD document.
 // https://w3c-dvcg.github.io/ld-signatures/#signature-algorithm
-func (k *PublicKey) ProduceSignatureLD(data []byte, domain string) (*SignatureLD, error) {
+func (k *VerificationKey) ProduceSignatureLD(data []byte, domain string) (*SignatureLD, error) {
 	// Set signature options
 	sig := &SignatureLD{
 		Type:    k.Type.SignatureType(),
@@ -103,7 +103,7 @@ func (k *PublicKey) ProduceSignatureLD(data []byte, domain string) (*SignatureLD
 // VerifySignatureLD validates the authenticity and integrity of a linked data
 // signature using the public key instance.
 // https://w3c-dvcg.github.io/ld-signatures/#signature-verification-algorithm
-func (k *PublicKey) VerifySignatureLD(data []byte, sig *SignatureLD) bool {
+func (k *VerificationKey) VerifySignatureLD(data []byte, sig *SignatureLD) bool {
 	// Get signature options
 	sigOptions := &SignatureLD{
 		Type:    k.Type.SignatureType(),
@@ -127,7 +127,7 @@ func (k *PublicKey) VerifySignatureLD(data []byte, sig *SignatureLD) bool {
 // ProduceProof will generate a valid linked data proof for the provided data,
 // usually a canonicalized version of JSON-LD document.
 // https://w3c-dvcg.github.io/ld-proofs
-func (k *PublicKey) ProduceProof(data []byte, purpose, domain string) (*ProofLD, error) {
+func (k *VerificationKey) ProduceProof(data []byte, purpose, domain string) (*ProofLD, error) {
 	// Set proof options
 	p := &ProofLD{
 		Context:            []string{securityContext},
@@ -155,7 +155,7 @@ func (k *PublicKey) ProduceProof(data []byte, purpose, domain string) (*ProofLD,
 // VerifyProof will evaluate the authenticity and integrity of a linked data
 // proof using the public key instance.
 // https://w3c-ccg.github.io/ld-proofs/#create-verify-hash-algorithm
-func (k *PublicKey) VerifyProof(data []byte, proof *ProofLD) bool {
+func (k *VerificationKey) VerifyProof(data []byte, proof *ProofLD) bool {
 	// Get proof options
 	p := &ProofLD{
 		Context:            proof.Context,
@@ -178,7 +178,7 @@ func (k *PublicKey) VerifyProof(data []byte, proof *ProofLD) bool {
 
 // AddExtension can be used to register additional contextual information in the key instance.
 // If another extension with the same id and version information, the data will be updated.
-func (k *PublicKey) AddExtension(ext Extension) {
+func (k *VerificationKey) AddExtension(ext Extension) {
 	for i, ee := range k.Extensions {
 		if ee.ID == ext.ID && ee.Version == ext.Version {
 			k.Extensions[i] = ext
@@ -191,7 +191,7 @@ func (k *PublicKey) AddExtension(ext Extension) {
 // GetExtension retrieves the information available for a given extension and decode it into
 // the  provided holder instance (usually a pointer to a structure type). If no information is
 // available or a decoding problems occurs an error will be returned.
-func (k *PublicKey) GetExtension(id string, version string, holder interface{}) error {
+func (k *VerificationKey) GetExtension(id string, version string, holder interface{}) error {
 	for _, ee := range k.Extensions {
 		if ee.ID == id && ee.Version == version {
 			return ee.load(holder)
@@ -201,7 +201,7 @@ func (k *PublicKey) GetExtension(id string, version string, holder interface{}) 
 }
 
 // Sign the provided data.
-func (k *PublicKey) sign(data []byte) ([]byte, error) {
+func (k *VerificationKey) sign(data []byte) ([]byte, error) {
 	if len(k.Private) == 0 {
 		return nil, errors.New("no private key available")
 	}
@@ -233,7 +233,7 @@ func (k *PublicKey) sign(data []byte) ([]byte, error) {
 }
 
 // Verify the provided signature and original data.
-func (k *PublicKey) verify(data, signature []byte) bool {
+func (k *VerificationKey) verify(data, signature []byte) bool {
 	// Get public key bytes
 	pubBytes, err := k.Bytes()
 	if err != nil {
@@ -272,9 +272,9 @@ func (k *PublicKey) verify(data, signature []byte) bool {
 }
 
 // Generates a new cryptographic key.
-func newCryptoKey(kt KeyType) (*PublicKey, error) {
+func newCryptoKey(kt KeyType) (*VerificationKey, error) {
 	var pub []byte
-	pk := &PublicKey{Type: kt}
+	pk := &VerificationKey{Type: kt}
 
 	// Create new key pair
 	switch kt {
@@ -315,8 +315,8 @@ func newCryptoKey(kt KeyType) (*PublicKey, error) {
 }
 
 // Load an existing cryptographic key.
-func loadExistingKey(private []byte, kt KeyType) (*PublicKey, error) {
-	pk := &PublicKey{
+func loadExistingKey(private []byte, kt KeyType) (*VerificationKey, error) {
+	pk := &VerificationKey{
 		Type:    kt,
 		Private: private,
 	}
@@ -359,10 +359,10 @@ func loadExistingKey(private []byte, kt KeyType) (*PublicKey, error) {
 	return pk, nil
 }
 
-// Returns a 4096 bits RSA key pair in PEM-encoded DER PKIX format.
+// Returns a 2048 bits RSA key pair in PEM-encoded DER PKIX format.
 func newRSAKey() (pub []byte, priv []byte, err error) {
 	// Generate key
-	key, err := rsa.GenerateKey(rand.Reader, 4096)
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return nil, nil, err
 	}
