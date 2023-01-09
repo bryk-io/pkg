@@ -23,8 +23,7 @@ updates:
     ignore:
       - dependency-name: "google.golang.org/genproto"
       # Avoid breaking changes with gRPC gateway
-      - dependency-name: "github.com/grpc-ecosystem/grpc-gateway"
-        versions: ["v2.x"]
+      - dependency-name: "github.com/grpc-ecosystem/grpc-gateway/v2"
       # Avoid breaking changes with gRPC
       - dependency-name: "google.golang.org/grpc"
         versions: ["v2.x"]
