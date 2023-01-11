@@ -1,6 +1,25 @@
 package resolver
 
-import "net/http"
+import (
+	"encoding/json"
+	"net/http"
+
+	"go.bryk.io/pkg/did"
+)
+
+// internal JSON encoder instance.
+var jsEnc Encoder
+
+func init() {
+	jsEnc = new(jsonEncoder)
+}
+
+// minimal default JSON encode.
+type jsonEncoder struct{}
+
+func (js *jsonEncoder) Encode(doc *did.Document) ([]byte, error) {
+	return json.MarshalIndent(doc, "", "  ")
+}
 
 const (
 	ldContext = "https://w3id.org/did-resolution/v1"

@@ -42,7 +42,7 @@ deps:
 
 ## docs: Display package documentation on local server
 docs:
-	@echo "Docs available at: http://localhost:8080/pkg/go.bryk.io/pkg"
+	@echo "Docs available at: http://localhost:8080/pkg/bryk-io/pkg/"
 	godoc -http=:8080 -goroot=${GOPATH} -play
 
 ## lint: Static analysis

@@ -10,27 +10,17 @@ import (
 	"go.bryk.io/pkg/errors"
 )
 
-const (
-	// ContentTypeDocument instructs the resolution endpoint to
-	// return the obtained DID document as result.
-	ContentTypeDocument = "application/did+ld+json"
-
-	// ContentTypeWithProfile instructs the resolution endpoint to
-	// return a complete resolution response structure as result. If
-	// no value is provided in the `Accept` header, this will be the
-	// default behavior.
-	// https://w3c-ccg.github.io/did-resolution/#output-didresolutionresult
-	ContentTypeWithProfile = "application/ld+json;profile=\"https://w3id.org/did-resolution\""
-)
-
 // Provider instances are method-specific and abstract away the
 // details on how to interact with the verifiable data registry
 // being used.
 type Provider interface {
 	// Read the details available on the verifiable data registry
 	// for a specific `did` entry. DID document metadata is optional
-	// but recommended. If an error is returned is must be a valid
-	// error code as defined in the spec.
+	// but recommended.
+	//  - If an error is returned is must be a valid error code as defined
+	//    in the spec.
+	//  - If no error AND no DID document are returned, a "notFound" error
+	//    will be returned by the resolver.
 	// https://w3c-ccg.github.io/did-resolution/#errors
 	Read(did string) (*did.Document, *did.DocumentMetadata, error)
 }
@@ -39,6 +29,8 @@ type Provider interface {
 // representations for a resolved DID document.
 type Encoder interface {
 	// Encode an existing DID document to a valid representation.
+	// If an error is returned is must be a valid error code as
+	// defined in the spec.
 	Encode(doc *did.Document) ([]byte, error)
 }
 
@@ -57,9 +49,14 @@ type Instance struct {
 
 // New returns a ready-to-use DID resolver instance.
 func New(opts ...Option) (*Instance, error) {
-	i := new(Instance)
-	i.encoders = make(map[string]Encoder)
-	i.providers = make(map[string]Provider)
+	i := &Instance{
+		providers: make(map[string]Provider),
+		encoders: map[string]Encoder{
+			ContentTypeLD:          jsEnc,
+			ContentTypeDocument:    jsEnc,
+			ContentTypeWithProfile: jsEnc,
+		},
+	}
 	for _, opt := range opts {
 		if err := opt(i); err != nil {
 			return nil, err
@@ -79,11 +76,12 @@ func (ri *Instance) Resolve(id string, opts *ResolutionOptions) (*Result, error)
 	_ = opts.Validate()
 
 	// prepare result holder
-	res := new(Result)
-	res.Context = append(res.Context, ldContext)
-	res.ResolutionMetadata = &ResolutionMetadata{
-		ContentType: opts.Accept,
-		Retrieved:   time.Now().UTC().Format(time.RFC3339),
+	res := &Result{
+		Context: []interface{}{ldContext},
+		ResolutionMetadata: &ResolutionMetadata{
+			ContentType: opts.Accept,
+			Retrieved:   time.Now().UTC().Format(time.RFC3339),
+		},
 	}
 
 	// is DID valid?
@@ -132,11 +130,12 @@ func (ri *Instance) ResolveRepresentation(id string, opts *ResolutionOptions) (*
 	_ = opts.Validate()
 
 	// prepare result holder
-	res := new(Result)
-	res.Context = append(res.Context, ldContext)
-	res.ResolutionMetadata = &ResolutionMetadata{
-		ContentType: opts.Accept,
-		Retrieved:   time.Now().UTC().Format(time.RFC3339),
+	res := &Result{
+		Context: []interface{}{ldContext},
+		ResolutionMetadata: &ResolutionMetadata{
+			ContentType: opts.Accept,
+			Retrieved:   time.Now().UTC().Format(time.RFC3339),
+		},
 	}
 
 	// is DID valid?
@@ -144,7 +143,7 @@ func (ri *Instance) ResolveRepresentation(id string, opts *ResolutionOptions) (*
 	if err != nil {
 		err = errors.New(ErrInvalidDID)
 		res.ResolutionMetadata.Error = err.Error()
-		return nil, err
+		return res, err
 	}
 
 	// is method supported?
@@ -152,7 +151,7 @@ func (ri *Instance) ResolveRepresentation(id string, opts *ResolutionOptions) (*
 	if !ok {
 		err = errors.New(ErrMethodNotSupported)
 		res.ResolutionMetadata.Error = err.Error()
-		return nil, err
+		return res, err
 	}
 
 	// is encoder supported?
@@ -160,28 +159,28 @@ func (ri *Instance) ResolveRepresentation(id string, opts *ResolutionOptions) (*
 	if !ok {
 		err = errors.New(ErrRepresentationNotSupported)
 		res.ResolutionMetadata.Error = err.Error()
-		return nil, err
+		return res, err
 	}
 
 	// retrieve DID doc and optional metadata
 	res.Document, res.DocumentMetadata, err = provider.Read(id)
 	if err != nil {
 		res.ResolutionMetadata.Error = err.Error()
-		return nil, err
+		return res, err
 	}
 
 	// return not found error if DID doc wasn't retrieved
 	if res.Document == nil {
 		err = errors.New(ErrNotFound)
 		res.ResolutionMetadata.Error = err.Error()
-		return nil, err
+		return res, err
 	}
 
 	// get DID document representation
 	res.Representation, err = enc.Encode(res.Document)
 	if err != nil {
-		res.ResolutionMetadata.Error = ErrInternal
-		return nil, err
+		res.ResolutionMetadata.Error = err.Error()
+		return res, err
 	}
 
 	// resolution was successful
@@ -191,36 +190,62 @@ func (ri *Instance) ResolveRepresentation(id string, opts *ResolutionOptions) (*
 // ResolutionHandler exposes the `resolve` operations through an HTTP endpoint
 // compatible with the DIF specification.
 // https://w3c-ccg.github.io/did-resolution/#bindings-https
-func (ri *Instance) ResolutionHandler(res http.ResponseWriter, req *http.Request) {
+func (ri *Instance) ResolutionHandler(rw http.ResponseWriter, rq *http.Request) {
 	// get requested identifier
-	id := strings.TrimPrefix(req.URL.Path, "/identifiers/")
+	id := strings.TrimPrefix(rq.URL.Path, "/1.0/identifiers/")
 
 	// process resolution request
 	opts := new(ResolutionOptions)
-	opts.FromRequest(req)
-	data, err := ri.Resolve(id, opts)
+	opts.FromRequest(rq)
+	_ = opts.Validate()
 
-	// set proper HTTP status
+	var (
+		res *Result
+		err error
+	)
+	if strings.Count(opts.Accept, "json") > 0 {
+		// standard JSON LD mime types are handled directly by a
+		// 'resolve' operation
+		res, err = ri.Resolve(id, opts)
+	} else {
+		// custom mime types are hadled by specialized encoders
+		res, err = ri.ResolveRepresentation(id, opts)
+	}
+
+	// return error
 	if err != nil {
-		res.WriteHeader(errToStatus(err.Error()))
-	}
-	if data.DocumentMetadata != nil && data.DocumentMetadata.Deactivated {
-		res.WriteHeader(deactivatedStatus)
+		rw.Header().Set("Content-Type", ContentTypeWithProfile+";charset=utf-8")
+		rw.WriteHeader(errToStatus(err.Error()))
+		_ = json.NewEncoder(rw).Encode(res)
+		return
 	}
 
-	// set content type
-	res.Header().Set("Content-Type", ContentTypeDocument)
-	if req.Header.Get("Accept") == ContentTypeWithProfile {
-		res.Header().Set("Content-Type", ContentTypeWithProfile)
+	// return deactivated doc
+	if res.DocumentMetadata != nil && res.DocumentMetadata.Deactivated {
+		rw.Header().Set("Content-Type", ContentTypeWithProfile+";charset=utf-8")
+		rw.WriteHeader(deactivatedStatus)
+		_ = json.NewEncoder(rw).Encode(res)
+		return
 	}
 
 	// return result
 	// https://w3c-ccg.github.io/did-resolution/#did-resolution-result
-	if req.Header.Get("Accept") == ContentTypeDocument {
+	switch opts.Accept {
+	case ContentTypeLD:
 		// return the DID document directly
-		_ = json.NewEncoder(res).Encode(data.Document)
-		return
+		rw.Header().Set("Content-Type", ContentTypeDocument+";charset=utf-8")
+		_ = json.NewEncoder(rw).Encode(res.Document)
+	case ContentTypeDocument:
+		// return the DID document directly
+		rw.Header().Set("Content-Type", ContentTypeDocument+";charset=utf-8")
+		_ = json.NewEncoder(rw).Encode(res.Document)
+	case ContentTypeWithProfile:
+		// return the complete resolution result
+		rw.Header().Set("Content-Type", ContentTypeWithProfile+";charset=utf-8")
+		_ = json.NewEncoder(rw).Encode(res)
+	default:
+		// return custom representation
+		rw.Header().Set("Content-Type", opts.Accept)
+		_, _ = rw.Write(res.Representation)
 	}
-	// return the complete resolution result
-	_ = json.NewEncoder(res).Encode(data)
 }

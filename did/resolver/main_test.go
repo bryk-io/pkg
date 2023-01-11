@@ -6,17 +6,12 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"time"
 
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/did"
 	"go.bryk.io/pkg/errors"
 )
-
-type sampleEncoder struct{}
-
-func (js *sampleEncoder) Encode(doc *did.Document) ([]byte, error) {
-	return json.MarshalIndent(doc, "", "  ")
-}
 
 type sampleProvider struct {
 	mu  sync.Mutex
@@ -51,6 +46,34 @@ func (sp *sampleProvider) registerNew() string {
 	return id.String()
 }
 
+func (sp *sampleProvider) deactivate(id string) {
+	rec, ok := sp.dir[id]
+	if !ok {
+		return
+	}
+	md := rec.GetMetadata()
+	md.Deactivated = true
+	md.Updated = time.Now().UTC().Format(time.RFC3339)
+	_ = rec.AddMetadata(md)
+	sp.mu.Lock()
+	sp.dir[id] = rec
+	sp.mu.Unlock()
+}
+
+func (sp *sampleProvider) activate(id string) {
+	rec, ok := sp.dir[id]
+	if !ok {
+		return
+	}
+	md := rec.GetMetadata()
+	md.Deactivated = false
+	md.Updated = time.Now().UTC().Format(time.RFC3339)
+	_ = rec.AddMetadata(md)
+	sp.mu.Lock()
+	sp.dir[id] = rec
+	sp.mu.Unlock()
+}
+
 func TestResolve(t *testing.T) {
 	assert := tdd.New(t)
 
@@ -59,10 +82,7 @@ func TestResolve(t *testing.T) {
 	prov.dir = make(map[string]*did.Identifier)
 	activeID := prov.registerNew()
 
-	rr, err := New(
-		WithProvider("dev", prov),                            // register "dev" provider
-		WithEncoder(ContentTypeDocument, new(sampleEncoder)), // register "json" encoder
-	)
+	rr, err := New(WithProvider("dev", prov))
 	assert.Nil(err, "failed to create new resolver instance")
 
 	t.Run(ErrInvalidDID, func(t *testing.T) {
@@ -100,10 +120,7 @@ func TestResolveRepresentation(t *testing.T) {
 	prov.dir = make(map[string]*did.Identifier)
 	activeID := prov.registerNew()
 
-	rr, err := New(
-		WithProvider("dev", prov),                            // register "dev" provider
-		WithEncoder(ContentTypeDocument, new(sampleEncoder)), // register "json" encoder
-	)
+	rr, err := New(WithProvider("dev", prov))
 	assert.Nil(err, "failed to create new resolver instance")
 
 	t.Run(ErrInvalidDID, func(t *testing.T) {
@@ -114,11 +131,6 @@ func TestResolveRepresentation(t *testing.T) {
 	t.Run(ErrMethodNotSupported, func(t *testing.T) {
 		_, err := rr.ResolveRepresentation("did:local:12345-67890", nil)
 		assert.Equal(ErrMethodNotSupported, err.Error())
-	})
-
-	t.Run(ErrRepresentationNotSupported, func(t *testing.T) {
-		_, err := rr.ResolveRepresentation("did:dev:12345-67890", &ResolutionOptions{Accept: "x-messagepack"})
-		assert.Equal(ErrRepresentationNotSupported, err.Error())
 	})
 
 	t.Run(ErrInternal, func(t *testing.T) {
@@ -145,25 +157,137 @@ func TestResolutionHandler(t *testing.T) {
 	prov.dir = make(map[string]*did.Identifier)
 	activeID := prov.registerNew()
 
-	rr, err := New(
-		WithProvider("dev", prov),                            // register "dev" provider
-		WithEncoder(ContentTypeDocument, new(sampleEncoder)), // register "json" encoder
-	)
+	rr, err := New(WithProvider("dev", prov))
 	assert.Nil(err, "failed to create new resolver instance")
 
 	// Resolver server
 	mux := http.NewServeMux()
-	mux.HandleFunc("/identifiers/", rr.ResolutionHandler)
+	mux.HandleFunc("/1.0/identifiers/", rr.ResolutionHandler)
 	go func() {
 		_ = http.ListenAndServe(":3000", mux)
 	}()
 
-	endpoint := "http://localhost:3000/identifiers/" + activeID
-	req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
-	req.Header.Set("Accept", ContentTypeDocument)
-	res, err := http.DefaultClient.Do(req)
-	assert.Nil(err)
-	body, _ := io.ReadAll(res.Body)
-	_ = res.Body.Close()
-	t.Logf("%s", body)
+	// must return a resolution result
+	t.Run("no-accept-header", func(t *testing.T) {
+		endpoint := "http://localhost:3000/1.0/identifiers/" + activeID
+		req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+		res, err := http.DefaultClient.Do(req)
+
+		assert.Nil(err)
+		assert.Equal(res.Header.Get("content-type"), ContentTypeWithProfile+";charset=utf-8")
+		assert.Equal(res.StatusCode, http.StatusOK)
+
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		val := new(Result)
+		assert.Nil(json.Unmarshal(body, val))
+	})
+
+	// must return a DID document directly
+	t.Run(ContentTypeLD, func(t *testing.T) {
+		endpoint := "http://localhost:3000/1.0/identifiers/" + activeID
+		req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+		req.Header.Set("Accept", ContentTypeLD)
+		res, err := http.DefaultClient.Do(req)
+
+		assert.Nil(err)
+		assert.Equal(res.Header.Get("content-type"), ContentTypeDocument+";charset=utf-8")
+		assert.Equal(res.StatusCode, http.StatusOK)
+
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		doc := new(did.Document)
+		assert.Nil(json.Unmarshal(body, doc))
+	})
+
+	// must return a DID document directly
+	t.Run(ContentTypeDocument, func(t *testing.T) {
+		endpoint := "http://localhost:3000/1.0/identifiers/" + activeID
+		req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+		req.Header.Set("Accept", ContentTypeDocument)
+		res, err := http.DefaultClient.Do(req)
+
+		assert.Nil(err)
+		assert.Equal(res.Header.Get("content-type"), ContentTypeDocument+";charset=utf-8")
+		assert.Equal(res.StatusCode, http.StatusOK)
+
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		doc := new(did.Document)
+		assert.Nil(json.Unmarshal(body, doc))
+	})
+
+	// must return a resolution result
+	t.Run(ContentTypeWithProfile, func(t *testing.T) {
+		endpoint := "http://localhost:3000/1.0/identifiers/" + activeID
+		req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+		req.Header.Set("Accept", ContentTypeWithProfile)
+		res, err := http.DefaultClient.Do(req)
+
+		assert.Nil(err)
+		assert.Equal(res.Header.Get("content-type"), ContentTypeWithProfile+";charset=utf-8")
+		assert.Equal(res.StatusCode, http.StatusOK)
+
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		val := new(Result)
+		assert.Nil(json.Unmarshal(body, val))
+	})
+
+	// must return a "notFound" error
+	t.Run(ErrNotFound, func(t *testing.T) {
+		endpoint := "http://localhost:3000/1.0/identifiers/did:dev:not-found"
+		req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+		req.Header.Set("Accept", ContentTypeLD)
+		res, err := http.DefaultClient.Do(req)
+
+		assert.Nil(err)
+		assert.Equal(res.Header.Get("content-type"), ContentTypeWithProfile+";charset=utf-8")
+		assert.Equal(res.StatusCode, http.StatusNotFound)
+
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		val := new(Result)
+		assert.Nil(json.Unmarshal(body, val))
+		assert.Equal(ErrNotFound, val.ResolutionMetadata.Error)
+	})
+
+	// must return a "internalError" error
+	t.Run(ErrInternal, func(t *testing.T) {
+		endpoint := "http://localhost:3000/1.0/identifiers/did:dev:with-internal-error"
+		req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+		req.Header.Set("Accept", ContentTypeLD)
+		res, err := http.DefaultClient.Do(req)
+
+		assert.Nil(err)
+		assert.Equal(res.Header.Get("content-type"), ContentTypeWithProfile+";charset=utf-8")
+		assert.Equal(res.StatusCode, http.StatusInternalServerError)
+
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		val := new(Result)
+		assert.Nil(json.Unmarshal(body, val))
+		assert.Equal(ErrInternal, val.ResolutionMetadata.Error)
+	})
+
+	// must return a "internalError" error
+	t.Run("deactivatedDID", func(t *testing.T) {
+		prov.deactivate(activeID)
+		defer prov.activate(activeID)
+
+		endpoint := "http://localhost:3000/1.0/identifiers/" + activeID
+		req, _ := http.NewRequest(http.MethodGet, endpoint, nil)
+		req.Header.Set("Accept", ContentTypeLD)
+		res, err := http.DefaultClient.Do(req)
+
+		assert.Nil(err)
+		assert.Equal(res.Header.Get("content-type"), ContentTypeWithProfile+";charset=utf-8")
+		assert.Equal(res.StatusCode, deactivatedStatus)
+
+		body, _ := io.ReadAll(res.Body)
+		_ = res.Body.Close()
+		val := new(Result)
+		assert.Nil(json.Unmarshal(body, val))
+		assert.True(val.DocumentMetadata.Deactivated)
+	})
 }

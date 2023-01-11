@@ -6,6 +6,24 @@ import (
 	"go.bryk.io/pkg/did"
 )
 
+// Common content-type IANA values.
+const (
+	// ContentTypeLD instructs the resolution endpoint to return
+	// standard JSON LD data.
+	ContentTypeLD = "application/ld+json"
+
+	// ContentTypeDocument instructs the resolution endpoint to
+	// return the obtained DID document as result.
+	ContentTypeDocument = "application/did+ld+json"
+
+	// ContentTypeWithProfile instructs the resolution endpoint to
+	// return a complete resolution response structure as result. If
+	// no value is provided in the `Accept` header, this will be the
+	// default behavior.
+	// https://w3c-ccg.github.io/did-resolution/#output-didresolutionresult
+	ContentTypeWithProfile = "application/ld+json;profile=\"https://w3id.org/did-resolution\""
+)
+
 // Common error codes.
 // https://w3c-ccg.github.io/did-resolution/#errors
 const (
@@ -50,13 +68,13 @@ type Result struct {
 	Context []interface{} `json:"@context" yaml:"-"`
 
 	// Resolved DID document.
-	Document *did.Document `json:"didDocument"`
+	Document *did.Document `json:"didDocument,omitempty"`
 
 	// DID document metadata.
-	DocumentMetadata *did.DocumentMetadata `json:"didDocumentMetadata"`
+	DocumentMetadata *did.DocumentMetadata `json:"didDocumentMetadata,omitempty"`
 
 	// Resolution process metadata.
-	ResolutionMetadata *ResolutionMetadata `json:"didResolutionMetadata"`
+	ResolutionMetadata *ResolutionMetadata `json:"didResolutionMetadata,omitempty"`
 
 	// Representation obtained from the DID document during a
 	// `resolveRepresentation` operation.
@@ -95,8 +113,11 @@ type ResolutionOptions struct {
 // Validate the resolution options provided and load sensible default
 // values.
 func (ro *ResolutionOptions) Validate() error {
-	if ro.Accept == "" {
-		ro.Accept = ContentTypeDocument
+	if ro.Accept == "" || ro.Accept == "*/*" {
+		ro.Accept = ContentTypeWithProfile
+	}
+	if ro.Accept == "application/json" {
+		ro.Accept = ContentTypeLD
 	}
 	return nil
 }
