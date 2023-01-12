@@ -1,4 +1,4 @@
-package middleware
+package hsts
 
 import (
 	"bytes"
@@ -19,12 +19,12 @@ const (
 	scheme = "https"
 )
 
-// HSTS provides an HTTP Strict Transport Security implementation.
+// Handler provides an HTTP Strict Transport Security (HSTS) implementation.
 // When enabled this handler will redirect any HTTP request to its HTTPS
 // representation while adding the required HSTS headers.
 //
 // Based on the original implementation: https://github.com/a-h/hsts
-func HSTS(options HSTSOptions) func(http.Handler) http.Handler {
+func Handler(options Options) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			if isHTTPS(r, &options) {
@@ -46,9 +46,9 @@ func HSTS(options HSTSOptions) func(http.Handler) http.Handler {
 	}
 }
 
-// HSTSOptions defines the configuration options available when enabling HSTS.
+// Options available when enabling HSTS.
 // nolint: lll
-type HSTSOptions struct {
+type Options struct {
 	// MaxAge sets the duration (in hours) that the HSTS is valid for.
 	MaxAge uint `json:"max_age" yaml:"max_age" mapstructure:"max_age"`
 
@@ -69,9 +69,9 @@ type HSTSOptions struct {
 	IncludeSubdomains bool `json:"include_subdomains" yaml:"include_subdomains" mapstructure:"include_subdomains"`
 }
 
-// DefaultHSTSOptions return a sane default configuration to enable a HSTS policy.
-func DefaultHSTSOptions() HSTSOptions {
-	return HSTSOptions{
+// DefaultOptions return a sane default configuration to enable a HSTS policy.
+func DefaultOptions() Options {
+	return Options{
 		MaxAge:                      24 * minimumPreloadAge,
 		AcceptXForwardedProtoHeader: true,
 		SendPreloadDirective:        false,
@@ -80,7 +80,7 @@ func DefaultHSTSOptions() HSTSOptions {
 }
 
 // Inspect if the provided HTTP request is a valid HTTPS request.
-func isHTTPS(r *http.Request, options *HSTSOptions) bool {
+func isHTTPS(r *http.Request, options *Options) bool {
 	// Added by common load balancer which do TLS offloading
 	if options.AcceptXForwardedProtoHeader && r.Header.Get("X-Forwarded-Proto") == scheme {
 		return true
@@ -101,7 +101,7 @@ func isHTTPS(r *http.Request, options *HSTSOptions) bool {
 }
 
 // Get the HTTP header value for the handler instance.
-func header(options *HSTSOptions) string {
+func header(options *Options) string {
 	maxAge := time.Duration(options.MaxAge) * time.Hour
 	buf := bytes.NewBufferString("max-age=")
 	_, _ = buf.WriteString(strconv.Itoa(int(maxAge.Seconds())))

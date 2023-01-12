@@ -1,4 +1,4 @@
-package middleware
+package cors
 
 import (
 	"net/http"
@@ -6,13 +6,13 @@ import (
 	gmw "github.com/gorilla/handlers"
 )
 
-// CORS provides a "Cross Origin Resource Sharing" middleware.
-func CORS(options CORSOptions) func(http.Handler) http.Handler {
+// Handler provides a "Cross Origin Resource Sharing" middleware.
+func Handler(options Options) func(http.Handler) http.Handler {
 	return gmw.CORS(options.parse()...)
 }
 
-// CORSOptions allow to adjust the behavior on the CORS middleware.
-type CORSOptions struct {
+// Options available to adjust the behavior of CORS middleware.
+type Options struct {
 	// Specify the user agent may pass authentication details along
 	// with the request.
 	AllowCredentials bool `json:"allow_credentials" yaml:"allow_credentials" mapstructure:"allow_credentials"`
@@ -58,34 +58,34 @@ type CORSOptions struct {
 	OriginValidator func(string) bool `json:"-" yaml:"-"`
 }
 
-func (co *CORSOptions) parse() []gmw.CORSOption {
+func (opt *Options) parse() []gmw.CORSOption {
 	var list []gmw.CORSOption
-	if co.AllowCredentials {
+	if opt.AllowCredentials {
 		list = append(list, gmw.AllowCredentials())
 	}
-	if co.IgnoreOptions {
+	if opt.IgnoreOptions {
 		list = append(list, gmw.IgnoreOptions())
 	}
-	if len(co.AllowedHeaders) != 0 {
-		list = append(list, gmw.AllowedHeaders(co.AllowedHeaders))
+	if len(opt.AllowedHeaders) != 0 {
+		list = append(list, gmw.AllowedHeaders(opt.AllowedHeaders))
 	}
-	if len(co.AllowedMethods) != 0 {
-		list = append(list, gmw.AllowedMethods(co.AllowedMethods))
+	if len(opt.AllowedMethods) != 0 {
+		list = append(list, gmw.AllowedMethods(opt.AllowedMethods))
 	}
-	if len(co.AllowedOrigins) != 0 {
-		list = append(list, gmw.AllowedOrigins(co.AllowedOrigins))
+	if len(opt.AllowedOrigins) != 0 {
+		list = append(list, gmw.AllowedOrigins(opt.AllowedOrigins))
 	}
-	if len(co.ExposedHeaders) != 0 {
-		list = append(list, gmw.ExposedHeaders(co.ExposedHeaders))
+	if len(opt.ExposedHeaders) != 0 {
+		list = append(list, gmw.ExposedHeaders(opt.ExposedHeaders))
 	}
-	if co.MaxAge != 0 {
-		list = append(list, gmw.MaxAge(int(co.MaxAge)))
+	if opt.MaxAge != 0 {
+		list = append(list, gmw.MaxAge(int(opt.MaxAge)))
 	}
-	if co.OptionsStatusCode != 0 {
-		list = append(list, gmw.OptionStatusCode(co.OptionsStatusCode))
+	if opt.OptionsStatusCode != 0 {
+		list = append(list, gmw.OptionStatusCode(opt.OptionsStatusCode))
 	}
-	if co.OriginValidator != nil {
-		list = append(list, gmw.AllowedOriginValidator(co.OriginValidator))
+	if opt.OriginValidator != nil {
+		list = append(list, gmw.AllowedOriginValidator(opt.OriginValidator))
 	}
 	return list
 }

@@ -1,4 +1,4 @@
-package middleware
+package logging
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 	xlog "go.bryk.io/pkg/log"
 )
 
-// Logging produce output for the processed HTTP requests tagged with
+// Handler produce output for the processed HTTP requests tagged with
 // standard ECS details by default. Fields can be extended by providing
 // a hook function.
-func Logging(ll xlog.Logger, hook LoggingHook) func(http.Handler) http.Handler {
+func Handler(ll xlog.Logger, hook Hook) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			// Get base message details
@@ -50,9 +50,9 @@ func Logging(ll xlog.Logger, hook LoggingHook) func(http.Handler) http.Handler {
 	}
 }
 
-// LoggingHook provides a mechanism to extend a message fields just
+// Hook provides a mechanism to extend a message fields just
 // before is submitted.
-type LoggingHook func(fields *xlog.Fields, r http.Request)
+type Hook func(fields *xlog.Fields, r http.Request)
 
 // Custom response writer to collect additional details.
 type loggingRW struct {

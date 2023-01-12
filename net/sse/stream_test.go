@@ -11,7 +11,9 @@ import (
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
 	"go.bryk.io/pkg/net/http"
-	mw "go.bryk.io/pkg/net/middleware"
+	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
+	mwLogging "go.bryk.io/pkg/net/middleware/logging"
+	mwRecover "go.bryk.io/pkg/net/middleware/recovery"
 	"go.uber.org/goleak"
 )
 
@@ -84,9 +86,9 @@ func TestHandler(t *testing.T) {
 		http.WithIdleTimeout(0), // SSE requires no timeout on "keep-alive" connections
 		http.WithHandler(router),
 		http.WithMiddleware(
-			mw.PanicRecovery(),
-			mw.GzipCompression(9),
-			mw.Logging(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
+			mwRecover.Handler(),
+			mwGzip.Handler(9),
+			mwLogging.Handler(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
 		),
 	}
 
@@ -101,7 +103,7 @@ func TestHandler(t *testing.T) {
 
 	t.Run("ClosedByServer", func(t *testing.T) {
 		// Consume events until closed by server
-		req, _ := PrepareRequest(context.TODO(), "http://localhost:8080/sse", nil)
+		req, _ := PrepareRequest(context.Background(), "http://localhost:8080/sse", nil)
 		sub, err := cl.Subscribe(req)
 		assert.Nil(err)
 		for ev := range sub.Receive() {
@@ -117,7 +119,7 @@ func TestHandler(t *testing.T) {
 
 	t.Run("ClosedByContext", func(t *testing.T) {
 		// Consume events until context timeout
-		ctx, cancel := context.WithTimeout(context.TODO(), 6*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 		defer cancel()
 		req, _ := PrepareRequest(ctx, "http://localhost:8080/sse", nil)
 		sub, err := cl.Subscribe(req)
@@ -151,9 +153,9 @@ func TestWithBrowser(t *testing.T) {
 		http.WithIdleTimeout(0), // SSE requires no timeout on "keep-alive" connections
 		http.WithHandler(router),
 		http.WithMiddleware(
-			mw.PanicRecovery(),
-			mw.GzipCompression(9),
-			mw.Logging(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
+			mwRecover.Handler(),
+			mwGzip.Handler(9),
+			mwLogging.Handler(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
 		),
 	}
 

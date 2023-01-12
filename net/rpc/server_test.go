@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/log"
-	"go.bryk.io/pkg/net/middleware"
+	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
 	apiErrors "go.bryk.io/pkg/otel/errors"
@@ -351,7 +351,7 @@ func TestServer(t *testing.T) {
 			WithHandlerName("http-gateway"),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
-			WithGatewayMiddleware(middleware.GzipCompression(7)),
+			WithGatewayMiddleware(mwGzip.Handler(7)),
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
 			WithClientOptions(WithClientObservability(oop)),

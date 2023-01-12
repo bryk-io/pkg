@@ -11,7 +11,11 @@ import (
 
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
-	mw "go.bryk.io/pkg/net/middleware"
+	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
+	mwHeaders "go.bryk.io/pkg/net/middleware/headers"
+	mwLogging "go.bryk.io/pkg/net/middleware/logging"
+	mwProxy "go.bryk.io/pkg/net/middleware/proxy"
+	mwRecover "go.bryk.io/pkg/net/middleware/recovery"
 )
 
 var mux *lib.ServeMux
@@ -34,11 +38,11 @@ func TestNewServer(t *testing.T) {
 		WithIdleTimeout(10 * time.Second),
 		WithHandler(router),
 		WithMiddleware(
-			mw.PanicRecovery(),
-			mw.ProxyHeaders(),
-			mw.GzipCompression(9),
-			mw.Logging(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
-			mw.Headers(map[string]string{
+			mwRecover.Handler(),
+			mwProxy.Handler(),
+			mwGzip.Handler(9),
+			mwLogging.Handler(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
+			mwHeaders.Handler(map[string]string{
 				"x-bar": "bar",
 				"x-foo": "foo",
 			}),
@@ -140,9 +144,9 @@ func ExampleNewServer() {
 		WithPort(8080),
 		WithIdleTimeout(5 * time.Second),
 		WithMiddleware(
-			mw.PanicRecovery(),
-			mw.ProxyHeaders(),
-			mw.GzipCompression(9),
+			mwRecover.Handler(),
+			mwProxy.Handler(),
+			mwGzip.Handler(9),
 		),
 	}
 

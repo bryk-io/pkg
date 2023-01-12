@@ -1,14 +1,14 @@
-package middleware
+package recovery
 
 import (
 	"fmt"
 	"net/http"
 )
 
-// PanicRecovery allows the server to convert unhandled panic events into an
+// Handler allows the server to convert unhandled panic events into an
 // `internal server error`. This will prevent the server from crashing if a
 // handler produces a `panic` operation.
-func PanicRecovery() func(handler http.Handler) http.Handler {
+func Handler() func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {

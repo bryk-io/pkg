@@ -1,4 +1,4 @@
-package middleware
+package metadata
 
 import (
 	"context"
@@ -8,9 +8,8 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// ContextMetadataOptions provide configuration settings available to
-// adjust the behavior of the metadata middleware.
-type ContextMetadataOptions struct {
+// Options available to adjust the behavior of the metadata middleware.
+type Options struct {
 	// The headers must be specified in its lowercase (non-canonical) form.
 	// If no specific headers are provided, all headers in the request are
 	// registered as metadata by default.
@@ -18,20 +17,20 @@ type ContextMetadataOptions struct {
 
 	// Provides complete flexibility to adjust the metadata produced for a
 	// received request.
-	Hook func(md *Metadata, r http.Request) `json:"-" yaml:"-" mapstructure:"-"`
+	Hook func(md *MD, r http.Request) `json:"-" yaml:"-" mapstructure:"-"`
 }
 
-// ContextMetadata allows keeping HTTP headers or other request details as
+// Handler allows keeping HTTP headers or other request details as
 // metadata in the context used when processing incoming requests. This
 // allows other extensions and resolvers to have access to required information.
 //
 // Upstream elements can retrieve available metadata with:
 //
-//	md, ok := MetadataFromContext(ctx)
-func ContextMetadata(options ContextMetadataOptions) func(http.Handler) http.Handler {
+//	md, ok := FromContext(ctx)
+func Handler(options Options) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			md := Metadata{}
+			md := MD{}
 			for hk, hv := range r.Header {
 				if len(options.Headers) == 0 || contains(hk, options.Headers) {
 					md.Set(hk, hv...)
@@ -47,14 +46,14 @@ func ContextMetadata(options ContextMetadataOptions) func(http.Handler) http.Han
 	}
 }
 
-// Metadata provides a simple mechanism to propagate custom values
+// MD provides a simple mechanism to propagate custom values
 // through the context instance used while processing operations.
 // Based on the gRPC implementation.
-type Metadata = metadata.MD
+type MD = metadata.MD
 
-// MetadataFromContext retrieves metadata information from the provided
+// FromContext retrieves metadata information from the provided
 // context if available.
-func MetadataFromContext(ctx context.Context) (Metadata, bool) {
+func FromContext(ctx context.Context) (MD, bool) {
 	return metadata.FromIncomingContext(ctx)
 }
 
