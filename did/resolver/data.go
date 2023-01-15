@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"net/http"
+	"strings"
 
 	"go.bryk.io/pkg/did"
 )
@@ -124,5 +125,5 @@ func (ro *ResolutionOptions) Validate() error {
 
 // FromRequest loads resolution options from an incoming HTTP request.
 func (ro *ResolutionOptions) FromRequest(req *http.Request) {
-	ro.Accept = req.Header.Get("Accept")
+	ro.Accept = strings.Split(req.Header.Get("Accept"), ",")[0]
 }

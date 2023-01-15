@@ -79,7 +79,7 @@ func (ri *Instance) Resolve(id string, opts *ResolutionOptions) (*Result, error)
 	res := &Result{
 		Context: []interface{}{ldContext},
 		ResolutionMetadata: &ResolutionMetadata{
-			ContentType: opts.Accept,
+			ContentType: ContentTypeDocument,
 			Retrieved:   time.Now().UTC().Format(time.RFC3339),
 		},
 	}
@@ -236,11 +236,11 @@ func (ri *Instance) ResolutionHandler(rw http.ResponseWriter, rq *http.Request) 
 		rw.Header().Set("Content-Type", ContentTypeDocument+";charset=utf-8")
 		_ = json.NewEncoder(rw).Encode(res.Document)
 	case ContentTypeDocument:
-		// return the DID document directly
+		// return DID document directly
 		rw.Header().Set("Content-Type", ContentTypeDocument+";charset=utf-8")
 		_ = json.NewEncoder(rw).Encode(res.Document)
 	case ContentTypeWithProfile:
-		// return the complete resolution result
+		// return resolution result
 		rw.Header().Set("Content-Type", ContentTypeWithProfile+";charset=utf-8")
 		_ = json.NewEncoder(rw).Encode(res)
 	default:
