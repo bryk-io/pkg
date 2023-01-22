@@ -39,7 +39,7 @@ type SpanManaged interface {
 
 	// Error adds an annotation to the span with an error event.
 	// More information: https://bit.ly/3lqxl5b
-	Error(level log.Level, err error, attributes Attributes)
+	Error(level log.Level, err error, attributes ...Attributes)
 
 	// GetAttributes returns the data elements available in the span.
 	GetAttributes() Attributes
@@ -66,11 +66,9 @@ type SpanManaged interface {
 // observability data between services (for example, sharing a customer ID from
 // one service to the next).
 type Span interface {
-	// End will mark the span as completed.
-	End()
-
-	// SetStatus will update the status of the span.
-	SetStatus(code otelCodes.Code, msg string)
+	// End will mark the span as completed. If `err` is not nil, the
+	// status for the span will be marked as failed.
+	End(err error)
 
 	SpanManaged // inherit "managed" span functionality
 }
@@ -104,20 +102,19 @@ func (s *span) TraceID() string {
 	return s.span.SpanContext().TraceID().String()
 }
 
-// End will mark the span as completed.
-func (s *span) End() {
-	s.op.Finish()
-	s.span.End()
-}
-
-// SetStatus will update the status of the span.
-func (s *span) SetStatus(code otelCodes.Code, msg string) {
+// End will mark the span as completed. If `err` is not nil, the
+// status for the span will be marked as failed.
+func (s *span) End(err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.span.SetStatus(code, msg)
-	if code != otelCodes.Ok {
+	if err != nil {
+		s.span.SetStatus(otelCodes.Error, err.Error())
 		s.op.Status("error")
+	} else {
+		s.span.SetStatus(otelCodes.Ok, "")
 	}
+	s.op.Finish()
+	s.span.End()
 }
 
 // Context of the span instance. Creating a new span with this context
@@ -144,16 +141,18 @@ func (s *span) Event(message string, attributes ...Attributes) {
 // Error adds an annotation to the span with an error event. If `setStatus` is true
 // the status of the span will also be adjusted.
 // More information: https://bit.ly/3lqxl5b
-func (s *span) Error(level log.Level, err error, attributes Attributes) {
+func (s *span) Error(level log.Level, err error, attributes ...Attributes) {
 	// Base error details
 	fields := Attributes{
-		"event":                "error",
-		"error.level":          level,
-		"error.message":        err.Error(),
-		"exception.stacktrace": getStack(1),
+		"event":             "error",
+		"error.level":       level,
+		"error.message":     err.Error(),
+		lblExceptionMessage: err.Error(),
+		lblStackTrace:       getStack(1),
 	}
+	attrs := join(attributes...)
 	if attributes != nil {
-		fields = join(fields, attributes)
+		fields = join(fields, attrs)
 	}
 
 	// Record error on the span
@@ -162,7 +161,7 @@ func (s *span) Error(level log.Level, err error, attributes Attributes) {
 	// Report error
 	if s.IsSampled() {
 		s.op.Level(level.String())
-		s.op.Tags(join(s.GetAttributes(), attributes))
+		s.op.Tags(join(s.GetAttributes(), attrs))
 		if bgg := s.GetBaggage(); len(bgg) > 0 {
 			s.op.Segment("Baggage", bgg)
 		}

@@ -61,7 +61,7 @@ func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOpt
 	// create OTEL span
 	sp.opts = append(sp.opts, apiTrace.WithAttributes(sp.attrs.Expand()...))
 	sp.ctx, sp.span = cmp.ot.Start(ctx, name, sp.opts...)
-	sp.span.SetStatus(otelCodes.Ok, "ok")
+	sp.span.SetStatus(otelCodes.Unset, "")
 
 	// add OTEL details and baggage to error reporting operation
 	if bgg := sp.GetBaggage(); len(bgg) > 0 {
@@ -74,16 +74,15 @@ func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOpt
 	return sp
 }
 
-// SpanFromContext returns a reference to the current span stored in the context.
-// You can use this reference to add events or additional metadata to it, but you
-// can't close it directly.
+// SpanFromContext returns a reference to the current span stored in the
+// context. You can use this reference to add events to it, but you can't
+// close it directly.
 //
 // You can also use the `Context()` of the managed span to initiate child
 // tasks of your own.
-func (cmp *Component) SpanFromContext(ctx context.Context, attrs ...Attributes) SpanManaged {
-	// retrieve OTEL span from `ctx` and attach additional attributes
+func (cmp *Component) SpanFromContext(ctx context.Context) SpanManaged {
+	// retrieve OTEL span from `ctx`
 	fields := Attributes{}
-	fields.Join(attrs...)
 	sp := apiTrace.SpanFromContext(ctx)
 	sp.SetAttributes(fields.Expand()...)
 

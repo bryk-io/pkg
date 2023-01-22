@@ -19,27 +19,28 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	semConv "go.opentelemetry.io/otel/semconv/v1.12.0"
-	rpcCodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 )
 
 const (
-	lblSvcName        = string(semConv.ServiceNameKey)
-	lblSvcVer         = string(semConv.ServiceVersionKey)
-	lblHostArch       = string(semConv.HostArchKey)
-	lblHostName       = string(semConv.HostNameKey)
-	lblHostOS         = string(semConv.OSTypeKey)
-	lblLibName        = string(semConv.TelemetrySDKNameKey)
-	lblLibVer         = string(semConv.TelemetrySDKVersionKey)
-	lblLibLang        = string(semConv.TelemetrySDKLanguageKey)
-	lblProcessRuntime = string(semConv.ProcessRuntimeDescriptionKey)
-	lblTraceID        = "telemetry.trace.id"
-	lblSpanID         = "telemetry.span.id"
-	lblSpanKind       = "telemetry.span.kind"
-	lblChildCount     = "telemetry.span.child_count"
-	lblDuration       = "duration"
-	lblDurationMS     = "duration_ms"
+	lblSvcName          = string(semConv.ServiceNameKey)
+	lblSvcVer           = string(semConv.ServiceVersionKey)
+	lblHostArch         = string(semConv.HostArchKey)
+	lblHostName         = string(semConv.HostNameKey)
+	lblHostOS           = string(semConv.OSTypeKey)
+	lblLibName          = string(semConv.TelemetrySDKNameKey)
+	lblLibVer           = string(semConv.TelemetrySDKVersionKey)
+	lblLibLang          = string(semConv.TelemetrySDKLanguageKey)
+	lblProcessRuntime   = string(semConv.ProcessRuntimeDescriptionKey)
+	lblStackTrace       = string(semConv.ExceptionStacktraceKey)
+	lblExceptionMessage = string(semConv.ExceptionMessageKey)
+	lblTraceID          = "telemetry.trace.id"
+	lblSpanID           = "telemetry.span.id"
+	lblSpanKind         = "telemetry.span.kind"
+	lblChildCount       = "telemetry.span.child_count"
+	lblDuration         = "duration"
+	lblDurationMS       = "duration_ms"
 )
 
 // WithExporterStdout is a utility method to automatically setup and attach
@@ -58,6 +59,7 @@ func WithExporterStdout(pretty bool) []OperatorOption {
 // WithExporterOTLP is a utility method to automatically setup and attach
 // trace and metric exporters to send the generated telemetry data to an OTLP
 // exporter instance.
+// https://opentelemetry.io/docs/collector/
 func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string) []OperatorOption {
 	var opts []OperatorOption
 	se, me, err := ExporterOTLP(endpoint, insecure, headers)
@@ -237,52 +239,5 @@ func levelFromString(val string) log.Level {
 		return log.Fatal
 	default:
 		return log.Debug
-	}
-}
-
-// Map an OTEL code value to a valid logging level.
-// nolint: unused,gocyclo,deadcode
-func codeToLevel(code rpcCodes.Code) log.Level {
-	switch code {
-	// Info
-	case rpcCodes.OK:
-		return log.Info
-	case rpcCodes.Canceled:
-		return log.Info
-	case rpcCodes.NotFound:
-		return log.Info
-	case rpcCodes.AlreadyExists:
-		return log.Info
-	// Warning
-	case rpcCodes.Unavailable:
-		return log.Warning
-	case rpcCodes.InvalidArgument:
-		return log.Warning
-	case rpcCodes.DeadlineExceeded:
-		return log.Warning
-	case rpcCodes.PermissionDenied:
-		return log.Warning
-	case rpcCodes.Unauthenticated:
-		return log.Warning
-	case rpcCodes.ResourceExhausted:
-		return log.Warning
-	case rpcCodes.FailedPrecondition:
-		return log.Warning
-	case rpcCodes.Aborted:
-		return log.Warning
-	case rpcCodes.OutOfRange:
-		return log.Warning
-	// Errors
-	case rpcCodes.Unknown:
-		return log.Error
-	case rpcCodes.Unimplemented:
-		return log.Error
-	case rpcCodes.Internal:
-		return log.Error
-	case rpcCodes.DataLoss:
-		return log.Error
-	// Non-matched codes are identified as errors
-	default:
-		return log.Error
 	}
 }

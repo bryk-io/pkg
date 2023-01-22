@@ -390,7 +390,7 @@ func TestServer(t *testing.T) {
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
 			task := oop.Start(context.Background(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
-			defer task.End()
+			defer task.End(nil)
 
 			// Prepare HTTP request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:12137/foo/ping", nil)
@@ -410,7 +410,7 @@ func TestServer(t *testing.T) {
 		t.Run("Request", func(t *testing.T) {
 			// Start span
 			task := oop.Start(context.Background(), "/foo/request", otel.WithSpanKind(otel.SpanKindClient))
-			defer task.End()
+			defer task.End(nil)
 
 			// Prepare request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:12137/foo/request", nil)
@@ -438,7 +438,7 @@ func TestServer(t *testing.T) {
 		t.Run("CustomPath", func(t *testing.T) {
 			// Start span
 			task := oop.Start(context.Background(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
-			defer task.End()
+			defer task.End(nil)
 
 			// Prepare request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:12137/hello", nil)
@@ -459,7 +459,7 @@ func TestServer(t *testing.T) {
 			t.SkipNow()
 			// Start span
 			task := oop.Start(context.Background(), "/instrumentation", otel.WithSpanKind(otel.SpanKindClient))
-			defer task.End()
+			defer task.End(nil)
 
 			// Prepare request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodGet, "http://127.0.0.1:12137/instrumentation", nil)
@@ -481,7 +481,7 @@ func TestServer(t *testing.T) {
 			t.Run("ServerSide", func(t *testing.T) {
 				// Start span
 				task := oop.Start(context.Background(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
-				defer task.End()
+				defer task.End(nil)
 
 				// Open websocket connection
 				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/server_stream", task.Headers())
@@ -510,7 +510,7 @@ func TestServer(t *testing.T) {
 			t.Run("ClientSide", func(t *testing.T) {
 				// Start span
 				task := oop.Start(context.Background(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
-				defer task.End()
+				defer task.End(nil)
 
 				// Open websocket connection
 				pbM := protojson.MarshalOptions{EmitUnpopulated: true}
@@ -652,7 +652,7 @@ func TestServer(t *testing.T) {
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
 			task := oop.Start(context.Background(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
-			defer task.End()
+			defer task.End(nil)
 
 			// Prepare HTTPS request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "https://127.0.0.1:12137/foo/ping", nil)
@@ -672,7 +672,7 @@ func TestServer(t *testing.T) {
 		t.Run("CustomPath", func(t *testing.T) {
 			// Start span
 			task := oop.Start(context.Background(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
-			defer task.End()
+			defer task.End(nil)
 
 			// Prepare HTTPS request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "https://127.0.0.1:12137/hello", nil)
@@ -702,7 +702,7 @@ func TestServer(t *testing.T) {
 
 				// Start span
 				task := oop.Start(context.Background(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
-				defer task.End()
+				defer task.End(nil)
 
 				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/server_stream", task.Headers())
 				if err != nil {
@@ -740,7 +740,7 @@ func TestServer(t *testing.T) {
 
 				// Start span
 				task := oop.Start(context.Background(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
-				defer task.End()
+				defer task.End(nil)
 
 				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/client_stream", task.Headers())
 				if err != nil {
@@ -836,7 +836,7 @@ func TestServer(t *testing.T) {
 
 		// Test client
 		res, err := hcl.Do(req)
-		task.End()
+		task.End(nil)
 		assert.Nil(err, "failed http post")
 		assert.Equal(http.StatusOK, res.StatusCode, "failed http post")
 		defer func() {
@@ -1171,7 +1171,7 @@ func TestEchoServer(t *testing.T) {
 
 			// End span
 			_ = res.Body.Close()
-			task.End()
+			task.End(nil)
 			if done {
 				break
 			}

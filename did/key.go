@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcec/v2/ecdsa"
+	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"github.com/mr-tron/base58"
 	"go.bryk.io/pkg/crypto/ed25519"
 	e "golang.org/x/crypto/ed25519"
@@ -218,7 +218,7 @@ func (k *VerificationKey) sign(data []byte) ([]byte, error) {
 		}
 		return rsaSign(pvt, data)
 	case KeyTypeSecp256k1:
-		pvt, _ := btcec.PrivKeyFromBytes(k.Private)
+		pvt := secp.PrivKeyFromBytes(k.Private)
 		if pvt == nil {
 			return nil, errors.New("failed to decode private key")
 		}
@@ -257,11 +257,11 @@ func (k *VerificationKey) verify(data, signature []byte) bool {
 		}
 		return rsaVerify(pk, data, signature) == nil
 	case KeyTypeSecp256k1:
-		pub, err := btcec.ParsePubKey(pubBytes)
+		pub, err := secp.ParsePubKey(pubBytes)
 		if err != nil {
 			return false
 		}
-		sig, err := ecdsa.ParseSignature(signature)
+		sig, err := ecdsa.ParseDERSignature(signature)
 		if err != nil {
 			return false
 		}
@@ -297,7 +297,7 @@ func newCryptoKey(kt KeyType) (*VerificationKey, error) {
 		copy(pk.Private, key.PrivateKey())
 		key.Destroy()
 	case KeyTypeSecp256k1:
-		key, err := btcec.NewPrivateKey()
+		key, err := secp.GeneratePrivateKey()
 		if err != nil {
 			return nil, wrap(err, "failed to create new secp256k1 key")
 		}
@@ -469,10 +469,11 @@ func validateKeyEd(private, challenge []byte) ([]byte, error) {
 // Validate the provided 'private' key is Secp256k1. Return
 // the corresponding public key (compressed).
 func validateKeySecp256k1(private, challenge []byte) ([]byte, error) {
-	pvt, pp := btcec.PrivKeyFromBytes(private)
+	pvt := secp.PrivKeyFromBytes(private)
 	if pvt == nil {
 		return nil, errors.New("invalid secp256k1 private key")
 	}
+	pp := pvt.PubKey()
 	ss := ecdsa.Sign(pvt, challenge)
 	if ss == nil {
 		return nil, errors.New("invalid secp256k1 private key")

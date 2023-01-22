@@ -24,9 +24,6 @@ type Operator struct {
 	// Service version tag.
 	ServiceVersion string `json:"service_version" yaml:"service_version" mapstructure:"service_version"`
 
-	// Value reported in the `otel.library.name` attribute.
-	TracerName string `json:"tracer_name" yaml:"tracer_name" mapstructure:"tracer_name"`
-
 	// Additional attributes for the service.
 	Attributes map[string]interface{} `json:"attributes" yaml:"attributes" mapstructure:"attributes"`
 
@@ -61,12 +58,6 @@ func (c *Operator) Params() []cli.Param {
 			ByDefault: c.ServiceVersion,
 		},
 		{
-			Name:      "otel-tracer-name",
-			Usage:     "Tracer name",
-			FlagKey:   "otel.tracer_name",
-			ByDefault: c.TracerName,
-		},
-		{
 			Name:      "otel-host-metrics",
 			Usage:     "Capture host metrics",
 			FlagKey:   "otel.host_metrics",
@@ -93,9 +84,6 @@ func (c *Operator) Expand() interface{} {
 	}
 	if c.ServiceVersion != "" {
 		opt = append(opt, otel.WithServiceVersion(c.ServiceVersion))
-	}
-	if c.TracerName != "" {
-		opt = append(opt, otel.WithTracerName(c.TracerName))
 	}
 	if len(c.Attributes) > 0 {
 		opt = append(opt, otel.WithResourceAttributes(c.Attributes))

@@ -16,7 +16,7 @@ func NoOpSpan() Span {
 		attrs: Attributes{},        // empty attributes set
 		opts:  []apiTrace.SpanStartOption{},
 	}
-	sp.ctx, sp.span = noOpTraceProvider.Start(context.TODO(), "no-op")
+	sp.ctx, sp.span = noOpTraceProvider.Start(context.Background(), "no-op")
 	return sp
 }
 

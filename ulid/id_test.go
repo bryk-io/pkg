@@ -18,6 +18,8 @@ func TestNew(t *testing.T) {
 	prev, _ = New()
 	for i := 0; i < 10; i++ {
 		<-time.After(100 * time.Millisecond)
+
+		// Create and use new instance
 		id, err = New()
 		assert.Nil(err)
 		t.Logf("id: %s", id.String())
@@ -28,6 +30,11 @@ func TestNew(t *testing.T) {
 		assert.True(id.Compare(id) == 0)
 		assert.True(id.Compare(prev) >= 1)
 		assert.True(prev.Compare(id) < 0)
+
+		// Recover instance using 'Parse'
+		rec, err := Parse(id.String())
+		assert.Nil(err, "parse")
+		assert.Equal(id, rec)
 		prev = id
 	}
 }

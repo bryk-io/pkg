@@ -59,6 +59,13 @@ func New() (id ULID, err error) {
 	return id, err
 }
 
+// Parse a textual representation of an ULID instance.
+func Parse(val string) (ULID, error) {
+	id := new(ULID)
+	err := parse([]byte(val), false, id)
+	return *id, err
+}
+
 // Bytes returns bytes slice representation of ULID.
 func (id ULID) Bytes() []byte {
 	return id[:]
