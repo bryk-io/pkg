@@ -105,14 +105,15 @@ func (s *span) TraceID() string {
 // End will mark the span as completed. If `err` is not nil, the
 // status for the span will be marked as failed.
 func (s *span) End(err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err != nil {
-		s.span.SetStatus(otelCodes.Error, err.Error())
-		s.op.Status("error")
-	} else {
+	if err == nil {
 		s.span.SetStatus(otelCodes.Ok, "")
+		s.op.Finish()
+		s.span.End()
+		return
 	}
+	s.Error(log.Error, err)
+	s.span.SetStatus(otelCodes.Error, err.Error())
+	s.op.Status("error")
 	s.op.Finish()
 	s.span.End()
 }
@@ -130,8 +131,9 @@ func (s *span) IsSampled() bool {
 	return s.span.SpanContext().IsSampled()
 }
 
-// Event produces a log marker during the execution of the span. The attributes
-// provided here will be merged with those provided when creating the span.
+// Event produces a log marker during the execution of the span. The
+// attributes provided here will be merged with those provided when
+// creating the span.
 func (s *span) Event(message string, attributes ...Attributes) {
 	attrs := join(attributes...)
 	s.span.AddEvent(message, apiTrace.WithAttributes(attrs.Expand()...))
