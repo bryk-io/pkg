@@ -7,6 +7,7 @@ import (
 	"time"
 
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/metadata"
 	"storj.io/drpc"
 	"storj.io/drpc/drpcmetadata"
 )
@@ -26,7 +27,7 @@ func Logging(logger xlog.Logger, hook LoggingHook) Middleware {
 
 // LoggingHook provides a mechanism to extend a message fields just
 // before is submitted.
-type LoggingHook func(ctx context.Context, rpc string, fields *xlog.Fields)
+type LoggingHook func(ctx context.Context, rpc string, fields *metadata.MD)
 
 type logging struct {
 	ll   xlog.Logger
@@ -43,7 +44,7 @@ func (md logging) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in,
 	}
 
 	// Start message
-	md.ll.WithFields(fields).Info(rpc)
+	md.ll.WithFields(fields.Values()).Info(rpc)
 
 	// Process request
 	start := time.Now().UTC()
@@ -61,9 +62,9 @@ func (md logging) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in,
 	// End message
 	if err != nil {
 		fields.Set("error", err.Error())
-		md.ll.WithFields(fields).Errorf("%s failed", rpc)
+		md.ll.WithFields(fields.Values()).Errorf("%s failed", rpc)
 	} else {
-		md.ll.WithFields(fields).Infof("%s completed", rpc)
+		md.ll.WithFields(fields.Values()).Infof("%s completed", rpc)
 	}
 	return err
 }
@@ -77,7 +78,7 @@ func (md logging) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) 
 	}
 
 	// Start message
-	md.ll.WithFields(fields).Info(rpc)
+	md.ll.WithFields(fields.Values()).Info(rpc)
 
 	// Process request
 	start := time.Now().UTC()
@@ -87,7 +88,7 @@ func (md logging) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) 
 	// Error message
 	if err != nil {
 		fields.Set("error", err.Error())
-		md.ll.WithFields(fields).Errorf("%s failed", rpc)
+		md.ll.WithFields(fields.Values()).Errorf("%s failed", rpc)
 		return st, err
 	}
 
@@ -103,13 +104,13 @@ func (md logging) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) 
 		fields.Set("duration_ms", fmt.Sprintf("%.3f", lapse.Seconds()*1000))
 		fields.Set("event.end", end.Nanosecond())
 		fields.Set("event.duration", lapse.Nanoseconds())
-		md.ll.WithFields(fields).Infof("%s completed", rpc)
+		md.ll.WithFields(fields.Values()).Infof("%s completed", rpc)
 	}()
 	return st, err
 }
 
-func getFields(ctx context.Context, rpc string) xlog.Fields {
-	fields := xlog.Fields{}
+func getFields(ctx context.Context, rpc string) metadata.MD {
+	fields := metadata.New()
 	segments := strings.Split(rpc, "/")
 	if len(segments) == 3 {
 		fields.Set("rpc.system", "drpc")

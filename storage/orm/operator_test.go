@@ -359,7 +359,7 @@ func TestOperator(t *testing.T) {
 	})
 
 	// Disconnect
-	assert.Nil(op.Close(context.TODO()), "disconnect")
+	assert.Nil(op.Close(context.Background()), "disconnect")
 }
 
 // Dummy operator reference to be used on examples.
@@ -386,7 +386,7 @@ func ExampleNewOperator() {
 	// ..
 
 	// Close the connection to the database when no longer needed
-	err = db.Close(context.TODO())
+	err = db.Close(context.Background())
 	if err != nil {
 		panic(err)
 	}

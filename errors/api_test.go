@@ -71,8 +71,8 @@ func TestOpaque(t *testing.T) {
 	assert.Nil(Unwrap(op), "opaque can't be unwrapped")
 	assert.True(Is(Cause(op), op), "opaque is root error")
 
-	var se1 hasStack
-	var se2 hasStack
+	var se1 HasStack
+	var se2 HasStack
 	assert.True(As(e1, &se1))
 	assert.True(As(op, &se2))
 	assert.NotEqual(se1.StackTrace(), se2.StackTrace(), "opaque values should drop stack traces")
@@ -85,7 +85,6 @@ func TestFormat(t *testing.T) {
 	type tests struct {
 		src       string
 		multiline bool
-		gopath    bool
 	}
 
 	t.Run("Error", func(t *testing.T) {

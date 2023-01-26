@@ -8,6 +8,7 @@ import (
 	"time"
 
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/metadata"
 )
 
 // Handler produce output for the processed HTTP requests tagged with
@@ -25,7 +26,7 @@ func Handler(ll xlog.Logger, hook Hook) func(http.Handler) http.Handler {
 				ResponseWriter: w,
 				code:           http.StatusOK,
 				size:           0,
-				log:            ll.Sub(fields),
+				log:            ll.Sub(fields.Values()),
 			}
 			next.ServeHTTP(lrw, r)
 
@@ -44,7 +45,7 @@ func Handler(ll xlog.Logger, hook Hook) func(http.Handler) http.Handler {
 			}
 
 			// Log message
-			ll.WithFields(fields).Print(getLevel(lrw.code), r.URL.String())
+			ll.WithFields(fields.Values()).Print(getLevel(lrw.code), r.URL.String())
 		}
 		return http.HandlerFunc(fn)
 	}
@@ -52,7 +53,7 @@ func Handler(ll xlog.Logger, hook Hook) func(http.Handler) http.Handler {
 
 // Hook provides a mechanism to extend a message fields just
 // before is submitted.
-type Hook func(fields *xlog.Fields, r http.Request)
+type Hook func(fields *metadata.MD, r http.Request)
 
 // Custom response writer to collect additional details.
 type loggingRW struct {
@@ -105,15 +106,15 @@ func getLevel(status int) xlog.Level {
 	}
 }
 
-func getFields(r *http.Request) xlog.Fields {
-	data := xlog.Fields{
+func getFields(r *http.Request) metadata.MD {
+	data := metadata.FromMap(metadata.Map{
 		"user_agent.original":     r.UserAgent(),
 		"client.ip":               getIP(r),
 		"client.packets":          r.ContentLength,
 		"http.version":            r.Proto,
 		"http.request.method":     strings.ToLower(r.Method),
 		"http.request.body.bytes": r.ContentLength,
-	}
+	})
 	if ref := r.Header.Get("Referer"); ref != "" {
 		data.Set("http.request.referrer", ref)
 	}

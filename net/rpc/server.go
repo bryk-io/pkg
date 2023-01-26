@@ -105,7 +105,7 @@ func (srv *Server) Stop(graceful bool) error {
 	// Close HTTP gateway
 	var e error
 	if srv.gw != nil {
-		if err := srv.gw.Shutdown(context.TODO()); err != nil {
+		if err := srv.gw.Shutdown(context.Background()); err != nil {
 			e = errors.Wrap(err, "shutdown HTTP gateway")
 		}
 		if err := srv.gateway.conn.Close(); err != nil {
@@ -205,7 +205,7 @@ func (srv *Server) reset() {
 	if srv.halt != nil {
 		srv.halt()
 	}
-	srv.ctx, srv.halt = context.WithCancel(context.TODO())
+	srv.ctx, srv.halt = context.WithCancel(context.Background())
 	srv.net = netTCP
 	srv.port = 12137
 	srv.services = []ServiceProvider{}

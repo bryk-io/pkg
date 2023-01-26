@@ -3,6 +3,7 @@ package log
 import (
 	"sync"
 
+	"go.bryk.io/pkg/metadata"
 	"go.uber.org/zap"
 )
 
@@ -19,26 +20,30 @@ type zapHandler struct {
 	mu     sync.Mutex
 	log    *zap.SugaredLogger
 	lvl    Level
-	tags   *Fields
-	fields *Fields
+	tags   *metadata.MD
+	fields *metadata.MD
 }
 
 func (zh *zapHandler) SetLevel(lvl Level) {
+	zh.mu.Lock()
 	zh.lvl = lvl
+	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Sub(tags Fields) Logger {
+func (zh *zapHandler) Sub(tags metadata.Map) Logger {
+	t := metadata.FromMap(tags)
 	return &zapHandler{
 		log:    zh.log,
 		lvl:    zh.lvl,
-		tags:   &tags,
+		tags:   &t,
 		fields: nil,
 	}
 }
 
-func (zh *zapHandler) WithFields(fields Fields) Logger {
+func (zh *zapHandler) WithFields(fields metadata.Map) Logger {
+	f := metadata.FromMap(fields)
 	zh.mu.Lock()
-	zh.fields = &fields
+	zh.fields = &f
 	zh.mu.Unlock()
 	return zh
 }
@@ -46,10 +51,11 @@ func (zh *zapHandler) WithFields(fields Fields) Logger {
 func (zh *zapHandler) WithField(key string, value interface{}) Logger {
 	zh.mu.Lock()
 	if zh.fields == nil {
-		zh.fields = &Fields{}
+		f := metadata.New()
+		zh.fields = &f
 	}
-	zh.fields.Set(key, value)
 	zh.mu.Unlock()
+	zh.fields.Set(key, value)
 	return zh
 }
 
@@ -221,33 +227,36 @@ func (zh *zapHandler) Printf(level Level, format string, args ...interface{}) {
 func (zh *zapHandler) hasFields() bool {
 	zh.mu.Lock()
 	defer zh.mu.Unlock()
-	return zh.fields != nil || zh.tags != nil
+	if zh.fields != nil && !zh.fields.IsEmpty() {
+		return true
+	}
+	if zh.tags != nil && !zh.tags.IsEmpty() {
+		return true
+	}
+	return false
 }
 
 func (zh *zapHandler) clearFields() {
-	zh.mu.Lock()
-	zh.fields = nil
-	zh.mu.Unlock()
+	if zh.fields != nil {
+		zh.fields.Clear()
+	}
 }
 
 func (zh *zapHandler) getFields() []interface{} {
-	fields := Fields{}
+	fields := metadata.New()
 	if zh.fields != nil {
-		for k, v := range *zh.fields {
-			fields[k] = v
-		}
+		fields.Join(*zh.fields)
 	}
 	if zh.tags != nil {
-		for k, v := range *zh.tags {
-			fields[k] = v
-		}
+		fields.Join(*zh.tags)
 	}
 	i := 0
-	list := make([]interface{}, len(fields)*2)
-	for k, v := range fields {
+	values := fields.Values()
+	list := make([]interface{}, len(values)*2)
+	for k, v := range values {
 		list[i] = k
 		list[i+1] = v
-		i += 2 // nolint:wastedassign
+		i += 2
 	}
 	return list
 }

@@ -119,7 +119,7 @@ Regardless of how a connection is created you can set up a monitor for it using 
 the provided context.
 
 	// Get a monitor instance with a 5 seconds check interval
-	ctx, close := context.WithCancel(context.TODO())
+	ctx, close := context.WithCancel(context.Background())
 	defer close()
 	monitor := MonitorClientConnection(ctx, conn, 5*time.Second)
 

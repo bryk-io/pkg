@@ -518,7 +518,7 @@ func TestFlows(t *testing.T) {
 			<-time.After(1 * time.Second)
 
 			// Dispatch RPC request
-			ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			response, err := pub.SubmitRPC(ctx, "sample.rpc", randomMessage())
 			assert.Nil(err, "submit RPC error")
 

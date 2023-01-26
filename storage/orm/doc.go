@@ -29,7 +29,7 @@ connection to it.
 	}
 
 	// Close the connection to the database when no longer needed
-	if err = db.Close(context.TODO()); err != nil {
+	if err = db.Close(context.Background()); err != nil {
 		panic(err)
 	}
 

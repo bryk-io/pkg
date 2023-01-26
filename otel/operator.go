@@ -21,16 +21,15 @@ import (
 // Operator provides a single point-of-control for observability
 // requirements on a system, including: logs, metrics and traces.
 type Operator struct {
-	*Component                                        // main embedded component
 	log               log.Logger                      // logger instance
 	reporter          apiErrors.Reporter              // error reporter
-	coreAttributes    Attributes                      // resource attributes
+	coreAttributes    Attributes                      // base (env) attributes
 	userAttributes    Attributes                      // user-provided additional attributes
 	resource          *sdkResource.Resource           // OTEL resource definition
 	traceExporter     sdkTrace.SpanExporter           // trace sink components
 	metricExporter    sdkMetric.Reader                // metric sink components
 	traceProvider     *sdkTrace.TracerProvider        // main traces provider
-	metricProvider    *sdkMetric.MeterProvider        // main metrics provider
+	meterProvider     *sdkMetric.MeterProvider        // main metrics provider
 	propagator        propagation.TextMapPropagator   // default composite propagator
 	tracerName        string                          // name for the internal default tracer
 	tracer            apiTrace.Tracer                 // default internal tracer
@@ -40,6 +39,7 @@ type Operator struct {
 	spanLimits        sdkTrace.SpanLimits             // default span limits
 	props             []propagation.TextMapPropagator // list of individual text map propagators
 	sampler           sdkTrace.Sampler                // trace sampler strategy used
+	*Component                                        // main embedded component
 }
 
 // NewOperator creates a new operator instance. Operators can be used
@@ -65,12 +65,12 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 		return nil, err
 	}
 
-	// Attributes. Combine the default core attributes and the user provided data.
-	// This attributes will be automatically used when logging messages and "inherited"
-	// by all spans by adjusting the OTEL resource definition.
+	// Attributes. Combine the default core attributes and the user provided
+	// data. This attributes will be automatically used when logging messages
+	// and "inherited" by all spans by adjusting the OTEL resource definition.
 	attrs := join(op.coreAttributes, op.userAttributes)
-	op.log = op.log.Sub(log.Fields(attrs))
-	op.resource = sdkResource.NewWithAttributes(semConv.SchemaURL, attrs.Expand()...)
+	op.log = op.log.Sub(attrs)
+	op.resource = sdkResource.NewWithAttributes(semConv.SchemaURL, expand(attrs)...)
 
 	// Prepare context propagation mechanisms.
 	// If you do not set a propagator the default is to use a `NoOp` option, which
@@ -87,14 +87,12 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 
 	// Create the default "main" component.
 	op.Component = &Component{
-		ot:         op.tracer,
-		propagator: op.propagator,
-		attrs:      Attributes{},
-		Logger:     op.log,
-		reporter:   op.reporter,
-	}
-	if op.metricProvider != nil {
-		op.Component.MeterProvider = op.metricProvider
+		attrs:         Attributes{},     // initial empty set of attributes
+		ot:            op.tracer,        // inherit operator tracer
+		propagator:    op.propagator,    // inherit operator propagation mechanism(s)
+		reporter:      op.reporter,      // inherit operator error reporter
+		Logger:        op.log,           // inherit operator logger
+		MeterProvider: op.meterProvider, // inherit operator's meter provider
 	}
 
 	// Set internal OTEL error handler.
@@ -103,9 +101,7 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 	// Set OTEL globals.
 	otel.SetTextMapPropagator(op.propagator) // propagator(s)
 	otel.SetTracerProvider(op.traceProvider) // trace provider
-	if op.metricProvider != nil {            // meter provider
-		op.captureStandardMetrics() // start collecting common metrics
-	}
+	op.captureStandardMetrics()              // start collecting common metrics
 	return op, nil
 }
 
@@ -122,8 +118,8 @@ func (op *Operator) Shutdown(ctx context.Context) {
 	_ = op.traceExporter.Shutdown(ctx)
 
 	// Stop metric provider
-	if op.metricProvider != nil {
-		_ = op.metricProvider.Shutdown(ctx)
+	if op.meterProvider != nil {
+		_ = op.meterProvider.Shutdown(ctx)
 	}
 }
 
@@ -178,16 +174,21 @@ func (op *Operator) setupProviders() {
 		sdkMetric.WithReader(op.metricExporter),
 		sdkMetric.WithResource(op.resource),
 	}
-	op.metricProvider = sdkMetric.NewMeterProvider(metricProviderOpts...)
-	metricGlobal.SetMeterProvider(op.metricProvider)
+	op.meterProvider = sdkMetric.NewMeterProvider(metricProviderOpts...)
+	metricGlobal.SetMeterProvider(op.meterProvider)
 }
 
 // Start collection of host and runtime metrics, if enabled.
 func (op *Operator) captureStandardMetrics() {
+	// Nothing to do if no meter provider is available.
+	if op.meterProvider == nil {
+		return
+	}
+
 	// Capture host metrics.
 	if op.hostMetrics {
 		opts := []host.Option{
-			host.WithMeterProvider(op.metricProvider),
+			host.WithMeterProvider(op.meterProvider),
 		}
 		if err := host.Start(opts...); err != nil {
 			op.log.WithField("error.message", err.Error()).Warning("failed to start host metrics agent")
@@ -197,7 +198,7 @@ func (op *Operator) captureStandardMetrics() {
 	// Capture runtime metrics.
 	if op.runtimeMetrics {
 		opts := []runtime.Option{
-			runtime.WithMeterProvider(op.metricProvider),
+			runtime.WithMeterProvider(op.meterProvider),
 			runtime.WithMinimumReadMemStatsInterval(op.runtimeMetricsInt),
 		}
 		if err := runtime.Start(opts...); err != nil {

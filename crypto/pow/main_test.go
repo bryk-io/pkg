@@ -42,7 +42,7 @@ func TestSolve(t *testing.T) {
 	assert := tdd.New(t)
 	defer goleak.VerifyNone(t)
 	rec := &src{value: []byte("this is the value")}
-	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	r1 := Solve(ctx, rec, sha256.New(), 16)
@@ -63,7 +63,7 @@ func TestSolve(t *testing.T) {
 // Run a protocol round to find a solution to a PoW challenge.
 func ExampleSolve() {
 	// Create a context with a maximum timeout of 10 seconds
-	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Set the source for the round

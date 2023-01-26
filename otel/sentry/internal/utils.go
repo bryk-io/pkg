@@ -110,7 +110,7 @@ func join(list ...map[string]interface{}) map[string]interface{} {
 
 // Build a dummy HTTP request for the provided "sentry-trace" id.
 func toReq(traceID string) *http.Request {
-	req, _ := http.NewRequestWithContext(context.TODO(), http.MethodGet, "http://localhost", nil)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost", nil)
 	req.Header.Set("sentry-trace", traceID)
 	return req
 }

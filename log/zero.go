@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"go.bryk.io/pkg/metadata"
 )
 
 // nolint: varcheck, deadcode
@@ -35,7 +36,8 @@ type ZeroOptions struct {
 
 	// ErrorField is the field name used to display error messages. When
 	// using pretty print on a color-enabled console, the field will be
-	// highlighted by default for readability.
+	// highlighted by default for readability. If not provided, `error`
+	// will be used by default.
 	ErrorField string
 
 	// A destination for all produced messages. This can be a file, network
@@ -68,23 +70,26 @@ type zeroHandler struct {
 	mu     sync.Mutex
 	log    zerolog.Logger
 	lvl    Level
-	fields *Fields
+	fields *metadata.MD
 }
 
 func (zh *zeroHandler) SetLevel(lvl Level) {
+	zh.mu.Lock()
 	zh.lvl = lvl
+	zh.mu.Unlock()
 }
 
-func (zh *zeroHandler) Sub(tags Fields) Logger {
+func (zh *zeroHandler) Sub(tags metadata.Map) Logger {
 	return &zeroHandler{
-		log: zh.log.With().Fields(map[string]interface{}(tags)).Logger(),
+		log: zh.log.With().Fields(tags).Logger(),
 		lvl: zh.lvl,
 	}
 }
 
-func (zh *zeroHandler) WithFields(fields Fields) Logger {
+func (zh *zeroHandler) WithFields(fields metadata.Map) Logger {
+	f := metadata.FromMap(fields)
 	zh.mu.Lock()
-	zh.fields = &fields
+	zh.fields = &f
 	zh.mu.Unlock()
 	return zh
 }
@@ -92,10 +97,11 @@ func (zh *zeroHandler) WithFields(fields Fields) Logger {
 func (zh *zeroHandler) WithField(key string, value interface{}) Logger {
 	zh.mu.Lock()
 	if zh.fields == nil {
-		zh.fields = &Fields{}
+		f := metadata.New()
+		zh.fields = &f
 	}
-	zh.fields.Set(key, value)
 	zh.mu.Unlock()
+	zh.fields.Set(key, value)
 	return zh
 }
 
@@ -208,8 +214,8 @@ func (zh *zeroHandler) Printf(level Level, format string, args ...interface{}) {
 func (zh *zeroHandler) setFields(ev *zerolog.Event) *zerolog.Event {
 	zh.mu.Lock()
 	if zh.fields != nil {
-		ev.Fields(map[string]interface{}(*zh.fields))
-		zh.fields = nil
+		ev.Fields(zh.fields.Values())
+		zh.fields.Clear()
 	}
 	zh.mu.Unlock()
 	return ev

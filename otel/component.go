@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/metadata"
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/otel/baggage"
 	otelCodes "go.opentelemetry.io/otel/codes"
@@ -13,25 +14,24 @@ import (
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
-// Component instances provide an abstraction to support all the main primitives
-// required to instrument an application (or individual portion of one): logs,
-// traces and metrics. Component attributes are attached by default to all spans
-// started from it.
+// Component instances provide an abstraction to support all the main
+// primitives required to instrument an application (or individual portions
+// of one): logs, traces and metrics. Component attributes are attached
+// by default to all spans started from it.
 type Component struct {
 	ot                      apiTrace.Tracer               // underlying OTEL tracer
 	attrs                   Attributes                    // base component attributes
 	reporter                apiErrors.Reporter            // error reporter
 	propagator              propagation.TextMapPropagator // context propagation mechanism
-	log.Logger                                            // embedded main logger instance
+	log.Logger                                            // embedded logger instance
 	apiMetric.MeterProvider                               // embedded metric provider
 }
 
-// Start a new span with the provided details. Remember to call "End()" to properly
-// mark the span as completed. All spans are initialized with an "OK" status code
-// by default.
+// Start a new span with the provided details. Remember to call "End()"
+// to properly mark the span as completed.
 //
 //	task := op.Span(context.Background(), "my-task")
-//	defer task.End()
+//	defer task.End(err)
 func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOption) Span {
 	// bare span instance
 	sp := cmp.newSpan(name)
@@ -40,33 +40,34 @@ func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOpt
 	}
 
 	// create error reporting operation
-	// - add span attributes to it; don't use baggage values since those usually have
-	//   very high cardinality and are not meant to be used as event filters/selectors
 	// - store operation reference in span's context
+	// - add span attributes as operation tags; don't use baggage values
+	//   since those usually have very high cardinality and are not meant
+	//   to be used as event filters/selectors
 	sp.op = cmp.reporter.Start(ctx, name)
-	sp.op.Tags(sp.attrs)
+	sp.op.Tags(sp.attrs.Values())
 	ctx = cmp.reporter.ToContext(ctx, sp.op)
 
 	// attach user data if provided in span attributes
-	if usr, ok := extractUser(sp.attrs); ok {
+	if usr, ok := extractUser(sp.attrs.Values()); ok {
 		sp.op.User(usr)
 	}
 
-	// apply baggage values
-	if sp.bgg != nil {
-		bag, _ := baggage.New(sp.bgg.members()...)
+	// if available, add baggage values to the span's context
+	if !sp.bgg.IsEmpty() {
+		bag, _ := baggage.New(members(sp.bgg.Values())...)
 		ctx = baggage.ContextWithBaggage(ctx, bag)
+
+		// add baggage values as an error reporting operation "segment" too
+		sp.op.Segment("Baggage", sp.bgg.Values())
 	}
 
 	// create OTEL span
-	sp.opts = append(sp.opts, apiTrace.WithAttributes(sp.attrs.Expand()...))
+	sp.opts = append(sp.opts, apiTrace.WithAttributes(expand(sp.attrs.Values())...))
 	sp.ctx, sp.span = cmp.ot.Start(ctx, name, sp.opts...)
 	sp.span.SetStatus(otelCodes.Unset, "")
 
-	// add OTEL details and baggage to error reporting operation
-	if bgg := sp.GetBaggage(); len(bgg) > 0 {
-		sp.op.Segment("Baggage", bgg)
-	}
+	// add OTEL details as a "segment" on error reporting operation
 	sp.op.Segment("OTEL", map[string]interface{}{
 		"trace.id": sp.TraceID(),
 		"span.id":  sp.ID(),
@@ -82,28 +83,25 @@ func (cmp *Component) Start(ctx context.Context, name string, options ...SpanOpt
 // tasks of your own.
 func (cmp *Component) SpanFromContext(ctx context.Context) SpanManaged {
 	// retrieve OTEL span from `ctx`
-	fields := Attributes{}
 	sp := apiTrace.SpanFromContext(ctx)
-	sp.SetAttributes(fields.Expand()...)
 
 	// retrieve error reporting operation from `ctx`
 	op := cmp.reporter.FromContext(ctx)
 	if op == nil {
 		op = apiErrors.NoOpOperation()
 	}
-	op.Tags(fields)
 
 	return &span{
 		op:    op,             // error reporter operation
 		cp:    cmp.propagator, // context propagation mechanism
 		ctx:   ctx,            // provided context
 		span:  sp,             // restored span from provided context
-		attrs: fields,         // provided attributes
+		attrs: metadata.New(), // provided attributes
 	}
 }
 
-// Export available span details. Useful when manually propagating a task context
-// across process boundaries.
+// Export available span details. Useful when manually propagating a task
+// context across process boundaries.
 func (cmp *Component) Export(ctx context.Context) ([]byte, error) {
 	md := propagation.MapCarrier{}
 	cmp.propagator.Inject(ctx, md)
@@ -141,11 +139,11 @@ func (cmp *Component) ErrorReporter() apiErrors.Reporter {
 // Default span structure.
 func (cmp *Component) newSpan(name string) *span {
 	return &span{
-		name:  name,                // task name
-		kind:  SpanKindUnspecified, // default kind
-		bgg:   nil,                 // no baggage by default
-		attrs: cmp.attrs,           // inherit base component attributes
-		cp:    cmp.propagator,      // inherit context propagation mechanism
+		name:  name,                        // task name
+		kind:  SpanKindUnspecified,         // default kind
+		bgg:   metadata.New(),              // no baggage by default
+		attrs: metadata.FromMap(cmp.attrs), // inherit base component attributes
+		cp:    cmp.propagator,              // inherit context propagation mechanism
 		opts:  []apiTrace.SpanStartOption{},
 	}
 }

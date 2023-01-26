@@ -68,7 +68,7 @@ func (c *jsonCodec) Marshal(err error) ([]byte, error) {
 	var oe *Error
 	if As(err, &oe) {
 		data["stamp"] = oe.Stamp()
-		data["trace"] = oe.StackTrace()
+		data["trace"] = oe.PortableTrace()
 		data["hints"] = oe.Hints()
 		data["tags"] = oe.Tags()
 		if ev := oe.Events(); ev != nil {

@@ -7,8 +7,8 @@ type Codec interface {
 	Marshal(err error) ([]byte, error)
 }
 
-// Report an error instance by generating a portable/transmissible representation
-// of it using the provided codec.
+// Report an error instance by generating a portable/transmissible
+// representation of it using the provided codec.
 func Report(err error, cc Codec) ([]byte, error) {
 	return cc.Marshal(err)
 }

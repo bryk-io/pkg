@@ -86,7 +86,7 @@ func (c *Client) GetConnection(endpoint string) (conn *grpc.ClientConn, err erro
 		conn, err = grpc.Dial(endpoint, c.dialOpts...)
 		return conn, errors.Wrap(err, "failed to dial")
 	}
-	ctx, cancel := context.WithTimeout(context.TODO(), c.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 	conn, err = grpc.DialContext(ctx, endpoint, c.dialOpts...)
 	return conn, errors.Wrap(err, "failed to dial with context")

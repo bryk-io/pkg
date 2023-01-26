@@ -10,14 +10,14 @@ import (
 // Error is an error with an attached stacktrace. It can be used
 // wherever the builtin error interface is expected.
 type Error struct {
-	ts     int64             // UNIX timestamp (in milliseconds)
-	err    error             // root error value
-	prev   error             // previous error in the chain, present only on wrapped errors
-	prefix string            // prefix value when presenting error in simple textual form
-	frames []StackFrame      // error stacktrace
-	hints  []string          // additional contextual information
-	events []Event           // events associated to the error
-	tags   map[string]string // additional metadata details
+	ts     int64                  // UNIX timestamp (in milliseconds)
+	err    error                  // root error value
+	prev   error                  // previous error in the chain, present only on wrapped errors
+	prefix string                 // prefix value when presenting error in simple textual form
+	frames []StackFrame           // error stacktrace
+	hints  []string               // additional contextual information
+	events []Event                // events associated to the error
+	tags   map[string]interface{} // additional metadata details
 	mu     sync.Mutex
 }
 
@@ -73,6 +73,18 @@ func (e *Error) StackTrace() []StackFrame {
 	return e.frames
 }
 
+// PortableTrace returns the frames in the callers stack attempting
+// to remove any paths specific to the local system, making the
+// information a bit more readable and portable.
+func (e *Error) PortableTrace() []StackFrame {
+	fr := make([]StackFrame, len(e.frames))
+	copy(fr, e.frames)
+	for i := range fr {
+		fr[i].File = printFile(fr[i].File)
+	}
+	return fr
+}
+
 // AddHint registers additional information on the error instance. When
 // `safe` is true the hint will be added only if not already set, preventing
 // duplicates.
@@ -107,11 +119,11 @@ func (e *Error) AddEvent(ev Event) {
 
 // SetTag registers a specific key/value pair on the error instance; replacing
 // any previously set values under the same key.
-func (e *Error) SetTag(key, value string) {
+func (e *Error) SetTag(key string, value interface{}) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.tags == nil {
-		e.tags = make(map[string]string)
+		e.tags = make(map[string]interface{})
 	}
 	e.tags[key] = value
 }
@@ -124,7 +136,7 @@ func (e *Error) Stamp() int64 {
 // Tags provide additional context to an error in the form of arbitrary
 // key/value pairs. If no tags are set on the error instance this method
 // returns `nil`.
-func (e *Error) Tags() map[string]string {
+func (e *Error) Tags() map[string]interface{} {
 	return e.tags
 }
 

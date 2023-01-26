@@ -134,7 +134,7 @@ For example, to start a typical production client.
 	// specific DRPC services.
 	// RPC request
 	mySvc := samplev1.NewDRPCFooAPIClient(cl)
-	res, _ := mySvc.Ping(context.TODO(), &emptypb.Empty{})
+	res, _ := mySvc.Ping(context.Background(), &emptypb.Empty{})
 
 # Custom Middleware
 

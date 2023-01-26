@@ -3,6 +3,7 @@ package otel
 import (
 	"context"
 
+	"go.bryk.io/pkg/metadata"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
@@ -12,8 +13,8 @@ func NoOpSpan() Span {
 	sp := &span{
 		name:  "no-op",             // task name
 		kind:  SpanKindUnspecified, // default kind
-		cp:    nil,                 // inherit context propagation mechanism
-		attrs: Attributes{},        // empty attributes set
+		cp:    nil,                 // no context propagation mechanism
+		attrs: metadata.New(),      // empty attributes set
 		opts:  []apiTrace.SpanStartOption{},
 	}
 	sp.ctx, sp.span = noOpTraceProvider.Start(context.Background(), "no-op")

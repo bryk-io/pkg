@@ -8,6 +8,7 @@ import (
 	"time"
 
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/metadata"
 	"storj.io/drpc"
 	"storj.io/drpc/drpcmetadata"
 )
@@ -27,7 +28,7 @@ func Logging(logger xlog.Logger, hook LoggingHook) Middleware {
 
 // LoggingHook provides a mechanism to extend a message fields just
 // before is submitted.
-type LoggingHook func(fields *xlog.Fields, stream drpc.Stream)
+type LoggingHook func(fields *metadata.MD, stream drpc.Stream)
 
 type wrappedStream struct {
 	drpc.Stream
@@ -64,13 +65,13 @@ func (md logging) HandleRPC(stream drpc.Stream, rpc string) error {
 	}
 
 	// Start message
-	md.ll.WithFields(fields).Info(rpc)
+	md.ll.WithFields(fields.Values()).Info(rpc)
 
 	// Process request
 	start := time.Now().UTC()
 	ws := wrappedStream{
 		Stream: stream,
-		ll:     md.ll.Sub(fields),
+		ll:     md.ll.Sub(fields.Values()),
 	}
 	err := md.next.HandleRPC(ws, rpc)
 	end := time.Now().UTC()
@@ -86,15 +87,15 @@ func (md logging) HandleRPC(stream drpc.Stream, rpc string) error {
 	// End message
 	if err != nil {
 		fields.Set("error", err.Error())
-		md.ll.WithFields(fields).Errorf("%s failed", rpc)
+		md.ll.WithFields(fields.Values()).Errorf("%s failed", rpc)
 		return err
 	}
-	md.ll.WithFields(fields).Infof("%s completed", rpc)
+	md.ll.WithFields(fields.Values()).Infof("%s completed", rpc)
 	return nil
 }
 
-func getFields(stream drpc.Stream, rpc string) xlog.Fields {
-	fields := xlog.Fields{}
+func getFields(stream drpc.Stream, rpc string) metadata.MD {
+	fields := metadata.New()
 	segments := strings.Split(rpc, "/")
 	if len(segments) == 3 {
 		fields.Set("rpc.system", "drpc")

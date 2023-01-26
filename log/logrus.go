@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"go.bryk.io/pkg/metadata"
 )
 
 // WithLogrus provides a log handler using the flexibility-oriented "logrus" library.
@@ -17,24 +18,27 @@ func WithLogrus(log logrus.FieldLogger) Logger {
 type logrusHandler struct {
 	log    logrus.FieldLogger
 	lvl    Level
-	fields *Fields
+	fields *metadata.MD
 	mu     sync.Mutex
 }
 
 func (lh *logrusHandler) SetLevel(lvl Level) {
+	lh.mu.Lock()
 	lh.lvl = lvl
+	lh.mu.Unlock()
 }
 
-func (lh *logrusHandler) Sub(tags Fields) Logger {
+func (lh *logrusHandler) Sub(tags metadata.Map) Logger {
 	return &logrusHandler{
 		log: lh.log.WithFields(logrus.Fields(tags)),
 		lvl: lh.lvl,
 	}
 }
 
-func (lh *logrusHandler) WithFields(fields Fields) Logger {
+func (lh *logrusHandler) WithFields(fields metadata.Map) Logger {
+	f := metadata.FromMap(fields)
 	lh.mu.Lock()
-	lh.fields = &fields
+	lh.fields = &f
 	lh.mu.Unlock()
 	return lh
 }
@@ -42,10 +46,11 @@ func (lh *logrusHandler) WithFields(fields Fields) Logger {
 func (lh *logrusHandler) WithField(key string, value interface{}) Logger {
 	lh.mu.Lock()
 	if lh.fields == nil {
-		lh.fields = &Fields{}
+		f := metadata.New()
+		lh.fields = &f
 	}
-	lh.fields.Set(key, value)
 	lh.mu.Unlock()
+	lh.fields.Set(key, value)
 	return lh
 }
 
@@ -57,7 +62,7 @@ func (lh *logrusHandler) Debug(args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Debug(args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Debug(args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -73,7 +78,7 @@ func (lh *logrusHandler) Debugf(format string, args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Debugf(format, args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Debugf(format, args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -89,7 +94,7 @@ func (lh *logrusHandler) Info(args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Info(args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Info(args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -105,7 +110,7 @@ func (lh *logrusHandler) Infof(format string, args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Infof(format, args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Infof(format, args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -121,7 +126,7 @@ func (lh *logrusHandler) Warning(args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Warning(args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Warning(args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -137,7 +142,7 @@ func (lh *logrusHandler) Warningf(format string, args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Warnf(format, args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Warnf(format, args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -153,7 +158,7 @@ func (lh *logrusHandler) Error(args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Error(args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Error(args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -169,7 +174,7 @@ func (lh *logrusHandler) Errorf(format string, args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Errorf(format, args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Errorf(format, args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -186,7 +191,7 @@ func (lh *logrusHandler) Panic(args ...interface{}) {
 	if lh.fields != nil {
 		defer lh.clearFields()
 		lh.mu.Unlock()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Panic(args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panic(args...)
 		return
 	}
 	lh.mu.Unlock()
@@ -201,7 +206,7 @@ func (lh *logrusHandler) Panicf(format string, args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Panicf(format, args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panicf(format, args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -218,7 +223,7 @@ func (lh *logrusHandler) Fatal(args ...interface{}) {
 	if lh.fields != nil {
 		defer lh.clearFields()
 		lh.mu.Unlock()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Fatal(args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatal(args...)
 		return
 	}
 	lh.mu.Unlock()
@@ -233,7 +238,7 @@ func (lh *logrusHandler) Fatalf(format string, args ...interface{}) {
 	lh.mu.Lock()
 	if lh.fields != nil {
 		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(*lh.fields)).Fatalf(format, args...)
+		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatalf(format, args...)
 		lh.mu.Unlock()
 		return
 	}
@@ -252,7 +257,7 @@ func (lh *logrusHandler) Printf(level Level, format string, args ...interface{})
 }
 
 func (lh *logrusHandler) clearFields() {
-	lh.mu.Lock()
-	lh.fields = nil
-	lh.mu.Unlock()
+	if lh.fields != nil {
+		lh.fields.Clear()
+	}
 }

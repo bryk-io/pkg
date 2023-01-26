@@ -27,13 +27,16 @@ type logSpans struct {
 
 // OnEnd is used to log a message once each span has ended.
 func (f logSpans) OnEnd(s sdkTrace.ReadOnlySpan) {
-	level := log.Info
-	if s.Status().Code == otelCodes.Error {
-		level = log.Error
-	}
+	// Log "intermediary" operation events
 	for _, event := range s.Events() {
 		eventLvl, eventAttrs := f.event(event, f.fields(s, false))
 		f.log.WithFields(eventAttrs).Print(eventLvl, event.Name)
+	}
+
+	// Log "end" operation message
+	level := log.Info
+	if s.Status().Code == otelCodes.Error {
+		level = log.Error
 	}
 	f.log.WithFields(f.fields(s, true)).Printf(level, "%s completed", s.Name())
 	f.Next.OnEnd(s)
@@ -41,6 +44,7 @@ func (f logSpans) OnEnd(s sdkTrace.ReadOnlySpan) {
 
 // OnStart is used to log a message when a new span is created.
 func (f logSpans) OnStart(parent context.Context, s sdkTrace.ReadWriteSpan) {
+	// Log "start" operation message
 	if rs, ok := s.(sdkTrace.ReadOnlySpan); ok {
 		f.log.WithFields(f.fields(rs, false)).Info(s.Name())
 	}
@@ -55,7 +59,7 @@ func (f logSpans) ForceFlush(ctx context.Context) error {
 	return f.Next.ForceFlush(ctx)
 }
 
-func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) log.Fields {
+func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) Attributes {
 	// Get span attributes
 	fields := Attributes{}
 	fields.load(s.Attributes())
@@ -77,16 +81,15 @@ func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) log.Fields {
 			delete(fields, nl)
 		}
 	}
-
-	return log.Fields(fields)
+	return fields
 }
 
-func (f logSpans) event(event sdkTrace.Event, fields log.Fields) (log.Level, log.Fields) {
+func (f logSpans) event(event sdkTrace.Event, fields Attributes) (log.Level, Attributes) {
 	eventLvl := log.Debug
 	attrs := Attributes{}
 	attrs.Set("time", event.Time)
 	attrs.load(event.Attributes)
-	attrs.Join(Attributes(fields))
+	attrs.join(fields)
 	for _, nl := range noLogFields {
 		if st := attrs.Get(nl); st != nil {
 			delete(attrs, nl)
@@ -95,5 +98,5 @@ func (f logSpans) event(event sdkTrace.Event, fields log.Fields) (log.Level, log
 	if lvl := attrs.Get("error.level"); lvl != nil {
 		eventLvl = levelFromString(fmt.Sprintf("%s", lvl))
 	}
-	return eventLvl, log.Fields(attrs)
+	return eventLvl, attrs
 }

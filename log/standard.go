@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"go.bryk.io/pkg/metadata"
 )
 
 // WithStandard provides a log handler using only standard library packages.
@@ -17,27 +19,31 @@ type stdLogger struct {
 	mu      sync.Mutex
 	log     *stdL.Logger
 	lvl     Level
-	tags    *Fields
-	fields  *Fields
+	tags    *metadata.MD
+	fields  *metadata.MD
 	discard bool
 }
 
 func (sl *stdLogger) SetLevel(lvl Level) {
+	sl.mu.Lock()
 	sl.lvl = lvl
+	sl.mu.Unlock()
 }
 
-func (sl *stdLogger) Sub(tags Fields) Logger {
+func (sl *stdLogger) Sub(tags metadata.Map) Logger {
+	t := metadata.FromMap(tags)
 	return &stdLogger{
 		log:     sl.log,
 		lvl:     sl.lvl,
-		tags:    &tags,
+		tags:    &t,
 		discard: sl.discard,
 	}
 }
 
-func (sl *stdLogger) WithFields(fields Fields) Logger {
+func (sl *stdLogger) WithFields(fields metadata.Map) Logger {
+	f := metadata.FromMap(fields)
 	sl.mu.Lock()
-	sl.fields = &fields
+	sl.fields = &f
 	sl.mu.Unlock()
 	return sl
 }
@@ -45,10 +51,11 @@ func (sl *stdLogger) WithFields(fields Fields) Logger {
 func (sl *stdLogger) WithField(key string, value interface{}) Logger {
 	sl.mu.Lock()
 	if sl.fields == nil {
-		sl.fields = &Fields{}
+		f := metadata.New()
+		sl.fields = &f
 	}
-	sl.fields.Set(key, value)
 	sl.mu.Unlock()
+	sl.fields.Set(key, value)
 	return sl
 }
 
@@ -169,28 +176,30 @@ func (sl *stdLogger) Printf(level Level, format string, args ...interface{}) {
 func (sl *stdLogger) hasFields() bool {
 	sl.mu.Lock()
 	defer sl.mu.Unlock()
-	return sl.fields != nil || sl.tags != nil
+	if sl.fields != nil && !sl.fields.IsEmpty() {
+		return true
+	}
+	if sl.tags != nil && !sl.tags.IsEmpty() {
+		return true
+	}
+	return false
 }
 
 func (sl *stdLogger) clearFields() {
-	sl.mu.Lock()
-	sl.fields = nil
-	sl.mu.Unlock()
+	if sl.fields != nil {
+		sl.fields.Clear()
+	}
 }
 
 func (sl *stdLogger) getFields() map[string]interface{} {
-	fields := make(map[string]interface{})
+	fields := metadata.New()
 	if sl.fields != nil {
-		for k, v := range *sl.fields {
-			fields[k] = v
-		}
+		fields.Join(*sl.fields)
 	}
 	if sl.tags != nil {
-		for k, v := range *sl.tags {
-			fields[k] = v
-		}
+		fields.Join(*sl.tags)
 	}
-	return fields
+	return fields.Values()
 }
 
 func (sl *stdLogger) print(level string, format string, args ...interface{}) {

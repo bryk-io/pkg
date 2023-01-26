@@ -5,6 +5,7 @@ import (
 	"time"
 
 	xlog "go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/metadata"
 	"storj.io/drpc"
 )
 
@@ -48,14 +49,14 @@ func (md retry) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in, o
 		}
 
 		// Operation fields
-		fields := xlog.Fields{
+		fields := metadata.FromMap(metadata.Map{
 			"error":         err.Error(),
 			"retry.attempt": md.tries,
-		}
+		})
 
 		// Verify limit
 		if md.tries == md.limit {
-			md.log.WithFields(fields).Warning("retry: max attempts exceeded")
+			md.log.WithFields(fields.Values()).Warning("retry: max attempts exceeded")
 			return err
 		}
 
@@ -64,9 +65,9 @@ func (md retry) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in, o
 		pause := time.Duration(float32(md.delay)*(md.factor*float32(md.tries))) * time.Millisecond
 		fields.Set("retry.pause_ms", pause.Milliseconds())
 		fields.Set("retry.pause", pause.String())
-		md.log.WithFields(fields).Debug("retry: delaying new attempt")
+		md.log.WithFields(fields.Values()).Debug("retry: delaying new attempt")
 		<-time.After(pause)
-		md.log.WithFields(fields).Warning("retry: re-submitting request")
+		md.log.WithFields(fields.Values()).Warning("retry: re-submitting request")
 		continue
 	}
 }
@@ -84,14 +85,14 @@ func (md retry) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) (d
 		}
 
 		// Operation fields
-		fields := xlog.Fields{
+		fields := metadata.FromMap(metadata.Map{
 			"error":         err.Error(),
 			"retry.attempt": md.tries,
-		}
+		})
 
 		// Verify limit
 		if md.tries == md.limit {
-			md.log.WithFields(fields).Warning("retry: max attempts exceeded")
+			md.log.WithFields(fields.Values()).Warning("retry: max attempts exceeded")
 			return nil, err
 		}
 
@@ -100,9 +101,9 @@ func (md retry) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) (d
 		pause := time.Duration(float32(md.delay)*(md.factor*float32(md.tries))) * time.Millisecond
 		fields.Set("retry.pause_ms", pause.Milliseconds())
 		fields.Set("retry.pause", pause.String())
-		md.log.WithFields(fields).Debug("retry: delaying new attempt")
+		md.log.WithFields(fields.Values()).Debug("retry: delaying new attempt")
 		<-time.After(pause)
-		md.log.WithFields(fields).Warning("retry: re-submitting request")
+		md.log.WithFields(fields.Values()).Warning("retry: re-submitting request")
 		continue
 	}
 }

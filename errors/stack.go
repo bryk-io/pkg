@@ -95,7 +95,7 @@ func getStack(skip int) []StackFrame {
 
 // Convert a frame from its native `runtime.Frame` representation.
 func convertFrame(rf runtime.Frame) StackFrame {
-	fnc, pkg := packageAndName(rf.Function)
+	pkg, fnc := packageAndName(rf.Function)
 	return StackFrame{
 		File:           rf.File,
 		LineNumber:     rf.Line,

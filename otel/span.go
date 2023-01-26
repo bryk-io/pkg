@@ -2,10 +2,13 @@ package otel
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/metadata"
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/otel/baggage"
 	otelCodes "go.opentelemetry.io/otel/codes"
@@ -14,8 +17,9 @@ import (
 )
 
 // SpanManaged represents a unit of work that was initiated by another
-// component. You may get a reference to the span to add events or additional
-// metadata, but you can't close it directly.
+// component. You may get a read-only reference to the span to inspect
+// it or add additional events to it but you won't be able to close it
+// directly.
 //
 // You can also use the `Context()` of the managed span to initiate child
 // tasks of your own.
@@ -33,13 +37,10 @@ type SpanManaged interface {
 	// IsSampled returns if the sampling bit is set in the span context's.
 	IsSampled() bool
 
-	// Event produces a log marker during the execution of the span. The attributes
-	// provided here will be merged with those provided when creating the span.
+	// Event produces a log marker during the execution of the span. The
+	// attributes provided here will be merged with those provided when
+	// creating the span.
 	Event(message string, attributes ...Attributes)
-
-	// Error adds an annotation to the span with an error event.
-	// More information: https://bit.ly/3lqxl5b
-	Error(level log.Level, err error, attributes ...Attributes)
 
 	// GetAttributes returns the data elements available in the span.
 	GetAttributes() Attributes
@@ -76,8 +77,8 @@ type Span interface {
 type span struct {
 	name  string
 	kind  SpanKind
-	attrs Attributes
-	bgg   Attributes
+	attrs metadata.MD
+	bgg   metadata.MD
 	opts  []apiTrace.SpanStartOption
 	span  apiTrace.Span
 	ctx   context.Context
@@ -111,7 +112,7 @@ func (s *span) End(err error) {
 		s.span.End()
 		return
 	}
-	s.Error(log.Error, err)
+	s.recordError(err)
 	s.span.SetStatus(otelCodes.Error, err.Error())
 	s.op.Status("error")
 	s.op.Finish()
@@ -136,31 +137,64 @@ func (s *span) IsSampled() bool {
 // creating the span.
 func (s *span) Event(message string, attributes ...Attributes) {
 	attrs := join(attributes...)
-	s.span.AddEvent(message, apiTrace.WithAttributes(attrs.Expand()...))
+	s.span.AddEvent(message, apiTrace.WithAttributes(expand(attrs)...))
 	s.op.Event(message, attrs)
 }
 
-// Error adds an annotation to the span with an error event. If `setStatus` is true
-// the status of the span will also be adjusted.
+// GetAttributes returns the data elements available in the span.
+func (s *span) GetAttributes() Attributes {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.attrs.Values()
+}
+
+// GetBaggage returns any attribute available in the span's bgg context.
+func (s *span) GetBaggage() Attributes {
+	bgg := metadata.New()
+	for _, m := range baggage.FromContext(s.ctx).Members() {
+		bgg.Set(m.Key(), m.Value())
+	}
+	return bgg.Values()
+}
+
+// Headers return the cross-cutting concerns from span context as a set of HTTP
+// headers. This is particularly useful when manually propagating the span across
+// network boundaries using a non-conventional transport, like Websockets.
+func (s *span) Headers() http.Header {
+	headers := http.Header{}
+	s.cp.Inject(s.ctx, propagation.HeaderCarrier(headers))
+	s.op.Inject(propagation.HeaderCarrier(headers))
+	return headers
+}
+
+// Adds an annotation to the span with an error event.
 // More information: https://bit.ly/3lqxl5b
-func (s *span) Error(level log.Level, err error, attributes ...Attributes) {
-	// Base error details
+func (s *span) recordError(err error, attributes ...Attributes) {
+	// preserve original error stacktrace if available, otherwise
+	// generate a new one pointing where this function was called
+	stack := getStack(2)
+	var se errors.HasStack
+	if errors.As(err, &se) {
+		stack = fmt.Sprintf("%+v", err)
+	}
+
+	// base error details
+	level := log.Error
 	fields := Attributes{
-		"event":             "error",
-		"error.level":       level,
-		"error.message":     err.Error(),
-		lblExceptionMessage: err.Error(),
-		lblStackTrace:       getStack(1),
+		"event":         "exception",
+		"error.level":   level,
+		"error.message": err.Error(),
+		lblStackTrace:   stack,
 	}
 	attrs := join(attributes...)
 	if attributes != nil {
 		fields = join(fields, attrs)
 	}
 
-	// Record error on the span
-	s.span.RecordError(err, apiTrace.WithAttributes(fields.Expand()...))
+	// record error on the span
+	s.span.RecordError(err, apiTrace.WithAttributes(expand(fields)...))
 
-	// Report error
+	// report error
 	if s.IsSampled() {
 		s.op.Level(level.String())
 		s.op.Tags(join(s.GetAttributes(), attrs))
@@ -173,32 +207,4 @@ func (s *span) Error(level log.Level, err error, attributes ...Attributes) {
 		})
 		s.op.Report(err)
 	}
-}
-
-// GetAttributes returns the data elements available in the span.
-func (s *span) GetAttributes() Attributes {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.attrs
-}
-
-// GetBaggage returns any attribute available in the span's bgg context.
-func (s *span) GetBaggage() Attributes {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	attrs := Attributes{}
-	for _, m := range baggage.FromContext(s.ctx).Members() {
-		attrs.Set(m.Key(), m.Value())
-	}
-	return attrs
-}
-
-// Headers return the cross-cutting concerns from span context as a set of HTTP
-// headers. This is particularly useful when manually propagating the span across
-// network boundaries using a non-conventional transport, like Websockets.
-func (s *span) Headers() http.Header {
-	headers := http.Header{}
-	s.cp.Inject(s.ctx, propagation.HeaderCarrier(headers))
-	s.op.Inject(propagation.HeaderCarrier(headers))
-	return headers
 }

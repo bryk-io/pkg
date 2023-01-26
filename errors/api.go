@@ -103,7 +103,7 @@ func Wrap(e error, prefix string) error {
 	// preserve original error stacktrace if available, otherwise
 	// generate a new one pointing where this function was called
 	frames := getStack(1)
-	var se hasStack
+	var se HasStack
 	if As(e, &se) {
 		frames = se.StackTrace()
 	}
@@ -225,16 +225,18 @@ func Combine(err, other error) error {
 	return err
 }
 
+// HasStack is implemented by error types that natively
+// provide robust stack traces.
+type HasStack interface {
+	StackTrace() []StackFrame
+}
+
 type isWrapper interface {
 	Unwrap() error
 }
 
 type hasCause interface {
 	Cause() error
-}
-
-type hasStack interface {
-	StackTrace() []StackFrame
 }
 
 type comparableError interface {

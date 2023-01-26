@@ -35,6 +35,7 @@ const (
 	lblProcessRuntime   = string(semConv.ProcessRuntimeDescriptionKey)
 	lblStackTrace       = string(semConv.ExceptionStacktraceKey)
 	lblExceptionMessage = string(semConv.ExceptionMessageKey)
+	lblExceptionType    = string(semConv.ExceptionTypeKey)
 	lblTraceID          = "telemetry.trace.id"
 	lblSpanID           = "telemetry.span.id"
 	lblSpanKind         = "telemetry.span.kind"
