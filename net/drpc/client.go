@@ -3,10 +3,10 @@ package drpc
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"net"
 	"sync"
 
+	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
 	clmw "go.bryk.io/pkg/net/drpc/middleware/client"
 	"storj.io/drpc"

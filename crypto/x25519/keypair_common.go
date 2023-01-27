@@ -3,10 +3,10 @@ package x25519
 import (
 	"crypto/rand"
 	"encoding/pem"
-	"errors"
 	"fmt"
 
 	"go.bryk.io/pkg/crypto/internal"
+	"go.bryk.io/pkg/errors"
 	c "golang.org/x/crypto/curve25519"
 )
 

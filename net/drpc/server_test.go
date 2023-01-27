@@ -3,7 +3,6 @@ package drpc
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	tdd "github.com/stretchr/testify/assert"
+	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
 	clMW "go.bryk.io/pkg/net/drpc/middleware/client"
 	srvMW "go.bryk.io/pkg/net/drpc/middleware/server"

@@ -1,11 +1,12 @@
 package did
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
+
+	"go.bryk.io/pkg/errors"
 )
 
 // Base prefix according to the specification.

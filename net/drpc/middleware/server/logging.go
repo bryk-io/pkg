@@ -1,12 +1,12 @@
 package server
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"time"
 
+	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
 	"go.bryk.io/pkg/metadata"
 	"storj.io/drpc"

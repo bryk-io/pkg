@@ -1,8 +1,7 @@
 package server
 
 import (
-	"errors"
-
+	"go.bryk.io/pkg/errors"
 	"golang.org/x/time/rate"
 	"storj.io/drpc"
 )

@@ -3,11 +3,11 @@ package tred
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"errors"
 	"io"
 	"sync"
 	"time"
 
+	"go.bryk.io/pkg/errors"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/sha3"

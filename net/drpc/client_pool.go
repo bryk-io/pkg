@@ -1,8 +1,9 @@
 package drpc
 
 import (
-	"errors"
 	"sync"
+
+	"go.bryk.io/pkg/errors"
 )
 
 // Pool provides a very simple cache and re-use mechanism for

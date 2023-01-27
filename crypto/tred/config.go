@@ -2,8 +2,9 @@ package tred
 
 import (
 	"crypto/rand"
-	"errors"
 	"io"
+
+	"go.bryk.io/pkg/errors"
 )
 
 // Config provides all configuration parameters available when creating a new

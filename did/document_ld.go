@@ -3,10 +3,10 @@ package did
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/piprate/json-gold/ld"
+	"go.bryk.io/pkg/errors"
 )
 
 const (

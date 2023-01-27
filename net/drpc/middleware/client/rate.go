@@ -2,8 +2,8 @@ package client
 
 import (
 	"context"
-	"errors"
 
+	"go.bryk.io/pkg/errors"
 	"golang.org/x/time/rate"
 	"storj.io/drpc"
 )

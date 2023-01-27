@@ -1,8 +1,7 @@
 package server
 
 import (
-	"errors"
-
+	"go.bryk.io/pkg/errors"
 	"storj.io/drpc"
 	"storj.io/drpc/drpcmetadata"
 )

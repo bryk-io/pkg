@@ -4,11 +4,11 @@ import (
 	"crypto/rand"
 	"crypto/sha512"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"math/big"
 
 	"go.bryk.io/pkg/crypto/internal"
+	"go.bryk.io/pkg/errors"
 	c "golang.org/x/crypto/curve25519"
 	e "golang.org/x/crypto/ed25519"
 )

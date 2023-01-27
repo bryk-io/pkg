@@ -109,106 +109,106 @@ func (zh *zeroHandler) Debug(args ...interface{}) {
 	if zh.lvl > Debug {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Debug()).Msg(fmt.Sprint(args...))
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Debug()).Msg(fmt.Sprint(cleanArgs...))
 }
 
 func (zh *zeroHandler) Debugf(format string, args ...interface{}) {
 	if zh.lvl > Debug {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Debug()).Msgf(format, args...)
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Debug()).Msgf(format, cleanArgs...)
 }
 
 func (zh *zeroHandler) Info(args ...interface{}) {
 	if zh.lvl > Info {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Info()).Msg(fmt.Sprint(args...))
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Info()).Msg(fmt.Sprint(cleanArgs...))
 }
 
 func (zh *zeroHandler) Infof(format string, args ...interface{}) {
 	if zh.lvl > Info {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Info()).Msgf(format, args...)
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Info()).Msgf(format, cleanArgs...)
 }
 
 func (zh *zeroHandler) Warning(args ...interface{}) {
 	if zh.lvl > Warning {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Warn()).Msg(fmt.Sprint(args...))
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Warn()).Msg(fmt.Sprint(cleanArgs...))
 }
 
 func (zh *zeroHandler) Warningf(format string, args ...interface{}) {
 	if zh.lvl > Warning {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Warn()).Msgf(format, args...)
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Warn()).Msgf(format, cleanArgs...)
 }
 
 func (zh *zeroHandler) Error(args ...interface{}) {
 	if zh.lvl > Error {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Error()).Msg(fmt.Sprint(args...))
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Error()).Msg(fmt.Sprint(cleanArgs...))
 }
 
 func (zh *zeroHandler) Errorf(format string, args ...interface{}) {
 	if zh.lvl > Error {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Error()).Msgf(format, args...)
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Error()).Msgf(format, cleanArgs...)
 }
 
 func (zh *zeroHandler) Panic(args ...interface{}) {
 	if zh.lvl > Panic {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Panic()).Msg(fmt.Sprint(args...))
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Panic()).Msg(fmt.Sprint(cleanArgs...))
 }
 
 func (zh *zeroHandler) Panicf(format string, args ...interface{}) {
 	if zh.lvl > Panic {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Panic()).Msgf(format, args...)
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Panic()).Msgf(format, cleanArgs...)
 }
 
 func (zh *zeroHandler) Fatal(args ...interface{}) {
 	if zh.lvl > Fatal {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Fatal()).Msg(fmt.Sprint(args...))
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Fatal()).Msg(fmt.Sprint(cleanArgs...))
 }
 
 func (zh *zeroHandler) Fatalf(format string, args ...interface{}) {
 	if zh.lvl > Fatal {
 		return
 	}
-	args = sanitize(args...)
-	zh.setFields(zh.log.Fatal()).Msgf(format, args...)
+	cleanArgs := sanitize(args...)
+	zh.setFields(zh.log.Fatal()).Msgf(format, cleanArgs...)
 }
 
 func (zh *zeroHandler) Print(level Level, args ...interface{}) {
-	args = sanitize(args...)
-	lprint(zh, level, args...)
+	cleanArgs := sanitize(args...)
+	lprint(zh, level, cleanArgs...)
 }
 
 func (zh *zeroHandler) Printf(level Level, format string, args ...interface{}) {
-	args = sanitize(args...)
-	lprintf(zh, level, format, args...)
+	cleanArgs := sanitize(args...)
+	lprintf(zh, level, format, cleanArgs...)
 }
 
 func (zh *zeroHandler) setFields(ev *zerolog.Event) *zerolog.Event {

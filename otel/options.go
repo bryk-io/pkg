@@ -1,9 +1,9 @@
 package otel
 
 import (
-	"errors"
 	"time"
 
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/log"
 	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/otel/propagation"

@@ -10,7 +10,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 	"github.com/mr-tron/base58"
 	"go.bryk.io/pkg/crypto/ed25519"
+	"go.bryk.io/pkg/errors"
 	e "golang.org/x/crypto/ed25519"
 )
 

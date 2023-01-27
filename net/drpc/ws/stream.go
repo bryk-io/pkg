@@ -2,11 +2,11 @@ package ws
 
 import (
 	"context"
-	"errors"
 	"io"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"go.bryk.io/pkg/errors"
 	"storj.io/drpc"
 	"storj.io/drpc/drpchttp"
 )

@@ -1,9 +1,10 @@
 package shamir
 
 import (
-	"errors"
 	"math/rand"
 	"time"
+
+	"go.bryk.io/pkg/errors"
 )
 
 const (

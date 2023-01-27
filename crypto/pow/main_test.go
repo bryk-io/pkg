@@ -3,7 +3,6 @@ package pow
 import (
 	"context"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	tdd "github.com/stretchr/testify/assert"
+	"go.bryk.io/pkg/errors"
 	"go.uber.org/goleak"
 )
 

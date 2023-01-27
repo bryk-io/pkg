@@ -63,72 +63,72 @@ func (sl *stdLogger) Debug(args ...interface{}) {
 	if sl.lvl > Debug {
 		return
 	}
-	args = sanitize(args...)
-	sl.Debugf(defaultFormat, args...)
+	cleanArgs := sanitize(args...)
+	sl.Debugf(defaultFormat, cleanArgs...)
 }
 
 func (sl *stdLogger) Debugf(format string, args ...interface{}) {
 	if sl.lvl > Debug {
 		return
 	}
-	args = sanitize(args...)
-	sl.print("DEBUG", format, args...)
+	cleanArgs := sanitize(args...)
+	sl.print("DEBUG", format, cleanArgs...)
 }
 
 func (sl *stdLogger) Info(args ...interface{}) {
 	if sl.lvl > Info {
 		return
 	}
-	args = sanitize(args...)
-	sl.Infof(defaultFormat, args...)
+	cleanArgs := sanitize(args...)
+	sl.Infof(defaultFormat, cleanArgs...)
 }
 
 func (sl *stdLogger) Infof(format string, args ...interface{}) {
 	if sl.lvl > Info {
 		return
 	}
-	args = sanitize(args...)
-	sl.print("INFO", format, args...)
+	cleanArgs := sanitize(args...)
+	sl.print("INFO", format, cleanArgs...)
 }
 
 func (sl *stdLogger) Warning(args ...interface{}) {
 	if sl.lvl > Warning {
 		return
 	}
-	args = sanitize(args...)
-	sl.Warningf(defaultFormat, args...)
+	cleanArgs := sanitize(args...)
+	sl.Warningf(defaultFormat, cleanArgs...)
 }
 
 func (sl *stdLogger) Warningf(format string, args ...interface{}) {
 	if sl.lvl > Warning {
 		return
 	}
-	args = sanitize(args...)
-	sl.print("WARNING", format, args...)
+	cleanArgs := sanitize(args...)
+	sl.print("WARNING", format, cleanArgs...)
 }
 
 func (sl *stdLogger) Error(args ...interface{}) {
 	if sl.lvl > Error {
 		return
 	}
-	args = sanitize(args...)
-	sl.Errorf(defaultFormat, args...)
+	cleanArgs := sanitize(args...)
+	sl.Errorf(defaultFormat, cleanArgs...)
 }
 
 func (sl *stdLogger) Errorf(format string, args ...interface{}) {
 	if sl.lvl > Error {
 		return
 	}
-	args = sanitize(args...)
-	sl.print("ERROR", format, args...)
+	cleanArgs := sanitize(args...)
+	sl.print("ERROR", format, cleanArgs...)
 }
 
 func (sl *stdLogger) Panic(args ...interface{}) {
 	if sl.lvl > Panic {
 		return
 	}
-	args = sanitize(args...)
-	sl.Panicf(defaultFormat, args...)
+	cleanArgs := sanitize(args...)
+	sl.Panicf(defaultFormat, cleanArgs...)
 }
 
 func (sl *stdLogger) Panicf(format string, args ...interface{}) {
@@ -138,17 +138,17 @@ func (sl *stdLogger) Panicf(format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	args = sanitize(args...)
-	sl.print("PANIC", format, args...)
-	panic(fmt.Sprintf(format, args...))
+	cleanArgs := sanitize(args...)
+	sl.print("PANIC", format, cleanArgs...)
+	panic(fmt.Sprintf(format, cleanArgs...))
 }
 
 func (sl *stdLogger) Fatal(args ...interface{}) {
 	if sl.lvl > Fatal {
 		return
 	}
-	args = sanitize(args...)
-	sl.Fatalf(defaultFormat, args...)
+	cleanArgs := sanitize(args...)
+	sl.Fatalf(defaultFormat, cleanArgs...)
 }
 
 func (sl *stdLogger) Fatalf(format string, args ...interface{}) {
@@ -158,19 +158,19 @@ func (sl *stdLogger) Fatalf(format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	args = sanitize(args...)
-	sl.print("FATAL", format, args...)
+	cleanArgs := sanitize(args...)
+	sl.print("FATAL", format, cleanArgs...)
 	os.Exit(1)
 }
 
 func (sl *stdLogger) Print(level Level, args ...interface{}) {
-	args = sanitize(args...)
-	lprint(sl, level, args...)
+	cleanArgs := sanitize(args...)
+	lprint(sl, level, cleanArgs...)
 }
 
 func (sl *stdLogger) Printf(level Level, format string, args ...interface{}) {
-	args = sanitize(args...)
-	lprintf(sl, level, format, args...)
+	cleanArgs := sanitize(args...)
+	lprintf(sl, level, format, cleanArgs...)
 }
 
 func (sl *stdLogger) hasFields() bool {
@@ -222,7 +222,7 @@ func output(level string, fields map[string]interface{}, format string, args ...
 	i := 0
 	for k, v := range fields {
 		s[i] = fmt.Sprintf("%s:%v", k, v)
-		i++ //nolint:wastedassign
+		i++
 	}
 	prefix := fmt.Sprintf("%s: (%s)", level, strings.Join(s, "|"))
 	return fmt.Sprintf(prefix+" "+format, args...)

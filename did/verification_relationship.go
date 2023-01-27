@@ -1,7 +1,7 @@
 package did
 
 import (
-	"errors"
+	"go.bryk.io/pkg/errors"
 )
 
 // VerificationRelationship specifies the semantics and intended usage

@@ -3,7 +3,6 @@ package rpc
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +15,7 @@ import (
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus"
 	tdd "github.com/stretchr/testify/assert"
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/log"
 	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
 	"go.bryk.io/pkg/net/rpc/ws"

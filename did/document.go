@@ -2,7 +2,8 @@ package did
 
 import (
 	"encoding/json"
-	"errors"
+
+	"go.bryk.io/pkg/errors"
 )
 
 // Extension provides a flexible mechanism to add contextual parameters to
