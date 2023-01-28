@@ -26,7 +26,7 @@ require (
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.8.1
 	go.bryk.io/miracl v0.5.0
-	go.bryk.io/x v0.0.0-20230116182449-1eaa4fc74543
+	go.bryk.io/x v0.0.0-20230127012039-810bca92d1a8
 	go.mongodb.org/mongo-driver v1.11.1
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.37.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.37.0

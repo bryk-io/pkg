@@ -1,7 +1,6 @@
 package errors
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -52,30 +51,9 @@ func TestReport(t *testing.T) {
 		},
 	})
 
-	cc := new(jsonCodec)
-	js, err := Report(e3, cc)
+	js, err := Report(e3, CodecJSON(true))
 	assert.Nil(err, "failed to generate report")
 	t.Logf("%s", js)
-}
-
-// Sample JSON codec.
-type jsonCodec struct{}
-
-func (c *jsonCodec) Marshal(err error) ([]byte, error) {
-	data := map[string]interface{}{
-		"error": err.Error(),
-	}
-	var oe *Error
-	if As(err, &oe) {
-		data["stamp"] = oe.Stamp()
-		data["trace"] = oe.PortableTrace()
-		data["hints"] = oe.Hints()
-		data["tags"] = oe.Tags()
-		if ev := oe.Events(); ev != nil {
-			data["events"] = ev
-		}
-	}
-	return json.MarshalIndent(data, "", "  ")
 }
 
 type customErrorA struct{ msg string }

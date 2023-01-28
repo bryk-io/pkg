@@ -31,7 +31,9 @@ const (
 // of a logger instance backed by the `zerolog` library.
 type ZeroOptions struct {
 	// Whether to print messages in a textual representation. If not enabled
-	// messages are logged in a structured (JSON) format by default.
+	// messages are logged in a structured (JSON) format by default. This
+	// value is only applied when writing to console, if a custom `Sink` is
+	// provided the messages are always submitted in JSON format.
 	PrettyPrint bool
 
 	// ErrorField is the field name used to display error messages. When
@@ -42,25 +44,31 @@ type ZeroOptions struct {
 
 	// A destination for all produced messages. This can be a file, network
 	// connection, or any other element supporting the `io.Writer` interface.
-	// If no sink is specified `os.Stderr` will be used by default.
+	// If no sink is specified `os.Stdout` will be used by default.
 	Sink io.Writer
 }
 
 // WithZero provides a log handler using the zerolog library.
 func WithZero(options ZeroOptions) Logger {
-	// Use `os.Stderr` as default sink
-	if options.Sink == nil {
-		options.Sink = os.Stderr
-	}
 	// Use `error` as default error field
 	if options.ErrorField == "" {
 		options.ErrorField = "error"
 	}
 	zerolog.ErrorFieldName = options.ErrorField
 	handler := zerolog.New(os.Stderr).With().Timestamp().Logger()
-	if options.PrettyPrint {
-		handler = handler.Output(zeroCW(options.Sink))
+	var output io.Writer
+	if options.Sink != nil {
+		// use user provided sink directly
+		output = options.Sink
+	} else {
+		// use standard output by default if no value was provided
+		output = os.Stdout
+		if options.PrettyPrint {
+			// use custom "console writer" to produce pretty printed output
+			output = zeroCW(output)
+		}
 	}
+	handler = handler.Output(output)
 	return &zeroHandler{
 		log: handler,
 	}

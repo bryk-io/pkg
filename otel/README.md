@@ -50,8 +50,10 @@ are:
   these attributes will be inherited by all spans produced.
 - `WithExporter`: All data collected by the operator needs to be send somewhere for
   processing, storage and consumption. This is referred to as an exporter. You can
-  use any collector you want. For example a simple "standard output" exporter via `WithExporterStdout` or a more advanced [OTEL Collector](https://opentelemetry.io/docs/collector/) via the `WithExporterOTLP`. If no collector is specified the data
-  will be discarded by default.
+  use any collector you want. For example a simple "standard output" exporter via
+  `WithExporterStdout` or a more advanced [OTEL Collector](https://opentelemetry.io/docs/collector/)
+  via the `WithExporterOTLP`. If no collector is specified the data will be discarded
+  by default.
 
 Review the documentation for details on several other options available.
 
@@ -85,7 +87,7 @@ You MUST always mark the Spans you create as done when appropriate using its
 
 ```go
 task := op.Span(context.Background(), "my-task")
-defer task.End()
+defer task.End(nil)
 ```
 
 You can optionally, but usually, use the `WithSpanAttributes` option to add
@@ -113,16 +115,11 @@ of a task.
 
 ```go
 task := op.Span(context.Background(), "my-task")
-defer task.End(nil)
 
 // My code is doing some intermediary task. If it fails, report it with
 // proper severity level.
 task.Event("performing X operation")
-err := someOtherWorkToDo()
-if err != nil {
-  task.Error(log.Error, err)
-}
-task.End(err) // report the task as a failure
+task.End(someFunctionReturningErrorOrNil())
 ```
 
 ### Creating Child Spans

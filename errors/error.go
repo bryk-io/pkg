@@ -85,23 +85,14 @@ func (e *Error) PortableTrace() []StackFrame {
 	return fr
 }
 
-// AddHint registers additional information on the error instance. When
-// `safe` is true the hint will be added only if not already set, preventing
-// duplicates.
-func (e *Error) AddHint(hint string, safe bool) {
+// AddHint registers additional information on the error instance.
+func (e *Error) AddHint(hint string) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
 	if e.hints == nil {
 		e.hints = []string{}
 	}
-	if safe {
-		for _, eh := range e.hints {
-			if hint == eh {
-				return // don't add duplicates
-			}
-		}
-	}
 	e.hints = append(e.hints, hint)
+	e.mu.Unlock()
 }
 
 // AddEvent registers an additional event on the error instance.
@@ -175,15 +166,21 @@ func (e *Error) Format(s fmt.State, verb rune) {
 				str += fmt.Sprintf("‹%d› %+v", i, frame)
 			}
 			if len(e.hints) > 0 {
-				str += "hints:\n"
+				str += "‹hints›\n"
 				for _, h := range e.hints {
 					str += fmt.Sprintf("\t- %s\n", h)
 				}
 			}
 			if len(e.tags) > 0 {
-				str += "tags:\n"
+				str += "‹tags›\n"
 				for k, v := range e.tags {
-					str += fmt.Sprintf("\t- %s=%s\n", k, v)
+					str += fmt.Sprintf("\t- %s=%v\n", k, v)
+				}
+			}
+			if len(e.events) > 0 {
+				str += "‹events›\n"
+				for _, ev := range e.events {
+					str += fmt.Sprintf("\t- (%s) %s\n", ev.Kind, ev.Message)
 				}
 			}
 		} else {

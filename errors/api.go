@@ -219,7 +219,7 @@ func Combine(err, other error) error {
 	}
 	var oe *Error
 	if As(err, &oe) {
-		oe.AddHint(other.Error(), true)
+		oe.AddHint(other.Error())
 		return oe
 	}
 	return err
