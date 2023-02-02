@@ -22,6 +22,13 @@ jobs:
       # Checkout code
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      # Get commit message
+      - name: Get commit message
+        run: |
+          echo 'commit_msg<<EOF' >> $GITHUB_ENV
+          git log --format=%B -n 1 ${{ github.sha }} >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       
       # Prepare runner environment
       - name: Set up runner environment
@@ -52,5 +59,7 @@ jobs:
           make release
 
       # Run analysis
+      # Can be excluded if the commit message contains: [skip codeql]
       - name: Perform CodeQL analysis
+        if: ${{ !contains(env.commit_msg, '[skip codeql]') }}
         uses: github/codeql-action/analyze@v2

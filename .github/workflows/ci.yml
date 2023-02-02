@@ -42,10 +42,10 @@ jobs:
         run: go list -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' -m all > go.list
 
       # Scan dependencies using Nancy
-      # Can be excluded if the commit message contains: [scan-deps skip]
+      # Can be excluded if the commit message contains: [skip scan-deps]
       # https://github.com/sonatype-nexus-community/nancy-github-action
       - name: Scan dependencies
-        if: ${{ !contains(env.commit_msg, '[scan-deps skip]') }}
+        if: ${{ !contains(env.commit_msg, '[skip scan-deps]') }}
         uses: sonatype-nexus-community/nancy-github-action@v1.0.2
 
   # Validate the protocol buffer definitions on the project
@@ -94,10 +94,11 @@ jobs:
         if: ${{ steps.buf-setup.outcome == 'success' }}
 
       # Detect breaking changes
+      # Can be excluded if the commit message contains: [skip buf-breaking]
       - name: Detect breaking changes
         id: buf-breaking
         uses: bufbuild/buf-breaking-action@v1.1.2
-        if: steps.buf-lint.outcome == 'success' && !contains(env.commit_msg, '[buf-breaking skip]')
+        if: steps.buf-lint.outcome == 'success' && !contains(env.commit_msg, '[skip buf-breaking]')
         with:
           against: 'https://github.com/${{ github.repository }}.git#branch=main'
         env:
@@ -132,6 +133,13 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+
+      # Get commit message
+      - name: Get commit message
+        run: |
+          echo 'commit_msg<<EOF' >> $GITHUB_ENV
+          git log --format=%B -n 1 ${{ github.sha }} >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
 
       # If "vendor" is in cache, restore.
       # To run conditional steps use:
