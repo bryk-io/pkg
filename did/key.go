@@ -5,24 +5,19 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/pem"
-	"fmt"
 	"time"
 
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
-	"github.com/mr-tron/base58"
 	"go.bryk.io/pkg/crypto/ed25519"
 	"go.bryk.io/pkg/errors"
 	e "golang.org/x/crypto/ed25519"
 )
 
-// VerificationKey represents a cryptographic key according to the "Linked Data
-// Cryptographic Suites".
+// VerificationKey represents a cryptographic key according to the
+// "Linked Data Cryptographic Suites".
 // https://w3c-ccg.github.io/ld-cryptosuite-registry/
 type VerificationKey struct {
 	// Unique identifier for the key reference.
@@ -54,13 +49,9 @@ func (k *VerificationKey) String() string {
 	return k.ID
 }
 
-// Bytes returns the byte representation of the public key properly decoding
-// it from a value entry.
+// Bytes returns the byte representation of the public key.
 func (k *VerificationKey) Bytes() ([]byte, error) {
-	if k.Type == KeyTypeEd {
-		return multibaseDecode(k.Public)
-	}
-	return base58.Decode(k.PublicKeyBase58)
+	return k.Type.DecodePublicKey(k)
 }
 
 // Sign the provided input and return the generated signature value.
@@ -73,8 +64,8 @@ func (k *VerificationKey) Verify(data, signature []byte) bool {
 	return k.verify(data, signature)
 }
 
-// ProduceSignatureLD generates a valid linked data signature for the provided
-// data, usually a canonicalized version of JSON-LD document.
+// ProduceSignatureLD generates a valid linked data signature for the
+// provided data, usually a canonicalized version of JSON-LD document.
 // https://w3c-dvcg.github.io/ld-signatures/#signature-algorithm
 func (k *VerificationKey) ProduceSignatureLD(data []byte, domain string) (*SignatureLD, error) {
 	// Set signature options
@@ -100,8 +91,8 @@ func (k *VerificationKey) ProduceSignatureLD(data []byte, domain string) (*Signa
 	return sig, nil
 }
 
-// VerifySignatureLD validates the authenticity and integrity of a linked data
-// signature using the public key instance.
+// VerifySignatureLD validates the authenticity and integrity of a
+// linked data signature using the public key instance.
 // https://w3c-dvcg.github.io/ld-signatures/#signature-verification-algorithm
 func (k *VerificationKey) VerifySignatureLD(data []byte, sig *SignatureLD) bool {
 	// Get signature options
@@ -124,8 +115,8 @@ func (k *VerificationKey) VerifySignatureLD(data []byte, sig *SignatureLD) bool 
 	return k.verify(input, sig.Value)
 }
 
-// ProduceProof will generate a valid linked data proof for the provided data,
-// usually a canonicalized version of JSON-LD document.
+// ProduceProof will generate a valid linked data proof for the provided
+// data, usually a canonicalized version of JSON-LD document.
 // https://w3c-dvcg.github.io/ld-proofs
 func (k *VerificationKey) ProduceProof(data []byte, purpose, domain string) (*ProofLD, error) {
 	// Set proof options
@@ -152,8 +143,8 @@ func (k *VerificationKey) ProduceProof(data []byte, purpose, domain string) (*Pr
 	return p, nil
 }
 
-// VerifyProof will evaluate the authenticity and integrity of a linked data
-// proof using the public key instance.
+// VerifyProof will evaluate the authenticity and integrity of a linked
+// data proof using the public key instance.
 // https://w3c-ccg.github.io/ld-proofs/#create-verify-hash-algorithm
 func (k *VerificationKey) VerifyProof(data []byte, proof *ProofLD) bool {
 	// Get proof options
@@ -176,8 +167,9 @@ func (k *VerificationKey) VerifyProof(data []byte, proof *ProofLD) bool {
 	return k.verify(input, proof.Value)
 }
 
-// AddExtension can be used to register additional contextual information in the key instance.
-// If another extension with the same id and version information, the data will be updated.
+// AddExtension can be used to register additional contextual information
+// in the key instance. If another extension with the same id and version
+// information, the data will be updated.
 func (k *VerificationKey) AddExtension(ext Extension) {
 	for i, ee := range k.Extensions {
 		if ee.ID == ext.ID && ee.Version == ext.Version {
@@ -188,9 +180,10 @@ func (k *VerificationKey) AddExtension(ext Extension) {
 	k.Extensions = append(k.Extensions, ext)
 }
 
-// GetExtension retrieves the information available for a given extension and decode it into
-// the  provided holder instance (usually a pointer to a structure type). If no information is
-// available or a decoding problems occurs an error will be returned.
+// GetExtension retrieves the information available for a given extension
+// and decode it into the provided holder instance (usually a pointer to
+// a structure type). If no information is available or decoding problems
+// occur, an error will be returned.
 func (k *VerificationKey) GetExtension(id string, version string, holder interface{}) error {
 	for _, ee := range k.Extensions {
 		if ee.ID == id && ee.Version == version {
@@ -306,11 +299,7 @@ func newCryptoKey(kt KeyType) (*VerificationKey, error) {
 	}
 
 	// Set encoded value
-	if kt == KeyTypeEd {
-		pk.Public = multibaseEncode(pub)
-	} else {
-		pk.PublicKeyBase58 = base58.Encode(pub)
-	}
+	kt.EncodePublicKey(pk, pub)
 	return pk, nil
 }
 
@@ -350,12 +339,8 @@ func loadExistingKey(private []byte, kt KeyType) (*VerificationKey, error) {
 		}
 	}
 
-	// Set encoded value
-	if kt == KeyTypeEd {
-		pk.Public = multibaseEncode(pub)
-	} else {
-		pk.PublicKeyBase58 = base58.Encode(pub)
-	}
+	// Set encoded public key value
+	kt.EncodePublicKey(pk, pub)
 	return pk, nil
 }
 
@@ -393,7 +378,8 @@ func newRSAKey() (pub []byte, priv []byte, err error) {
 	return pubBuf.Bytes(), privBuf.Bytes(), nil
 }
 
-// Produce a valid signature for the SHA256 hashed data using RSASSA-PKCS1-V1_5-SIGN.
+// Produce a valid signature for the SHA256 hashed data using
+// RSASSA-PKCS1-V1_5-SIGN.
 func rsaSign(priv *rsa.PrivateKey, data []byte) ([]byte, error) {
 	s, err := rsa.SignPKCS1v15(rand.Reader, priv, crypto.SHA256, getHash(data))
 	return s, err
@@ -402,43 +388,6 @@ func rsaSign(priv *rsa.PrivateKey, data []byte) ([]byte, error) {
 // Verify an RSA PKCS#1 v1.5 signature.
 func rsaVerify(pub *rsa.PublicKey, data, signature []byte) error {
 	return rsa.VerifyPKCS1v15(pub, crypto.SHA256, getHash(data), signature)
-}
-
-// Generate a SHA256 digest value from the provided data.
-func getHash(data []byte) []byte {
-	h := sha256.New()
-	if _, err := h.Write(data); err != nil {
-		return nil
-	}
-	return h.Sum(nil)
-}
-
-// https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-03
-func multibaseEncode(data []byte) string {
-	return "z" + base58.Encode(data)
-}
-
-// https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-03
-func multibaseDecode(src string) ([]byte, error) {
-	base := src[:1]
-	data := src[1:]
-	// https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-03#appendix-D.1
-	switch base {
-	case "z":
-		return base58.Decode(data)
-	case "f":
-		return hex.DecodeString(data)
-	case "m":
-		return base64.RawStdEncoding.DecodeString(data)
-	case "M":
-		return base64.StdEncoding.DecodeString(data)
-	case "u":
-		return base64.RawURLEncoding.DecodeString(data)
-	case "U":
-		return base64.URLEncoding.DecodeString(data)
-	default:
-		return nil, fmt.Errorf("unsupported base identifier: %s", base)
-	}
 }
 
 // Validate the provided 'private' key is Ed25519. Return

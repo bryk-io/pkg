@@ -5,34 +5,42 @@ managed:
   optimize_for: SPEED
   cc_enable_arenas: false
   java_multiple_files: true
+  # go_package_prefix:
+  #   # <module_name>   : name in go.mod 
+  #   # <relative_path> : generated code output 
+  #   # default: <module_name>/<relative_path>
+  #   except:
+  #     - buf.build/googleapis/googleapis
 # For each plugin:
-#   - name: buf generate will look for a binary named protoc-gen-NAME
+#   - plugin: buf generate will look for a binary named protoc-gen-NAME
 #   - out: path relative to the output directory
 #   - opt: options to provide to the plugin
 plugins:
-  - name: go
+  # buf.build/protocolbuffers/go:v1.28.1
+  - plugin: go
     out: .
     opt:
       - paths=source_relative
-  - name: go-grpc
+  # buf.build/grpc/go:v1.2.0
+  - plugin: go-grpc
     out: .
     opt:
       - paths=source_relative
       - require_unimplemented_servers=true
-  - name: grpc-gateway
+  - plugin: grpc-gateway
     out: .
     opt:
       - paths=source_relative
       - logtostderr=true
-  - name: openapiv2
+  - plugin: openapiv2
     out: .
     opt:
       - logtostderr=true
-  - name: validate
+  - plugin: validate
     out: .
     opt:
       - lang=go
-  - name: go-drpc
+  - plugin: go-drpc
     out: .
     opt:
       - paths=source_relative

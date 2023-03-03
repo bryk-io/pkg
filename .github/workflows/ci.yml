@@ -46,7 +46,7 @@ jobs:
       # https://github.com/sonatype-nexus-community/nancy-github-action
       - name: Scan dependencies
         if: ${{ !contains(env.commit_msg, '[skip scan-deps]') }}
-        uses: sonatype-nexus-community/nancy-github-action@v1.0.2
+        uses: sonatype-nexus-community/nancy-github-action@v1.0.3
       
       # Scan for leaked secrets
       # Can be excluded if the commit message contains: [skip scan-secrets]
@@ -123,7 +123,7 @@ jobs:
     needs: protos
     strategy:
       matrix:
-        go-version: [1.18.x, 1.19.x]
+        go-version: [1.18.x, 1.19.x, 1.20.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -169,7 +169,7 @@ jobs:
       - name: Static analysis
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.50.1
+          version: v1.51.2
 
       # Run unit tests
       - name: Test
