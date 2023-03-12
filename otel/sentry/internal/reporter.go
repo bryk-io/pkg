@@ -50,19 +50,14 @@ func NewReporter(dsn, env, release string) (apiErrors.Reporter, error) {
 	}, nil
 }
 
-// Start a new operation. The operation instance can be used to collect
-// valuable information that could end up being reported in case of an
-// exception using `Capture`.
+// Start a new operation.
 //
 // Sentry processing rules:
-//   - operations with tx names are reported directly in the trace view
-//   - operations without tx names are reported as child spans and viewable
-//     on the event details page
-//   - operations using `continue` are always reported as a child span
-func (sr *Reporter) Start(
-	ctx context.Context,
-	name string,
-	opts ...apiErrors.OperationOption) apiErrors.Operation {
+//   - operations with `tx` names are reported directly in the trace view
+//   - operations without `tx` names are reported as child spans and
+//     viewable on the event details page
+//   - operations using `continue` are always reported as a child spans
+func (sr *Reporter) Start(ctx context.Context, name string, opts ...apiErrors.OperationOption) apiErrors.Operation {
 	// Operation internals
 	scope := sdk.NewScope()
 	hub := sdk.NewHub(sr.Client, scope)
@@ -79,10 +74,9 @@ func (sr *Reporter) Start(
 		opt(op)
 	}
 
-	// Get parent operation reference
+	// Get parent operation reference. Child spans use parent's scope and
+	// context by default.
 	parent, isChild := ctx.Value(currentOpKey).(*Operation)
-
-	// Child spans use parent's scope and context by default
 	if isChild {
 		scope = parent.Scope
 		ctx = parent.Sp.Context()
@@ -103,7 +97,7 @@ func (sr *Reporter) Start(
 		}
 	}
 
-	// Spans continuing a remote trace always use a new root context
+	// Spans continuing a remote trace always use a new base context
 	if op.ToCont != "" {
 		if !sdk.HasHubOnContext(ctx) {
 			ctx = sdk.SetHubOnContext(ctx, hub)
@@ -121,11 +115,11 @@ func (sr *Reporter) Start(
 	return op
 }
 
-// Flush waits until the underlying transport sends any buffered events to
-// the sentry server, blocking for at most the given timeout. It returns
-// false if the timeout was reached. In that case, some events may not have
-// been sent. Flush should be called before terminating the program to avoid
-// unintentionally dropping events.
+// Flush waits until the underlying transport sends any buffered events
+// to the sentry server, blocking for at most the given `timeout`. It
+// returns false if the timeout was reached. In that case, some events
+// may not have been sent. Flush should be called before terminating
+// the program to avoid unintentionally dropping events.
 func (sr *Reporter) Flush(timeout time.Duration) bool {
 	return sr.Hub.Flush(timeout)
 }
@@ -141,8 +135,8 @@ func (sr *Reporter) FromContext(ctx context.Context) apiErrors.Operation {
 	return FromContext(ctx)
 }
 
-// Inject set cross-cutting concerns from the operation into the carrier. Allows
-// to propagate operation details across service boundaries.
+// Inject set cross-cutting concerns from the operation into the carrier.
+// Allows to propagate operation details across service boundaries.
 func (sr *Reporter) Inject(op apiErrors.Operation, carrier apiErrors.Carrier) {
 	Inject(op, carrier)
 }

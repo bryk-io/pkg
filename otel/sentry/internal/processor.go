@@ -15,7 +15,7 @@ type eventProcessor struct {
 	cache         sync.Map
 	ignoreTests   bool // drop information on "*_test.go" files
 	reverseFrames bool // reverse order of frame in the stacktrace
-	topMostSF     bool // only keep the top-most stacktrace to avoid duplicate details
+	topMostST     bool // only keep top-most stacktrace to avoid duplicate details
 }
 
 func (ep *eventProcessor) Name() string {
@@ -40,7 +40,7 @@ func (ep *eventProcessor) process(event *sdk.Event, _ *sdk.EventHint) *sdk.Event
 	}
 
 	// Keep only the top-most stacktrace to avoid repeating information
-	if ep.topMostSF {
+	if ep.topMostST {
 		for i := 0; i < len(event.Exception)-1; i++ {
 			event.Exception[i].Stacktrace = nil
 		}
@@ -59,7 +59,7 @@ func (ep *eventProcessor) process(event *sdk.Event, _ *sdk.EventHint) *sdk.Event
 	}
 
 	// Keep only the top-most stacktrace to avoid repeating information
-	if ep.topMostSF {
+	if ep.topMostST {
 		for i := 0; i < len(event.Threads)-1; i++ {
 			event.Threads[i].Stacktrace = nil
 		}

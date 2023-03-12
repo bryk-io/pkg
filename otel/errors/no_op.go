@@ -5,15 +5,16 @@ import (
 	"time"
 )
 
-// NoOpReporter provides a "dummy" reporter instance that simply discards
-// error data.
+// NoOpReporter provides a "dummy" reporter instance that simply
+// discards error data.
 func NoOpReporter() Reporter {
 	return new(noOpReporter)
 }
 
-// NoOpOperation returns an element compliant with the `Operation` interface
-// but that collects no data and produces no output. This is particularly useful
-// to dynamically enable/disable instrumentation without modifying the code.
+// NoOpOperation returns an element compliant with the `Operation`
+// interface but that collects no data and produces no output. This
+// is particularly useful to dynamically enable/disable instrumentation
+// without modifying the code.
 func NoOpOperation() Operation {
 	return new(noOp)
 }

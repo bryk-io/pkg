@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
-	semConv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 )

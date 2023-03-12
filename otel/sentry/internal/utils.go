@@ -3,7 +3,6 @@ package internal
 import (
 	"bytes"
 	"context"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,7 +18,13 @@ type spanOptsKeyType int
 
 const spanOptsKey spanOptsKeyType = iota
 
-// ToContext registers the operation `op` in the provided context instance.
+// Used to store an operation instance as a context value.
+type opContextKeyType int
+
+const currentOpKey opContextKeyType = iota
+
+// ToContext registers the operation `op` in the provided context
+// instance.
 func ToContext(ctx context.Context, op apiErrors.Operation) context.Context {
 	sOp, ok := op.(*Operation)
 	if !ok {
@@ -28,8 +33,9 @@ func ToContext(ctx context.Context, op apiErrors.Operation) context.Context {
 	return context.WithValue(ctx, currentOpKey, sOp)
 }
 
-// FromContext recovers an operation instance stored in `ctx`; this method
-// returns `nil` if no operation was found in the provided context.
+// FromContext recovers an operation instance stored in `ctx`; this
+// method returns `nil` if no operation was found in the provided
+// context.
 func FromContext(ctx context.Context) apiErrors.Operation {
 	sOp, ok := ctx.Value(currentOpKey).(*Operation)
 	if !ok {
@@ -38,8 +44,8 @@ func FromContext(ctx context.Context) apiErrors.Operation {
 	return sOp
 }
 
-// Inject set cross-cutting concerns from the operation into the carrier. Allows
-// to propagate operation details across service boundaries.
+// Inject set cross-cutting concerns from the operation into the carrier.
+// Allows to propagate operation details across service boundaries.
 func Inject(op apiErrors.Operation, carrier apiErrors.Carrier) {
 	if op, ok := op.(*Operation); ok {
 		carrier.Set("sentry-trace", op.TraceID())
@@ -57,19 +63,34 @@ func Extract(ctx context.Context, carrier apiErrors.Carrier) context.Context {
 	return ctx
 }
 
+// Return user data in the proper SDK type.
+func sdkUser(usr apiErrors.User) sdk.User {
+	return sdk.User{
+		ID:        usr.ID,
+		Email:     usr.Email,
+		IPAddress: usr.IPAddress,
+		Username:  usr.Username,
+		Name:      usr.Name,
+		Segment:   usr.Segment,
+		Data:      usr.Data,
+	}
+}
+
 // Map a simple status identifier to a valid SDK value.
 func getStatus(status string) sdk.SpanStatus {
 	switch status {
 	case "ok":
 		return sdk.SpanStatusOK
-	case "unauthenticated":
-		return sdk.SpanStatusUnauthenticated
+	case "error":
+		return sdk.SpanStatusInternalError
 	case "aborted":
 		return sdk.SpanStatusAborted
 	case "canceled":
 		return sdk.SpanStatusCanceled
-	case "error":
-		return sdk.SpanStatusInternalError
+	case "unauthenticated":
+		return sdk.SpanStatusUnauthenticated
+	case "denied":
+		return sdk.SpanStatusPermissionDenied
 	default:
 		return sdk.SpanStatusUnknown
 	}
@@ -78,18 +99,18 @@ func getStatus(status string) sdk.SpanStatus {
 // Map a simple level identifier to a valid SDK value.
 func getLevel(level string) sdk.Level {
 	switch level {
-	case "debug":
-		return sdk.LevelDebug
 	case "info":
 		return sdk.LevelInfo
 	case "warning":
 		return sdk.LevelWarning
+	case "error":
+		return sdk.LevelError
 	case "fatal":
 		return sdk.LevelFatal
 	case "panic":
 		return sdk.LevelFatal
 	default:
-		return sdk.LevelError
+		return sdk.LevelDebug
 	}
 }
 
@@ -108,13 +129,6 @@ func join(list ...map[string]interface{}) map[string]interface{} {
 	return out
 }
 
-// Build a dummy HTTP request for the provided "sentry-trace" id.
-func toReq(traceID string) *http.Request {
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost", nil)
-	req.Header.Set("sentry-trace", traceID)
-	return req
-}
-
 // Return custom event processor with sane defaults.
 func newEventProcessor() *eventProcessor {
 	return &eventProcessor{
@@ -123,7 +137,7 @@ func newEventProcessor() *eventProcessor {
 		goPath:        os.Getenv("GOPATH"),
 		goRoot:        runtime.GOROOT(),
 		reverseFrames: false,
-		topMostSF:     true,
+		topMostST:     true,
 	}
 }
 

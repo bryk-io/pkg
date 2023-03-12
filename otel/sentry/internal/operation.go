@@ -11,14 +11,10 @@ import (
 	apiErrors "go.bryk.io/pkg/otel/errors"
 )
 
-// Used to store an operation instance as a context value.
-type opContextKeyType int
-
-const currentOpKey opContextKeyType = iota
-
-// Operation instances are used to describe relevant tasks in your application.
-// The instance can be used to collect additional contextual information that
-// could end up being reported in case of an exception using `Capture`.
+// Operation instances are used to describe relevant tasks in your
+// application. The instance can be used to collect additional
+// contextual information that could end up being reported in case
+// of an exception using `Report`.
 type Operation struct {
 	Txn    string                 // transaction name
 	Name   string                 // operation name
@@ -38,14 +34,18 @@ func (op *Operation) Context() context.Context {
 	return context.WithValue(context.Background(), currentOpKey, op)
 }
 
-// Report an exception. Usually only unrecoverable errors should be reported
-// at the end of the processing attempt of a given task. This method returns
-// the event identifier for the error report.
+// Report an exception. This method returns the event identifier for
+// the error report.
 func (op *Operation) Report(err error) string {
 	return op.Submit(err)
 }
 
-// Level reported for the operation.
+// Level reported for the operation. Valid values are:
+//   - debug (default)
+//   - info
+//   - warning
+//   - error
+//   - fatal
 func (op *Operation) Level(level string) {
 	op.Scope.SetLevel(getLevel(level))
 }
@@ -56,13 +56,14 @@ func (op *Operation) Level(level string) {
 //   - canceled
 //   - aborted
 //   - unauthenticated
+//   - denied
 func (op *Operation) Status(status string) {
 	op.Sp.Status(status)
 }
 
-// User can be used to declare the user associated with the operation. If used,
-// at least an ID or an IP address should be provided. If called multiple times
-// the user data will be merged/updated.
+// User can be used to declare the user associated with the operation.
+// If used, at least an ID or an IP address should be provided. If
+// called multiple times the user data will be merged/updated.
 func (op *Operation) User(usr apiErrors.User) {
 	if op.usr == nil {
 		op.usr = new(apiErrors.User)
@@ -71,7 +72,7 @@ func (op *Operation) User(usr apiErrors.User) {
 	op.Scope.SetUser(sdkUser(*op.usr))
 }
 
-// Tags adds/updates a group of key/value pairs as operation's metadata.
+// Tags add/update a group of key/value pairs as operation's metadata.
 func (op *Operation) Tags(tags map[string]interface{}) {
 	t := make(map[string]string)
 	for k, v := range tags {
@@ -86,9 +87,9 @@ func (op *Operation) Segment(key string, data map[string]interface{}) {
 	op.Scope.SetContext(key, data)
 }
 
-// Event can be used to register activity worth reporting; this usually
-// provides a progression of activity/tasks leading to a potential error
-// condition.
+// Event (s) can be used to register activity worth reporting; this
+// usually describes an activity/tasks progression leading to a
+// potential error condition.
 //
 // There are some special attributes you can add to events:
 //   - event.kind: set to "default" if not provided
@@ -140,8 +141,8 @@ func (op *Operation) Event(msg string, attributes ...map[string]interface{}) {
 	}, 100)
 }
 
-// Finish sets the span's end time and, if the span is the root of a span tree,
-// sends the span tree to Sentry as a transaction.
+// Finish sets the span's end time and, if the span is the root of a
+// span tree, sends the span tree to Sentry as a transaction.
 func (op *Operation) Finish() {
 	op.mu.Lock()
 	defer op.mu.Unlock()
@@ -152,18 +153,20 @@ func (op *Operation) Finish() {
 	op.Sp.Finish()
 }
 
-// TraceID returns the trace propagation value; it can be used with the `sentry-trace`
-// HTTP header to manually propagate the operation context across service boundaries.
+// TraceID returns the trace propagation value; it can be used with
+// the `sentry-trace` HTTP header to manually propagate the operation
+// context across service boundaries.
 func (op *Operation) TraceID() string {
 	return op.Sp.TraceID()
 }
 
-// Inject set cross-cutting concerns from the operation into the carrier. Allows
-// to propagate operation details across service boundaries.
+// Inject set cross-cutting concerns from the operation into the carrier.
+// Allows to propagate operation details across service boundaries.
 func (op *Operation) Inject(mc apiErrors.Carrier) {
 	mc.Set("sentry-trace", op.TraceID())
 }
 
+// Merge user details in `sink` with values available in `update`.
 func mergeUserData(sink *apiErrors.User, update apiErrors.User) {
 	if update.ID != "" {
 		sink.ID = update.ID
@@ -185,17 +188,5 @@ func mergeUserData(sink *apiErrors.User, update apiErrors.User) {
 	}
 	for k, v := range update.Data {
 		sink.Data[k] = v
-	}
-}
-
-func sdkUser(usr apiErrors.User) sdk.User {
-	return sdk.User{
-		ID:        usr.ID,
-		Email:     usr.Email,
-		IPAddress: usr.IPAddress,
-		Username:  usr.Username,
-		Name:      usr.Name,
-		Segment:   usr.Segment,
-		Data:      usr.Data,
 	}
 }
