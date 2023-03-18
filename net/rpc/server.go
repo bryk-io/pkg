@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	mwAuth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	mwRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	mwValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -160,8 +159,8 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 
 	// Add middleware
 	unaryM, streamM := srv.getMiddleware()
-	srv.opts = append(srv.opts, mw.WithUnaryServerChain(unaryM...))
-	srv.opts = append(srv.opts, mw.WithStreamServerChain(streamM...))
+	srv.opts = append(srv.opts, grpc.ChainUnaryInterceptor(unaryM...))
+	srv.opts = append(srv.opts, grpc.ChainStreamInterceptor(streamM...))
 
 	// Create RPC instance and setup services
 	srv.mu.Lock()
