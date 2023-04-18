@@ -49,8 +49,8 @@ func (lh *logrusHandler) WithField(key string, value interface{}) Logger {
 		f := metadata.New()
 		lh.fields = &f
 	}
-	lh.mu.Unlock()
 	lh.fields.Set(key, value)
+	lh.mu.Unlock()
 	return lh
 }
 

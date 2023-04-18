@@ -67,7 +67,7 @@ scan-secrets:
 test:
 	# Unit tests
 	# -count=1 -p=1 (disable cache and parallel execution)
-	go test -race -v -failfast -count=1 -p=1 -coverprofile=coverage.report ./$(pkg)
+	go test -race -v -coverprofile=coverage.report ./$(pkg)
 	go tool cover -html coverage.report -o coverage.html
 
 ## updates: List available updates for direct dependencies

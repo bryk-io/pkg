@@ -54,8 +54,8 @@ func (sl *stdLogger) WithField(key string, value interface{}) Logger {
 		f := metadata.New()
 		sl.fields = &f
 	}
-	sl.mu.Unlock()
 	sl.fields.Set(key, value)
+	sl.mu.Unlock()
 	return sl
 }
 

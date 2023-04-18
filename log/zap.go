@@ -54,8 +54,8 @@ func (zh *zapHandler) WithField(key string, value interface{}) Logger {
 		f := metadata.New()
 		zh.fields = &f
 	}
-	zh.mu.Unlock()
 	zh.fields.Set(key, value)
+	zh.mu.Unlock()
 	return zh
 }
 
