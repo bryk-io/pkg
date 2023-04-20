@@ -350,7 +350,12 @@ func (srv *Server) setupGateway() error {
 	gwMux := gwRuntime.NewServeMux(srv.gateway.options()...)
 	var gwMuxH = http.Handler(gwMux) // cast gateway mux as regular HTTP handler
 	for _, s := range srv.services {
-		if err := s.GatewaySetup()(srv.ctx, gwMux, srv.gateway.conn); err != nil {
+		hs, ok := s.(HTTPServiceProvider)
+		if !ok || hs.GatewaySetup() == nil {
+			// skip if the service doesn't provide a gateway setup function
+			continue
+		}
+		if err := hs.GatewaySetup()(srv.ctx, gwMux, srv.gateway.conn); err != nil {
 			return errors.Wrap(err, "HTTP gateway setup error")
 		}
 	}

@@ -7,7 +7,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-// GatewayRegisterFunc provides a mechanism to set up an HTTP mux for a gRPC server.
+// GatewayRegisterFunc provides a mechanism to set up an HTTP mux
+// for a gRPC server.
 type GatewayRegisterFunc = func(context.Context, *runtime.ServeMux, *grpc.ClientConn) error
 
 // ServiceProvider is an entity that provides functionality to be exposed
@@ -16,8 +17,13 @@ type ServiceProvider interface {
 	// ServerSetup should perform any initialization requirements for the
 	// particular service and register it with the provided server instance.
 	ServerSetup(server *grpc.Server)
+}
 
-	// GatewaySetup should return the HTTP setup method or 'nil' if the service
-	// has no HTTP support.
+// HTTPServiceProvider is an entity that provides functionality to be
+// exposed through an RPC server and an HTTP gateway.
+type HTTPServiceProvider interface {
+	ServiceProvider
+
+	// GatewaySetup return the HTTP Gateway setup method.
 	GatewaySetup() GatewayRegisterFunc
 }
