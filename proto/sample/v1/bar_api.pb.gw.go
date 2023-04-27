@@ -168,7 +168,7 @@ func RegisterBarAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 // RegisterBarAPIHandlerFromEndpoint is same as RegisterBarAPIHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterBarAPIHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}

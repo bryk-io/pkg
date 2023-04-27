@@ -329,7 +329,7 @@ func RegisterFooAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 // RegisterFooAPIHandlerFromEndpoint is same as RegisterFooAPIHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterFooAPIHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.Dial(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}
