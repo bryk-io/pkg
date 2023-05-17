@@ -182,22 +182,22 @@ func WithAuthByToken(tv TokenValidator) ServerOption {
 }
 
 // WithUnaryMiddleware allows including custom middleware functions when processing
-// incoming unary RPC requests.
-func WithUnaryMiddleware(entry grpc.UnaryServerInterceptor) ServerOption {
+// incoming unary RPC requests. Order is important when chaining multiple middleware.
+func WithUnaryMiddleware(entry ...grpc.UnaryServerInterceptor) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
-		srv.customUnary = append(srv.customUnary, entry)
+		srv.customUnary = append(srv.customUnary, entry...)
 		srv.mu.Unlock()
 		return nil
 	}
 }
 
 // WithStreamMiddleware allows including custom middleware functions when processing
-// stream RPC operations.
-func WithStreamMiddleware(entry grpc.StreamServerInterceptor) ServerOption {
+// stream RPC operations. Order is important when chaining multiple middleware.
+func WithStreamMiddleware(entry ...grpc.StreamServerInterceptor) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
-		srv.customStream = append(srv.customStream, entry)
+		srv.customStream = append(srv.customStream, entry...)
 		srv.mu.Unlock()
 		return nil
 	}
