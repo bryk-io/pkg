@@ -93,7 +93,7 @@ func (sr *Reporter) Start(ctx context.Context, name string, opts ...apiErrors.Op
 		if op.Txn == "" {
 			op.Txn = name
 			op.Name = "root"
-			op.Opts = append(op.Opts, sdk.TransactionName(name))
+			op.Opts = append(op.Opts, sdk.WithTransactionName(name))
 		}
 	}
 

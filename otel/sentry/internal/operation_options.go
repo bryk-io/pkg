@@ -15,7 +15,7 @@ func AsTransaction(name string) apiErrors.OperationOption {
 			return
 		}
 		so.Txn = name
-		so.Opts = append(so.Opts, sdk.TransactionName(name))
+		so.Opts = append(so.Opts, sdk.WithTransactionName(name))
 	}
 }
 
