@@ -19,13 +19,13 @@ require (
 	github.com/prometheus/client_golang v1.15.1
 	github.com/prometheus/client_model v0.4.0
 	github.com/rs/zerolog v1.29.1
-	github.com/sirupsen/logrus v1.9.1
+	github.com/sirupsen/logrus v1.9.2
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/streadway/amqp v1.0.0
-	github.com/stretchr/testify v1.8.2
-	go.bryk.io/miracl v0.5.0
+	github.com/stretchr/testify v1.8.3
+	go.bryk.io/miracl v0.5.1
 	go.bryk.io/x v0.0.0-20230427182944-1160da094937
 	go.mongodb.org/mongo-driver v1.11.6
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.41.1
