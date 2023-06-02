@@ -34,6 +34,8 @@ updates:
         versions: ["v1.x"]
       # Avoid breaking changes with unstable OTEL packages
       - dependency-name: "go.opentelemetry.io/*"
+      # Utility only used for testing
+      - dependency-name: "github.com/stretchr/testify"
     # Configure commit messages
     commit-message:
       # Prefix all commit messages with "dependencies"
