@@ -2,7 +2,7 @@ package amqp
 
 import (
 	xlog "go.bryk.io/pkg/log"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func ExampleWithLogger() {

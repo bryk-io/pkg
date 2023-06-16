@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
-	metricGlobal "go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkResource "go.opentelemetry.io/otel/sdk/resource"
@@ -175,7 +174,7 @@ func (op *Operator) setupProviders() {
 		sdkMetric.WithResource(op.resource),
 	}
 	op.meterProvider = sdkMetric.NewMeterProvider(metricProviderOpts...)
-	metricGlobal.SetMeterProvider(op.meterProvider)
+	otel.SetMeterProvider(op.meterProvider)
 }
 
 // Start collection of host and runtime metrics, if enabled.

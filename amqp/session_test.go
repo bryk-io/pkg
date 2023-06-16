@@ -11,7 +11,7 @@ import (
 	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
 	"go.uber.org/goleak"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var sampleTopology = `
