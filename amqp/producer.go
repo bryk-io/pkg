@@ -24,7 +24,7 @@ type Producer struct {
 	// Add the timestamp value when creating a new message.
 	SetTime bool
 
-	// Add a randomly-generated, unique UUID to each message.
+	// Add a randomly-generated, unique ID to each message.
 	SetID bool
 }
 

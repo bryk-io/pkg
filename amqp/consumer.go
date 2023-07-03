@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	driver "github.com/streadway/amqp"
+	driver "github.com/rabbitmq/amqp091-go"
 	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
 )

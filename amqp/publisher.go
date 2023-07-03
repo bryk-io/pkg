@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	driver "github.com/streadway/amqp"
+	driver "github.com/rabbitmq/amqp091-go"
 	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"
 )
@@ -198,7 +198,8 @@ func (p *Publisher) UnsafePush(msg Message, opts MessageOptions) error {
 	}
 
 	p.log.Debug("publishing message")
-	return p.session.channel.Publish(
+	return p.session.channel.PublishWithContext(
+		context.TODO(),
 		opts.Exchange,
 		opts.RoutingKey,
 		opts.Mandatory,

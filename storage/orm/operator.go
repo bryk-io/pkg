@@ -29,10 +29,15 @@ type Operator struct {
 // Remember to call the 'Close' method to free resources when the
 // operator is no longer needed.
 func NewOperator(db string, opts *options.ClientOptions) (*Operator, error) {
-	// Use custom registry by default
-	if opts.Registry == nil {
-		opts.Registry = bsonRegistry()
-	}
+	// By default:
+	// - fallback to "json" struct tags if "bson" struct tags are missing
+	// - marshal `nil` maps as empty BSON documents
+	// - marshal `nil` slices as empty BSON arrays
+	opts.SetBSONOptions(&options.BSONOptions{
+		UseJSONStructTags: true,
+		NilMapAsEmpty:     true,
+		NilSliceAsEmpty:   true,
+	})
 
 	// Validate client options
 	var err error
@@ -88,6 +93,8 @@ func (op *Operator) Tx(body TransactionBody, opts *options.TransactionOptions) e
 // 2. Default BSON encoder rules
 // 3. Use `bson` tags, if available
 // 4. Use `json` tags, if available
+// 5. Marshal `nil` maps as empty BSON documents
+// 6. Marshal `nil` slices as empty BSON arrays
 // https://pkg.go.dev/go.mongodb.org/mongo-driver/bson
 func (op *Operator) Model(name string) *Model {
 	return &Model{

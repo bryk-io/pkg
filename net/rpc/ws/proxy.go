@@ -104,6 +104,7 @@ func (p *Proxy) prepareRequest(incoming http.Request, outgoing *http.Request) {
 	}
 }
 
+// nolint: funlen
 func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 	var responseHeader http.Header
 

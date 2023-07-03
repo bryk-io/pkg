@@ -323,7 +323,7 @@ func TestOperator(t *testing.T) {
 		// Set transaction options
 		opts := options.Transaction()
 		opts.SetReadConcern(readconcern.Snapshot())
-		opts.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
+		opts.SetWriteConcern(writeconcern.Majority())
 
 		// Start transaction
 		err := op.Tx(func(tx *Transaction) error {
@@ -399,7 +399,7 @@ func ExampleOperator_Tx() {
 	// Set transaction options
 	opts := options.Transaction()
 	opts.SetReadConcern(readconcern.Snapshot())
-	opts.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
+	opts.SetWriteConcern(writeconcern.Majority())
 
 	// Complex multi-collection operation
 	complexOperation := func(tx *Transaction) error {

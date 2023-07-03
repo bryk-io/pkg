@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsoncodec"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -41,24 +40,4 @@ func checkType(el interface{}, expected reflect.Kind, desc string) error {
 		return fmt.Errorf("target must be a %s, but was a %s", desc, rv.Kind())
 	}
 	return nil
-}
-
-// Return a BSON codec that honor JSON tags by default.
-// https://pkg.go.dev/go.mongodb.org/mongo-driver/bson#hdr-Structs
-func bsonRegistry() *bsoncodec.Registry {
-	// Register default encoders/decoders
-	// https://pkg.go.dev/go.mongodb.org/mongo-driver/bson/bsoncodec#hdr-DefaultValueEncoders_and_DefaultValueDecoders
-	rb := bsoncodec.NewRegistryBuilder()
-	dve := bsoncodec.DefaultValueEncoders{}
-	dvd := bsoncodec.DefaultValueDecoders{}
-	dvd.RegisterDefaultDecoders(rb)
-	dve.RegisterDefaultEncoders(rb)
-
-	// Register custom struct encoder/decoder
-	structcodec, _ := bsoncodec.NewStructCodec(bsoncodec.JSONFallbackStructTagParser)
-	rb.RegisterDefaultEncoder(reflect.Struct, structcodec)
-	rb.RegisterDefaultDecoder(reflect.Struct, structcodec)
-
-	// Return registry instance
-	return rb.Build()
 }

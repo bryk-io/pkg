@@ -45,12 +45,12 @@ linters:
     - predeclared
     - exportloopref
     - whitespace
+    - nestif
+    - funlen
     # Deprecated linters
-    #- wrapcheck
-    #- nestif
-    #- funlen
-    #- ifshort
-    #- varcheck
+    # - wrapcheck
+    # - ifshort
+    # - varcheck
   disable:
     - deadcode
     - unused
@@ -103,10 +103,6 @@ linters-settings:
   goconst:
     min-len: 3
     min-occurrences: 5
-  depguard:
-    list-type: blacklist
-    include-go-root: false
-    packages: []
   misspell:
     locale: US
     ignore-words: []
