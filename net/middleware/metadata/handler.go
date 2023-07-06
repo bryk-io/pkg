@@ -39,7 +39,7 @@ func Handler(options Options) func(http.Handler) http.Handler {
 			if options.Hook != nil {
 				options.Hook(&md, *r)
 			}
-			ctx := metadata.NewIncomingContext(context.Background(), md)
+			ctx := metadata.NewIncomingContext(r.Context(), md)
 			h.ServeHTTP(w, r.WithContext(ctx))
 		}
 		return http.HandlerFunc(fn)
