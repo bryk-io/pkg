@@ -1,9 +1,6 @@
 package otelgrpc
 
 import (
-	mw "github.com/grpc-ecosystem/go-grpc-middleware"
-	apiErrors "go.bryk.io/pkg/otel/errors"
-	sentrygrpc "go.bryk.io/pkg/otel/sentry/grpc"
 	"google.golang.org/grpc"
 )
 
@@ -18,28 +15,20 @@ type Monitor interface {
 	Server() (grpc.UnaryServerInterceptor, grpc.StreamServerInterceptor)
 }
 
-type grpcMonitor struct {
-	rep apiErrors.Reporter
-}
+type grpcMonitor struct{}
 
 // NewMonitor returns a ready to use monitor instance that can be used to
 // easily instrument gRPC clients and servers.
-func NewMonitor(rep apiErrors.Reporter) Monitor {
-	return &grpcMonitor{rep: rep}
+func NewMonitor() Monitor {
+	return new(grpcMonitor)
 }
 
 func (e *grpcMonitor) Client() (grpc.UnaryClientInterceptor, grpc.StreamClientInterceptor) {
 	// Build client interceptors
-	sui, ssi := sentrygrpc.Client(e.rep)
-	ui := mw.ChainUnaryClient(unaryClientInterceptor(), sui)
-	si := mw.ChainStreamClient(streamClientInterceptor(), ssi)
-	return ui, si
+	return unaryClientInterceptor(), streamClientInterceptor()
 }
 
 func (e *grpcMonitor) Server() (grpc.UnaryServerInterceptor, grpc.StreamServerInterceptor) {
 	// Build server interceptors
-	sui, ssi := sentrygrpc.Server(e.rep)
-	ui := mw.ChainUnaryServer(unaryServerInterceptor(), sui)
-	si := mw.ChainStreamServer(streamServerInterceptor(), ssi)
-	return ui, si
+	return unaryServerInterceptor(), streamServerInterceptor()
 }

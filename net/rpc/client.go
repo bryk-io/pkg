@@ -119,7 +119,7 @@ func (c *Client) setup(options ...ClientOption) error {
 func (c *Client) getMiddleware() (unary []grpc.UnaryClientInterceptor, stream []grpc.StreamClientInterceptor) {
 	// Setup observability before anything else
 	if c.oop != nil {
-		ui, si := otelGrpc.NewMonitor(c.oop.ErrorReporter()).Client()
+		ui, si := otelGrpc.NewMonitor().Client()
 		unary = append(unary, ui)
 		stream = append(stream, si)
 	}

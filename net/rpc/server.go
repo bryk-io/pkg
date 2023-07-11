@@ -376,7 +376,7 @@ func (srv *Server) setupGateway() error {
 	var gmw []func(http.Handler) http.Handler
 	if srv.oop != nil {
 		// Add OTEL as the first middleware in the chain automatically
-		hmOpts := []otelHttp.Option{otelHttp.WithErrorReporter(srv.oop.ErrorReporter())}
+		hmOpts := []otelHttp.Option{}
 		if srv.gateway.spanFormatter != nil {
 			hmOpts = append(hmOpts, otelHttp.WithSpanNameFormatter(srv.gateway.spanFormatter))
 		}
@@ -435,7 +435,7 @@ func (srv *Server) setupGatewayInterface() error {
 func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream []grpc.StreamServerInterceptor) {
 	// Setup observability before anything else
 	if srv.oop != nil {
-		ui, si := otelGrpc.NewMonitor(srv.oop.ErrorReporter()).Server()
+		ui, si := otelGrpc.NewMonitor().Server()
 		unary = append(unary, ui)
 		stream = append(stream, si)
 	}

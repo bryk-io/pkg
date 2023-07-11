@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 
 	"go.bryk.io/pkg/errors"
@@ -13,7 +14,7 @@ import (
 	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
-	semConv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	grpcCodes "google.golang.org/grpc/codes"
@@ -54,7 +55,7 @@ const (
 
 // Semantic conventions for common RPC attributes.
 var (
-	// Semantic convention for gRPC as the remoting system.
+	// Semantic convention for gRPC as the remote system.
 	rpcSystemGRPC = semConv.RPCSystemKey.String("grpc")
 
 	// Semantic conventions for RPC message types.
@@ -463,8 +464,9 @@ func spanInfo(fullMethod, peerAddress string) (string, []attribute.KeyValue) {
 }
 
 // peerAttr returns attributes about the peer address.
+// peerAttr returns attributes about the peer address.
 func peerAttr(addr string) []attribute.KeyValue {
-	host, port, err := net.SplitHostPort(addr)
+	host, p, err := net.SplitHostPort(addr)
 	if err != nil {
 		return []attribute.KeyValue(nil)
 	}
@@ -472,11 +474,25 @@ func peerAttr(addr string) []attribute.KeyValue {
 	if host == "" {
 		host = "127.0.0.1"
 	}
-
-	return []attribute.KeyValue{
-		semConv.NetPeerIPKey.String(host),
-		semConv.NetPeerPortKey.String(port),
+	port, err := strconv.Atoi(p)
+	if err != nil {
+		return []attribute.KeyValue(nil)
 	}
+
+	var attr []attribute.KeyValue
+	if ip := net.ParseIP(host); ip != nil {
+		attr = []attribute.KeyValue{
+			semConv.NetSockPeerAddr(host),
+			semConv.NetSockPeerPort(port),
+		}
+	} else {
+		attr = []attribute.KeyValue{
+			semConv.NetPeerName(host),
+			semConv.NetPeerPort(port),
+		}
+	}
+
+	return attr
 }
 
 // peerFromCtx returns a peer address from a context, if one exists.

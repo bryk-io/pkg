@@ -20,7 +20,6 @@ import (
 	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
 	"go.bryk.io/pkg/net/rpc/ws"
 	"go.bryk.io/pkg/otel"
-	apiErrors "go.bryk.io/pkg/otel/errors"
 	otelHttp "go.bryk.io/pkg/otel/http"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
 	samplev1 "go.bryk.io/pkg/proto/sample/v1"
@@ -68,16 +67,12 @@ func TestServer(t *testing.T) {
 	prom, err := otelProm.NewOperator(prometheus.NewRegistry(), sampleCounter)
 	assert.Nil(err, "failed to enable prometheus, support")
 
-	// Error reporter
-	rep := apiErrors.NoOpReporter()
-
 	// OTEL Exporters
 	otelOpts := []otel.OperatorOption{
 		otel.WithServiceName("rpc-test"),
 		otel.WithServiceVersion("0.1.0"),
 		otel.WithLogger(ll),
 		otel.WithHostMetrics(),
-		otel.WithErrorReporter(rep),
 	}
 	if isCollectorAvailable() {
 		otelOpts = append(otelOpts, otel.WithExporterOTLP("localhost:4317", true, nil)...)
@@ -100,7 +95,6 @@ func TestServer(t *testing.T) {
 		return fmt.Sprintf("%s %s", req.Method, req.URL.Path)
 	}
 	httpMonitor := otelHttp.NewMonitor(
-		otelHttp.WithErrorReporter(oop.ErrorReporter()),
 		otelHttp.WithSpanNameFormatter(spanNameFormatter),
 	)
 
@@ -1146,9 +1140,7 @@ func TestEchoServer(t *testing.T) {
 
 	t.Run("HTTP", func(t *testing.T) {
 		// Instrumented HTTP client
-		hcl := otelHttp.NewMonitor(
-			otelHttp.WithErrorReporter(oop.ErrorReporter()),
-		).Client(nil)
+		hcl := otelHttp.NewMonitor().Client(nil)
 
 		// Submit requests until one fails
 		for {

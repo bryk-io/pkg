@@ -8,6 +8,7 @@ require (
 	github.com/chzyer/readline v1.5.1
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/getsentry/sentry-go v0.22.0
+	github.com/getsentry/sentry-go/otel v0.22.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/websocket v1.5.0
@@ -50,7 +51,7 @@ require (
 	golang.org/x/term v0.10.0
 	golang.org/x/time v0.3.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
-	google.golang.org/grpc v1.56.1
+	google.golang.org/grpc v1.56.2
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
 	storj.io/drpc v0.0.33

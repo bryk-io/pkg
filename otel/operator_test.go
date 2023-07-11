@@ -12,7 +12,6 @@ import (
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/log"
-	apiErrors "go.bryk.io/pkg/otel/errors"
 	otelHttp "go.bryk.io/pkg/otel/http"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
@@ -101,10 +100,7 @@ func TestNewOperator(t *testing.T) {
 	}
 	assert.Nil(err, "failed to create exporter")
 
-	// Error reporter
-	rep := apiErrors.NoOpReporter()
-
-	// Operator instance
+	// Operator settings
 	settings := []OperatorOption{
 		WithServiceName("my-service"),
 		WithServiceVersion("0.1.0"),
@@ -113,7 +109,6 @@ func TestNewOperator(t *testing.T) {
 		WithPropagator(b3.New(b3.WithInjectEncoding(b3.B3MultipleHeader))),
 		WithExporter(traceExp),
 		WithMetricReader(sdkMetric.NewPeriodicReader(metricExp)),
-		WithErrorReporter(rep),
 		WithHostMetrics(),
 		WithRuntimeMetrics(time.Duration(10) * time.Second),
 		WithResourceAttributes(Attributes{"resource.level.field": "bar"}),
@@ -122,6 +117,27 @@ func TestNewOperator(t *testing.T) {
 			ErrorField:  "error.message",
 		})),
 	}
+
+	// Error reporter
+	// dsn := "https://0b913a03a9f9408a9b712974076547d5@tracker.bryk.io/11"
+	// release := "dummy-project@v0.1.0+08a9b7129740"
+	// rep, err := sentry.NewReporter(&sentry.Options{
+	// 	DSN:                         dsn,
+	// 	Release:                     release,
+	// 	Environment:                 "dev",
+	// 	FlushTimeout:                2 * time.Second,
+	// 	EnablePerformanceMonitoring: true,
+	// 	TracesSampleRate:            1.0, // capture all traces
+	// 	ProfilingSampleRate:         1.0, // profile all operations
+	// })
+	// assert.Nil(err, "failed to create error reporter")
+	// settings = append(settings,
+	// 	WithPropagator(rep.Propagator()),
+	// 	WithSpanProcessor(rep.SpanProcessor()),
+	// 	WithSpanInterceptor(rep),
+	// )
+
+	// Operator instance
 	op, err := NewOperator(settings...)
 	assert.Nil(err, "new operator")
 	op.Info("operator created")
@@ -130,58 +146,15 @@ func TestNewOperator(t *testing.T) {
 	defer op.Shutdown(context.Background())
 
 	// Operation fields
+	// ~ sentry only supports string values for attributes
 	fields := Attributes{
-		"user.id":           "testing-user", // user details
+		"user.id":           "testing-user", // user-details
 		"task.value.string": "bar",
-		"task.value.int":    120,
-		"task.value.bool":   true,
-		"task.value.float":  1.456,
-		"task.value.list":   []string{"foo", "bar"},
+		"task.value.int":    "120",
+		"task.value.bool":   "true",
+		"task.value.float":  "1.456",
+		"task.value.list":   "[\"foo\", \"bar\"]",
 	}
-
-	// Example of using an error reporting instance independent of a OTEL
-	// operator.
-	t.Run("ReportError", func(t *testing.T) {
-		// start task
-		task := rep.Start(context.Background(), "report-test")
-		defer task.Finish()
-
-		// Associate the task with a particular user based on ID
-		task.User(apiErrors.User{ID: "testing-user"})
-
-		// adjust task metadata
-		task.Level("warning")
-		task.Segment("task", map[string]interface{}{
-			"task.value.string": "bar",
-			"task.value.int":    120,
-			"task.value.bool":   true,
-			"task.value.float":  1.456,
-			"task.value.list":   []string{"foo", "bar"},
-		})
-
-		// add events on the task, usually every message you want to log can be
-		// reported as an event during a task processing/execution
-		task.Event("starting a complex task") // using default parameters
-		task.Event("additional debugging information", Attributes{"event.kind": "info"})
-		task.Event("console output", Attributes{"event.category": "console"})
-		task.Event("database interactions", Attributes{"event.kind": "query", "event.category": "mongodb"})
-		task.Event("user interactions", Attributes{"event.kind": "user", "event.category": "auth"})
-		task.Event("outgoing HTTP request", Attributes{
-			"event.kind":     "http",
-			"event.category": "xhr",
-			"event.data": map[string]interface{}{
-				"method":      http.MethodPost,
-				"url":         "/api/method",
-				"status_code": http.StatusUnauthorized,
-			},
-		})
-		task.Event("error/warning occurring prior to a reported exception", Attributes{"event.kind": "error", "event.category": "warning"})
-
-		// report error
-		if err := sampleA(); err != nil {
-			task.Report(err)
-		}
-	})
 
 	t.Run("Basic", func(t *testing.T) {
 		// Root span
@@ -206,7 +179,7 @@ func TestNewOperator(t *testing.T) {
 
 	t.Run("Server", func(t *testing.T) {
 		// Get HTTP monitor provider from the extras package
-		monitor := otelHttp.NewMonitor(otelHttp.WithErrorReporter(op.ErrorReporter()))
+		monitor := otelHttp.NewMonitor()
 
 		// Setup server
 		router := http.NewServeMux()
@@ -245,15 +218,15 @@ func TestNewOperator(t *testing.T) {
 			// Randomly fail half the time
 			n := rand.Intn(9)
 			if n%2 == 0 {
-				res.WriteHeader(200)
+				res.WriteHeader(http.StatusOK)
 				_, _ = res.Write([]byte("pong"))
 				task.End(nil)
 				return
 			}
 
 			// Return error code
-			err := errors.New("RANDOM_ERROR")
-			res.WriteHeader(417)
+			err := sampleA()
+			res.WriteHeader(http.StatusExpectationFailed)
 			_, _ = res.Write([]byte(err.Error()))
 			task.End(err)
 		})
@@ -338,7 +311,10 @@ func TestNewOperator(t *testing.T) {
 		childSpan.Event("event on child span", nil)
 
 		// Verify baggage is properly propagated
-		assert.Equal(rootSpan.GetBaggage(), childSpan.GetBaggage(), "propagate baggage")
+		rootBgg := rootSpan.GetBaggage()
+		childBgg := childSpan.GetBaggage()
+		assert.Equal(rootBgg.Get("baggage.request.id"), childBgg.Get("baggage.request.id"), "propagate baggage")
+		assert.Equal(rootBgg.Get("baggage.request.space"), childBgg.Get("baggage.request.space"), "propagate baggage")
 
 		// Close spans manually for the example
 		childSpan.End(nil)

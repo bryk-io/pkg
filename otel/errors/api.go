@@ -6,7 +6,7 @@ import (
 )
 
 // Reporter instances allow to report error data to external services.
-// Useful for tracking, compliance and advance telemetry solutions.
+// Useful for tracking, compliance and advanced telemetry solutions.
 type Reporter interface {
 	// Start a new operation. The operation instance can be used to
 	// collect valuable information that could end up being reported

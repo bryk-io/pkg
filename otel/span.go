@@ -9,7 +9,6 @@ import (
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/log"
 	"go.bryk.io/pkg/metadata"
-	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/otel/baggage"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -75,15 +74,15 @@ type Span interface {
 }
 
 type span struct {
-	name  string
-	kind  SpanKind
-	attrs metadata.MD
-	bgg   metadata.MD
-	opts  []apiTrace.SpanStartOption
-	span  apiTrace.Span
-	ctx   context.Context
-	cp    propagation.TextMapPropagator
-	op    apiErrors.Operation
+	name  string                        // operation name
+	kind  SpanKind                      // operation kind
+	attrs metadata.MD                   // operation attributes
+	bgg   metadata.MD                   // operation baggage
+	opts  []apiTrace.SpanStartOption    // OTEL span options
+	span  apiTrace.Span                 // OTEL span instance
+	ctx   context.Context               // span context
+	cp    propagation.TextMapPropagator // span propagation mechanism
+	spp   SpanInterceptor               // span pre-processor
 	mu    sync.Mutex
 }
 
@@ -108,14 +107,11 @@ func (s *span) TraceID() string {
 func (s *span) End(err error) {
 	if err == nil {
 		s.span.SetStatus(otelCodes.Ok, "")
-		s.op.Finish()
 		s.span.End()
 		return
 	}
 	s.recordError(err)
 	s.span.SetStatus(otelCodes.Error, err.Error())
-	s.op.Status("error")
-	s.op.Finish()
 	s.span.End()
 }
 
@@ -138,7 +134,7 @@ func (s *span) IsSampled() bool {
 func (s *span) Event(message string, attributes ...Attributes) {
 	attrs := join(attributes...)
 	s.span.AddEvent(message, apiTrace.WithAttributes(expand(attrs)...))
-	s.op.Event(message, attrs)
+	s.spp.Event(s.span.SpanContext(), message, attrs)
 }
 
 // GetAttributes returns the data elements available in the span.
@@ -163,7 +159,6 @@ func (s *span) GetBaggage() Attributes {
 func (s *span) Headers() http.Header {
 	headers := http.Header{}
 	s.cp.Inject(s.ctx, propagation.HeaderCarrier(headers))
-	s.op.Inject(propagation.HeaderCarrier(headers))
 	return headers
 }
 
@@ -172,10 +167,12 @@ func (s *span) Headers() http.Header {
 func (s *span) recordError(err error, attributes ...Attributes) {
 	// preserve original error stacktrace if available, otherwise
 	// generate a new one pointing where this function was called
-	stack := getStack(2)
+	var stack string
 	var se errors.HasStack
 	if errors.As(err, &se) {
 		stack = fmt.Sprintf("%+v", err)
+	} else {
+		stack = getStack(2)
 	}
 
 	// base error details
@@ -195,16 +192,8 @@ func (s *span) recordError(err error, attributes ...Attributes) {
 	s.span.RecordError(err, apiTrace.WithAttributes(expand(fields)...))
 
 	// report error
+	// ? should we report errors even if the span is not sampled?
 	if s.IsSampled() {
-		s.op.Level(level.String())
-		s.op.Tags(join(s.GetAttributes(), attrs))
-		if bgg := s.GetBaggage(); len(bgg) > 0 {
-			s.op.Segment("Baggage", bgg)
-		}
-		s.op.Segment("OTEL", map[string]interface{}{
-			"trace.id": s.TraceID(),
-			"span.id":  s.ID(),
-		})
-		s.op.Report(err)
+		s.spp.ReportError(s.span.SpanContext(), err, fields)
 	}
 }

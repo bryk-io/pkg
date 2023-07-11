@@ -5,7 +5,6 @@ import (
 
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/log"
-	apiErrors "go.bryk.io/pkg/otel/errors"
 	"go.opentelemetry.io/otel/propagation"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
@@ -54,6 +53,25 @@ func WithPropagator(mp propagation.TextMapPropagator) OperatorOption {
 	}
 }
 
+// WithSpanProcessor registers a new span processor in the trace provider
+// processing chain.
+func WithSpanProcessor(sp sdkTrace.SpanProcessor) OperatorOption {
+	return func(op *Operator) error {
+		op.spanProcessors = append(op.spanProcessors, sp)
+		return nil
+	}
+}
+
+// WithSpanInterceptor registers a custom span interceptor with the
+// operator instance. Interceptors are used to add custom logic to the
+// span lifecycle.
+func WithSpanInterceptor(spp SpanInterceptor) OperatorOption {
+	return func(op *Operator) error {
+		op.spanInterceptor = spp
+		return nil
+	}
+}
+
 // WithResourceAttributes allows extending (or overriding) the core
 // attributes used globally by the operator. The core attributes must
 // provide information at the resource level. These attributes are used
@@ -91,16 +109,6 @@ func WithExporter(exp sdkTrace.SpanExporter) OperatorOption {
 func WithSampler(ss sdkTrace.Sampler) OperatorOption {
 	return func(op *Operator) error {
 		op.sampler = ss
-		return nil
-	}
-}
-
-// WithErrorReporter enables the operator to capture exceptions data and
-// submit it to an external service. If not provided, all output is discarded
-// by default.
-func WithErrorReporter(rep apiErrors.Reporter) OperatorOption {
-	return func(op *Operator) error {
-		op.reporter = rep
 		return nil
 	}
 }

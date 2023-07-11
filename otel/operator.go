@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"go.bryk.io/pkg/log"
-	apiErrors "go.bryk.io/pkg/otel/errors"
+
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
@@ -13,7 +13,7 @@ import (
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkResource "go.opentelemetry.io/otel/sdk/resource"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -21,10 +21,11 @@ import (
 // requirements on a system, including: logs, metrics and traces.
 type Operator struct {
 	log               log.Logger                      // logger instance
-	reporter          apiErrors.Reporter              // error reporter
 	coreAttributes    Attributes                      // base (env) attributes
 	userAttributes    Attributes                      // user-provided additional attributes
 	resource          *sdkResource.Resource           // OTEL resource definition
+	spanProcessors    []sdkTrace.SpanProcessor        // span processing chain
+	spanInterceptor   SpanInterceptor                 // custom span interceptor
 	traceExporter     sdkTrace.SpanExporter           // trace sink components
 	metricExporter    sdkMetric.Reader                // metric sink components
 	traceProvider     *sdkTrace.TracerProvider        // main traces provider
@@ -46,15 +47,16 @@ type Operator struct {
 func NewOperator(options ...OperatorOption) (*Operator, error) {
 	// Create instance and apply options.
 	op := &Operator{
-		log:               log.Discard(),            // discard logs
-		reporter:          apiErrors.NoOpReporter(), // discard reported errors
-		coreAttributes:    coreAttributes(),         // standard env attributes
-		userAttributes:    Attributes{},             // no custom attributes
-		traceExporter:     new(noOpExporter),        // discard traces and metrics
-		tracerName:        "go.bryk.io/pkg/otel",    // default value for `otel.library.name`
-		sampler:           sdkTrace.AlwaysSample(),  // track all traces by default
+		log:               log.Discard(),           // discard logs
+		coreAttributes:    coreAttributes(),        // standard env attributes
+		userAttributes:    Attributes{},            // no custom attributes
+		traceExporter:     new(noOpExporter),       // discard traces and metrics
+		tracerName:        "go.bryk.io/pkg/otel",   // default value for `otel.library.name`
+		sampler:           sdkTrace.AlwaysSample(), // track all traces by default
 		spanLimits:        sdkTrace.NewSpanLimits(),
 		runtimeMetricsInt: time.Duration(10) * time.Second,
+		spanProcessors:    []sdkTrace.SpanProcessor{},
+		spanInterceptor:   new(noOpSpanInterceptor),
 		props: []propagation.TextMapPropagator{
 			propagation.Baggage{},      // baggage
 			propagation.TraceContext{}, // tracecontext
@@ -86,12 +88,12 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 
 	// Create the default "main" component.
 	op.Component = &Component{
-		attrs:         Attributes{},     // initial empty set of attributes
-		ot:            op.tracer,        // inherit operator tracer
-		propagator:    op.propagator,    // inherit operator propagation mechanism(s)
-		reporter:      op.reporter,      // inherit operator error reporter
-		Logger:        op.log,           // inherit operator logger
-		MeterProvider: op.meterProvider, // inherit operator's meter provider
+		attrs:         Attributes{},       // initial empty set of attributes
+		ot:            op.tracer,          // inherit operator's tracer
+		spp:           op.spanInterceptor, // inherit operator's span interceptor
+		propagator:    op.propagator,      // inherit operator's propagation mechanism(s)
+		Logger:        op.log,             // inherit operator's logger
+		MeterProvider: op.meterProvider,   // inherit operator's meter provider
 	}
 
 	// Set internal OTEL error handler.
@@ -108,9 +110,6 @@ func NewOperator(options ...OperatorOption) (*Operator, error) {
 // will preform any cleanup or synchronization required while honoring all timeouts
 // and cancellations contained in the provided context.
 func (op *Operator) Shutdown(ctx context.Context) {
-	// Stop error reporter
-	_ = op.reporter.Flush(5 * time.Second)
-
 	// Stop trace provider and exporter
 	_ = op.traceProvider.ForceFlush(ctx)
 	_ = op.traceProvider.Shutdown(ctx)
@@ -130,11 +129,6 @@ func (op *Operator) MainComponent() *Component {
 	return op.Component
 }
 
-// ErrorReporter returns the error reporting instance setup with the operator.
-func (op *Operator) ErrorReporter() apiErrors.Reporter {
-	return op.reporter
-}
-
 // Apply provided configuration settings.
 func (op *Operator) setup(options ...OperatorOption) error {
 	for _, setting := range options {
@@ -147,21 +141,26 @@ func (op *Operator) setup(options ...OperatorOption) error {
 
 // Create the metrics and traces provider elements for the operator instance.
 func (op *Operator) setupProviders() {
-	// Build a span processing chain.
+	// Custom span processor to generate logs.
 	spc := logSpans{
 		log:  op.log,                                           // custom `SpanProcessor` to generate logs
 		Next: sdkTrace.NewBatchSpanProcessor(op.traceExporter), // submit completed spans to the exporter
 	}
 
-	// Trace provider.
-	// A trace provider is used to generate a tracer, and a tracer to create spans.
-	// trace provider -> tracer -> span
-	op.traceProvider = sdkTrace.NewTracerProvider(
-		sdkTrace.WithResource(op.resource),        // adjust monitored resource
+	// Trace provider options.
+	tpOpts := []sdkTrace.TracerProviderOption{sdkTrace.WithResource(op.resource), // adjust monitored resource
 		sdkTrace.WithSampler(op.sampler),          // set sampling strategy
 		sdkTrace.WithRawSpanLimits(op.spanLimits), // use default span limits
 		sdkTrace.WithSpanProcessor(spc),           // set the span processing chain
-	)
+	}
+	for _, sp := range op.spanProcessors {
+		tpOpts = append(tpOpts, sdkTrace.WithSpanProcessor(sp))
+	}
+
+	// Trace provider.
+	// A trace provider is used to generate a tracer, and a tracer to create spans.
+	// trace provider -> tracer -> span
+	op.traceProvider = sdkTrace.NewTracerProvider(tpOpts...)
 
 	// If no metrics exporter was provided, skip provider setup.
 	if op.metricExporter == nil {
