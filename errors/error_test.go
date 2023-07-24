@@ -54,6 +54,13 @@ func TestReport(t *testing.T) {
 	js, err := Report(e3, CodecJSON(true))
 	assert.Nil(err, "failed to generate report")
 	t.Logf("%s", js)
+
+	t.Run("Unmarshal", func(t *testing.T) {
+		codec := CodecJSON(true)
+		ok, recErr := codec.Unmarshal(js)
+		assert.True(ok, "unmarshal failed")
+		fmt.Printf("recovered error: %+v", recErr)
+	})
 }
 
 type customErrorA struct{ msg string }

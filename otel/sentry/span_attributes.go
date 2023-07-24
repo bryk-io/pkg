@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
-	"go.opentelemetry.io/otel/trace"
+	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
 type spanAttributes struct {
@@ -20,18 +20,18 @@ type spanAttributes struct {
 
 func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 	user := extractUser(s.Attributes())
-	for _, attribute := range s.Attributes() {
-		if attribute.Key == semConv.HTTPMethodKey {
+	for _, attr := range s.Attributes() {
+		if attr.Key == semConv.HTTPMethodKey {
 			result := descriptionForHTTPMethod(s)
 			result.User = user
 			return result
 		}
-		if attribute.Key == semConv.DBSystemKey {
+		if attr.Key == semConv.DBSystemKey {
 			result := descriptionForDBSystem(s)
 			result.User = user
 			return result
 		}
-		if attribute.Key == semConv.RPCSystemKey {
+		if attr.Key == semConv.RPCSystemKey {
 			return spanAttributes{
 				Op:          "rpc",
 				Description: s.Name(),
@@ -39,7 +39,7 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 				Source:      sdk.SourceRoute,
 			}
 		}
-		if attribute.Key == semConv.MessagingSystemKey {
+		if attr.Key == semConv.MessagingSystemKey {
 			return spanAttributes{
 				Op:          "messaging",
 				Description: s.Name(),
@@ -47,9 +47,9 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 				Source:      sdk.SourceRoute,
 			}
 		}
-		if attribute.Key == semConv.FaaSTriggerKey {
+		if attr.Key == semConv.FaaSTriggerKey {
 			return spanAttributes{
-				Op:          attribute.Value.AsString(),
+				Op:          asString(attr.Value),
 				Description: s.Name(),
 				User:        user,
 				Source:      sdk.SourceRoute,
@@ -67,13 +67,12 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 
 func descriptionForDBSystem(s sdkTrace.ReadOnlySpan) spanAttributes {
 	description := s.Name()
-	for _, attribute := range s.Attributes() {
-		if attribute.Key == semConv.DBStatementKey {
-			description = attribute.Value.AsString()
+	for _, attr := range s.Attributes() {
+		if attr.Key == semConv.DBStatementKey {
+			description = attr.Value.AsString()
 			break
 		}
 	}
-
 	return spanAttributes{
 		Op:          "db",
 		Description: description,
@@ -93,24 +92,24 @@ func descriptionForHTTPMethod(s sdkTrace.ReadOnlySpan) spanAttributes {
 
 	// adjust span kind
 	op := "http"
-	if spanKind == trace.SpanKindClient {
+	if spanKind == apiTrace.SpanKindClient {
 		op = "http.client"
 	}
-	if spanKind == trace.SpanKindServer {
+	if spanKind == apiTrace.SpanKindServer {
 		op = "http.server"
 	}
 
 	// load common attributes
-	for _, attribute := range s.Attributes() {
-		switch attribute.Key {
+	for _, attr := range s.Attributes() {
+		switch attr.Key {
 		case semConv.HTTPTargetKey:
-			httpTarget = attribute.Value.AsString()
+			httpTarget = attr.Value.AsString()
 		case semConv.HTTPRouteKey:
-			httpRoute = attribute.Value.AsString()
+			httpRoute = attr.Value.AsString()
 		case semConv.HTTPMethodKey:
-			httpMethod = attribute.Value.AsString()
+			httpMethod = attr.Value.AsString()
 		case semConv.HTTPURLKey:
-			httpURL = attribute.Value.AsString()
+			httpURL = attr.Value.AsString()
 		}
 	}
 

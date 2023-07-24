@@ -1,15 +1,14 @@
-package otel
+package sdk
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"reflect"
-	"runtime"
+	"strings"
 
 	"go.bryk.io/pkg/log"
-	"go.opentelemetry.io/otel"
+	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -17,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
+	sdkResource "go.opentelemetry.io/otel/sdk/resource"
 	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
@@ -25,13 +25,6 @@ import (
 const (
 	lblSvcName          = string(semConv.ServiceNameKey)
 	lblSvcVer           = string(semConv.ServiceVersionKey)
-	lblHostArch         = string(semConv.HostArchKey)
-	lblHostName         = string(semConv.HostNameKey)
-	lblHostOS           = string(semConv.OSTypeKey)
-	lblLibName          = string(semConv.TelemetrySDKNameKey)
-	lblLibVer           = string(semConv.TelemetrySDKVersionKey)
-	lblLibLang          = string(semConv.TelemetrySDKLanguageKey)
-	lblProcessRuntime   = string(semConv.ProcessRuntimeDescriptionKey)
 	lblStackTrace       = string(semConv.ExceptionStacktraceKey)
 	lblExceptionMessage = string(semConv.ExceptionMessageKey)
 	lblExceptionType    = string(semConv.ExceptionTypeKey)
@@ -46,8 +39,8 @@ const (
 // WithExporterStdout is a utility method to automatically setup and attach
 // trace and metric exporters to send the generated telemetry data to standard
 // output.
-func WithExporterStdout(pretty bool) []OperatorOption {
-	var opts []OperatorOption
+func WithExporterStdout(pretty bool) []Option {
+	var opts []Option
 	se, me, err := ExporterStdout(pretty)
 	if err == nil {
 		opts = append(opts, WithExporter(se))
@@ -60,8 +53,8 @@ func WithExporterStdout(pretty bool) []OperatorOption {
 // trace and metric exporters to send the generated telemetry data to an OTLP
 // exporter instance.
 // https://opentelemetry.io/docs/collector/
-func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string) []OperatorOption {
-	var opts []OperatorOption
+func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string) []Option {
+	var opts []Option
 	se, me, err := ExporterOTLP(endpoint, insecure, headers)
 	if err == nil {
 		opts = append(opts, WithExporter(se))
@@ -128,22 +121,63 @@ func ExporterOTLP(endpoint string, insecure bool, headers map[string]string) (*o
 	return traceExp, metricExp, nil
 }
 
-// CoreAttributes returns a set of basic environment attributes.
-// https://github.com/open-telemetry/opentelemetry-specification/tree/master/specification
-func coreAttributes() Attributes {
-	core := Attributes{
-		lblSvcName:        "service",
-		lblHostOS:         runtime.GOOS,
-		lblHostArch:       runtime.GOARCH,
-		lblProcessRuntime: runtime.Version(),
-		lblLibVer:         otel.Version(),
-		lblLibName:        "opentelemetry",
-		lblLibLang:        "go",
+// Collect environment information and setup the OTEL resource.
+func setupResource(attrs otel.Attributes) (*sdkResource.Resource, error) {
+	return sdkResource.New(context.Background(),
+		sdkResource.WithOS(),
+		sdkResource.WithHost(),
+		sdkResource.WithContainer(),
+		sdkResource.WithTelemetrySDK(),
+		sdkResource.WithProcessRuntimeName(),
+		sdkResource.WithProcessRuntimeVersion(),
+		sdkResource.WithProcessRuntimeDescription(),
+		sdkResource.WithAttributes(expand(attrs)...))
+}
+
+// Match simple identifiers with log level values.
+func levelFromString(val string) log.Level {
+	switch val {
+	case "debug":
+		return log.Debug
+	case "info":
+		return log.Info
+	case "warning":
+		return log.Warning
+	case "error":
+		return log.Error
+	case "panic":
+		return log.Panic
+	case "fatal":
+		return log.Fatal
+	default:
+		return log.Debug
 	}
-	if host, err := os.Hostname(); err == nil {
-		core.Set(lblHostName, host)
+}
+
+// Expand allows converting from attributes to a key/value list.
+func expand(attrs otel.Attributes) []attribute.KeyValue {
+	var list []attribute.KeyValue
+	for k, v := range attrs {
+		if strings.TrimSpace(k) != "" {
+			list = append(list, kvAny(k, v))
+		}
 	}
-	return core
+	return list
+}
+
+// Join any number of attribute sets into a single collection.
+// Duplicated values are override int the order in which the sets
+// containing those values are presented to Join.
+func join(list ...otel.Attributes) otel.Attributes {
+	out := otel.Attributes{}
+	for _, md := range list {
+		for k, v := range md {
+			if strings.TrimSpace(k) != "" {
+				out[k] = v
+			}
+		}
+	}
+	return out
 }
 
 // Any creates a new key-value pair instance with a passed name and
@@ -192,25 +226,5 @@ func kvAny(k string, value interface{}) attribute.KeyValue {
 			return attribute.String(k, string(b))
 		}
 		return attribute.String(k, fmt.Sprint(value))
-	}
-}
-
-// Match simple identifiers with log level values.
-func levelFromString(val string) log.Level {
-	switch val {
-	case "debug":
-		return log.Debug
-	case "info":
-		return log.Info
-	case "warning":
-		return log.Warning
-	case "error":
-		return log.Error
-	case "panic":
-		return log.Panic
-	case "fatal":
-		return log.Fatal
-	default:
-		return log.Debug
 	}
 }

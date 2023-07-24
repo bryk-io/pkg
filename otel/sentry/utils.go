@@ -2,13 +2,15 @@ package sentry
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 
 	sdk "github.com/getsentry/sentry-go"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Return custom event processor with sane defaults.
@@ -27,21 +29,6 @@ func newEventProcessor() *eventProcessor {
 func fileExists(fileName string) bool {
 	_, err := os.Stat(fileName)
 	return err == nil
-}
-
-// Join any number of attribute sets into a single collection.
-// Duplicated values are override int the order in which the sets
-// containing those values are presented to join.
-func join(list ...map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{})
-	for _, md := range list {
-		for k, v := range md {
-			if strings.TrimSpace(k) != "" {
-				out[k] = v
-			}
-		}
-	}
-	return out
 }
 
 // Map a simple level identifier to a valid SDK value.
@@ -133,4 +120,25 @@ func (sr *sourceReader) calculateContextLines(lines [][]byte, line, context int)
 	}
 
 	return lines[start:end], contextLine
+}
+
+// Return a value attributes as a string.
+func asString(v attribute.Value) string {
+	res := "-"
+	switch v.Type() {
+	case attribute.BOOL:
+		res = fmt.Sprintf("%t", v.AsBool())
+	case attribute.INT64:
+		res = fmt.Sprintf("%d", v.AsInt64())
+	case attribute.FLOAT64:
+		res = fmt.Sprintf("%f", v.AsFloat64())
+	case attribute.STRING:
+		res = v.AsString()
+	case attribute.BOOLSLICE, attribute.FLOAT64SLICE, attribute.INT64SLICE, attribute.STRINGSLICE:
+		js, _ := json.Marshal(v.AsInterface())
+		res = string(js)
+	case attribute.INVALID:
+		res = "-"
+	}
+	return res
 }

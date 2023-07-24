@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"go.bryk.io/pkg/errors"
-	"go.bryk.io/pkg/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
@@ -163,17 +162,6 @@ func WithLoadBalancer() ClientOption {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.useBalancer = true
-		return nil
-	}
-}
-
-// WithClientObservability instrument the client instance using observability
-// operator provided. If no operator is set, the default global instance is used.
-func WithClientObservability(oop *otel.Operator) ClientOption {
-	return func(c *Client) error {
-		c.mu.Lock()
-		c.oop = oop
-		c.mu.Unlock()
 		return nil
 	}
 }

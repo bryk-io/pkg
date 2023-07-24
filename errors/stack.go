@@ -75,7 +75,6 @@ func (sf StackFrame) Format(s fmt.State, verb rune) {
 // Utility method that returns a properly formatted stack trace.
 // Use the `skip` value to remove unwanted (noisy) frames from
 // the produced stack.
-// nolint: unparam
 func getStack(skip int) []StackFrame {
 	stack := make([]uintptr, maxStackDepth)
 	length := runtime.Callers(2+skip, stack[:])

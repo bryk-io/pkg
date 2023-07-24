@@ -33,7 +33,7 @@ func TestNewServer(t *testing.T) {
 
 	assert := tdd.New(t)
 
-	// Handler
+	// handler
 	router := lib.NewServeMux()
 	router.HandleFunc("/ping", func(res lib.ResponseWriter, _ *lib.Request) {
 		_, _ = res.Write([]byte("pong"))
@@ -45,7 +45,7 @@ func TestNewServer(t *testing.T) {
 	// random port
 	port, endpoint := getRandomPort()
 
-	// Server options
+	// server options
 	opts := []Option{
 		WithPort(port),
 		WithIdleTimeout(10 * time.Second),
@@ -178,6 +178,6 @@ func ExampleNewServer() {
 func getRandomPort() (int, string) {
 	rand.Seed(time.Now().UnixNano())
 	var port = 8080
-	port += rand.Intn(12)
+	port += rand.Intn(122)
 	return port, fmt.Sprintf("http://localhost:%d", port)
 }

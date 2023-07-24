@@ -5,7 +5,7 @@ import (
 
 	"go.bryk.io/pkg/cli"
 	"go.bryk.io/pkg/log"
-	"go.bryk.io/pkg/otel"
+	"go.bryk.io/pkg/otel/sdk"
 )
 
 // New loader component instance with default values.
@@ -72,27 +72,27 @@ func (c *Operator) Params() []cli.Param {
 	}
 }
 
-// Expand operator settings and return them as a `[]otel.OperatorOption`.
+// Expand operator settings and return them as a `[]sdk.Option`.
 func (c *Operator) Expand() interface{} {
-	var opt []otel.OperatorOption
-	opt = append(opt, otel.WithLogger(log.WithZero(log.ZeroOptions{
+	var opt []sdk.Option
+	opt = append(opt, sdk.WithBaseLogger(log.WithZero(log.ZeroOptions{
 		PrettyPrint: !c.LogJSON,
 		ErrorField:  "error.message",
 	})))
 	if c.ServiceName != "" {
-		opt = append(opt, otel.WithServiceName(c.ServiceName))
+		opt = append(opt, sdk.WithServiceName(c.ServiceName))
 	}
 	if c.ServiceVersion != "" {
-		opt = append(opt, otel.WithServiceVersion(c.ServiceVersion))
+		opt = append(opt, sdk.WithServiceVersion(c.ServiceVersion))
 	}
 	if len(c.Attributes) > 0 {
-		opt = append(opt, otel.WithResourceAttributes(c.Attributes))
+		opt = append(opt, sdk.WithResourceAttributes(c.Attributes))
 	}
 	if c.HostMetrics {
-		opt = append(opt, otel.WithHostMetrics())
+		opt = append(opt, sdk.WithHostMetrics())
 	}
 	if c.RuntimeMetrics {
-		opt = append(opt, otel.WithRuntimeMetrics(0))
+		opt = append(opt, sdk.WithRuntimeMetrics(0))
 	}
 	return opt
 }

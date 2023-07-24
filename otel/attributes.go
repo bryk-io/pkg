@@ -2,6 +2,9 @@ package otel
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"reflect"
 	"strings"
 
 	"go.bryk.io/pkg/metadata"
@@ -40,7 +43,7 @@ func (attrs Attributes) Context() context.Context {
 }
 
 // Join will add any number of attribute sets into current instance.
-func (attrs Attributes) join(list ...Attributes) {
+func (attrs Attributes) Join(list ...Attributes) {
 	for _, md := range list {
 		for k, v := range md {
 			attrs.Set(k, v)
@@ -48,13 +51,18 @@ func (attrs Attributes) join(list ...Attributes) {
 	}
 }
 
-// Convert from key/value list to an attributes instance.
-func (attrs Attributes) load(list []attribute.KeyValue) {
+// Load from key/value list to an attributes instance.
+func (attrs Attributes) Load(list []attribute.KeyValue) {
 	for _, el := range list {
 		if el.Key.Defined() {
 			attrs[string(el.Key)] = el.Value.AsInterface()
 		}
 	}
+}
+
+// Expand allows converting from attributes to a key/value list.
+func (attrs Attributes) Expand() []attribute.KeyValue {
+	return expand(attrs)
 }
 
 // Returns a list-member of a baggage-string as defined by the W3C Baggage
@@ -80,17 +88,51 @@ func expand(attrs Attributes) []attribute.KeyValue {
 	return list
 }
 
-// Join any number of attribute sets into a single collection.
-// Duplicated values are override int the order in which the sets
-// containing those values are presented to Join.
-func join(list ...Attributes) Attributes {
-	out := Attributes{}
-	for _, md := range list {
-		for k, v := range md {
-			if strings.TrimSpace(k) != "" {
-				out[k] = v
-			}
-		}
+// Any creates a new key-value pair instance with a passed name and
+// automatic type inference. This is slower, and not type-safe.
+func kvAny(k string, value interface{}) attribute.KeyValue {
+	if value == nil {
+		return attribute.String(k, "<nil>")
 	}
-	return out
+
+	if stringer, ok := value.(fmt.Stringer); ok {
+		return attribute.String(k, stringer.String())
+	}
+
+	rv := reflect.ValueOf(value)
+
+	// nolint:forcetypeassert
+	switch rv.Kind() {
+	case reflect.Array:
+		rv = rv.Slice(0, rv.Len())
+		fallthrough
+	case reflect.Slice:
+		switch reflect.TypeOf(value).Elem().Kind() {
+		case reflect.Bool:
+			return attribute.BoolSlice(k, rv.Interface().([]bool))
+		case reflect.Int:
+			return attribute.IntSlice(k, rv.Interface().([]int))
+		case reflect.Int64:
+			return attribute.Int64Slice(k, rv.Interface().([]int64))
+		case reflect.Float64:
+			return attribute.Float64Slice(k, rv.Interface().([]float64))
+		case reflect.String:
+			return attribute.StringSlice(k, rv.Interface().([]string))
+		default:
+			return attribute.String(k, "<nil>")
+		}
+	case reflect.Bool:
+		return attribute.Bool(k, rv.Bool())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return attribute.Int64(k, rv.Int())
+	case reflect.Float64:
+		return attribute.Float64(k, rv.Float())
+	case reflect.String:
+		return attribute.String(k, rv.String())
+	default:
+		if b, err := json.Marshal(value); b != nil && err == nil {
+			return attribute.String(k, string(b))
+		}
+		return attribute.String(k, fmt.Sprint(value))
+	}
 }

@@ -9,6 +9,9 @@ receivers:
     protocols:
       grpc:
       http:
+        cors:
+          allowed_origins: ["*"]
+          allowed_headers: ["*"]
 # https://github.com/open-telemetry/opentelemetry-collector/blob/main/processor/README.md
 processors:
   memory_limiter:

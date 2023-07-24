@@ -1,4 +1,4 @@
-package otel
+package api
 
 import (
 	apiTrace "go.opentelemetry.io/otel/trace"

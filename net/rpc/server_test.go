@@ -19,11 +19,14 @@ import (
 	"go.bryk.io/pkg/log"
 	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
 	"go.bryk.io/pkg/net/rpc/ws"
-	"go.bryk.io/pkg/otel"
+	otelApi "go.bryk.io/pkg/otel/api"
 	otelHttp "go.bryk.io/pkg/otel/http"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
-	samplev1 "go.bryk.io/pkg/proto/sample/v1"
-	"go.uber.org/goleak"
+
+	otelSdk "go.bryk.io/pkg/otel/sdk"
+	sampleV1 "go.bryk.io/pkg/proto/sample/v1"
+	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -32,12 +35,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	empty "google.golang.org/protobuf/types/known/emptypb"
 )
-
-func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		goleak.IgnoreTopFunction("github.com/golang/glog.(*loggingT).flushDaemon"),
-	)
-}
 
 func TestServer(t *testing.T) {
 	// Skip when running on CI.
@@ -67,21 +64,19 @@ func TestServer(t *testing.T) {
 	prom, err := otelProm.NewOperator(prometheus.NewRegistry(), sampleCounter)
 	assert.Nil(err, "failed to enable prometheus, support")
 
-	// OTEL Exporters
-	otelOpts := []otel.OperatorOption{
-		otel.WithServiceName("rpc-test"),
-		otel.WithServiceVersion("0.1.0"),
-		otel.WithLogger(ll),
-		otel.WithHostMetrics(),
+	// enable OTEL monitoring
+	traceExp, metricExp := availableExporters()
+	otelOpts := []otelSdk.Option{
+		otelSdk.WithServiceName("rpc-test"),
+		otelSdk.WithServiceVersion("0.1.0"),
+		otelSdk.WithBaseLogger(ll),
+		otelSdk.WithHostMetrics(),
+		otelSdk.WithExporter(traceExp),
+		otelSdk.WithMetricReader(sdkMetric.NewPeriodicReader(metricExp)),
 	}
-	if isCollectorAvailable() {
-		otelOpts = append(otelOpts, otel.WithExporterOTLP("localhost:4317", true, nil)...)
-	}
-
-	// Observability operator
-	oop, err := otel.NewOperator(otelOpts...)
+	monitoring, err := otelSdk.Setup(otelOpts...)
 	assert.Nil(err, "initialize operator")
-	defer oop.Shutdown(context.Background())
+	defer monitoring.Flush(context.Background())
 
 	// HTTP monitor
 	spanNameFormatter := func(req *http.Request) string {
@@ -100,7 +95,6 @@ func TestServer(t *testing.T) {
 
 	// Base server configuration options
 	serverOpts := []ServerOption{
-		WithObservability(oop),
 		WithPanicRecovery(),
 		WithInputValidation(),
 		WithReflection(),
@@ -132,14 +126,12 @@ func TestServer(t *testing.T) {
 		WithCompression(),
 		WithKeepalive(10),
 		WithRetry(retryOpts),
-		WithClientObservability(oop),
 	}
 
 	t.Run("WithDefaults", func(t *testing.T) {
 		// Start a new server with minimal settings
 		srv, err := NewServer(
 			WithServiceProvider(new(fooProvider)),
-			WithObservability(oop),
 			WithPrometheus(prom),
 		)
 		if err != nil {
@@ -159,7 +151,7 @@ func TestServer(t *testing.T) {
 			return
 		}
 
-		cl := samplev1.NewFooAPIClient(conn)
+		cl := sampleV1.NewFooAPIClient(conn)
 
 		t.Run("Ping", func(t *testing.T) {
 			_, err = cl.Ping(context.Background(), &empty.Empty{})
@@ -209,7 +201,7 @@ func TestServer(t *testing.T) {
 				assert.Nil(err, "failed to open client stream")
 				for i := 0; i < 10; i++ {
 					t := <-time.After(100 * time.Millisecond) // random latency
-					c := &samplev1.OpenClientStreamRequest{
+					c := &sampleV1.OpenClientStreamRequest{
 						Sender: "sample-client",
 						Stamp:  t.Unix(),
 					}
@@ -263,7 +255,7 @@ func TestServer(t *testing.T) {
 		ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 		// Sample request
-		cl := samplev1.NewFooAPIClient(conn)
+		cl := sampleV1.NewFooAPIClient(conn)
 		_, err = cl.Ping(ctx, &empty.Empty{})
 		assert.Nil(err, "ping error")
 
@@ -306,7 +298,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Consume API
-		cl := samplev1.NewFooAPIClient(conn)
+		cl := sampleV1.NewFooAPIClient(conn)
 		_, err = cl.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 
@@ -328,7 +320,7 @@ func TestServer(t *testing.T) {
 		// Response mutator
 		respMut := func(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
 			switch v := resp.(type) {
-			case *samplev1.Response:
+			case *sampleV1.Response:
 				// Metadata returned by the server will be available here for further
 				// processing and customization
 				ll.Warningf("mutator metadata: %+v", MetadataFromContext(ctx))
@@ -352,7 +344,6 @@ func TestServer(t *testing.T) {
 			WithGatewayMiddleware(mwGzip.Handler(7)),
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
-			WithClientOptions(WithClientObservability(oop)),
 			WithSpanFormatter(func(r *http.Request) string {
 				return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 			}),
@@ -387,7 +378,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.Background(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
+			task := otelApi.Start(context.Background(), "/foo/ping", otelApi.WithSpanKind(otelApi.SpanKindClient))
 			defer task.End(nil)
 
 			// Prepare HTTP request
@@ -407,7 +398,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("Request", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.Background(), "/foo/request", otel.WithSpanKind(otel.SpanKindClient))
+			task := otelApi.Start(context.Background(), "/foo/request", otelApi.WithSpanKind(otelApi.SpanKindClient))
 			defer task.End(nil)
 
 			// Prepare request
@@ -435,7 +426,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("CustomPath", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.Background(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
+			task := otelApi.Start(context.Background(), "/hello", otelApi.WithSpanKind(otelApi.SpanKindClient))
 			defer task.End(nil)
 
 			// Prepare request
@@ -456,7 +447,7 @@ func TestServer(t *testing.T) {
 		t.Run("Metrics", func(t *testing.T) {
 			t.SkipNow()
 			// Start span
-			task := oop.Start(context.Background(), "/instrumentation", otel.WithSpanKind(otel.SpanKindClient))
+			task := otelApi.Start(context.Background(), "/instrumentation", otelApi.WithSpanKind(otelApi.SpanKindClient))
 			defer task.End(nil)
 
 			// Prepare request
@@ -478,11 +469,11 @@ func TestServer(t *testing.T) {
 		t.Run("Streaming", func(t *testing.T) {
 			t.Run("ServerSide", func(t *testing.T) {
 				// Start span
-				task := oop.Start(context.Background(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := otelApi.Start(context.Background(), "/foo/server_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
 				// Open websocket connection
-				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/server_stream", task.Headers())
+				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/server_stream", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -507,12 +498,12 @@ func TestServer(t *testing.T) {
 
 			t.Run("ClientSide", func(t *testing.T) {
 				// Start span
-				task := oop.Start(context.Background(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := otelApi.Start(context.Background(), "/foo/client_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
 				// Open websocket connection
 				pbM := protojson.MarshalOptions{EmitUnpopulated: true}
-				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/client_stream", task.Headers())
+				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/client_stream", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -525,7 +516,7 @@ func TestServer(t *testing.T) {
 				// Send messages
 				for i := 0; i < 10; i++ {
 					t := <-time.After(100 * time.Millisecond)
-					c := &samplev1.GenericStreamChunk{
+					c := &sampleV1.GenericStreamChunk{
 						Sender: "test-client",
 						Stamp:  t.Unix(),
 					}
@@ -588,7 +579,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Request
-		cl := samplev1.NewFooAPIClient(conn)
+		cl := sampleV1.NewFooAPIClient(conn)
 		_, err = cl.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 
@@ -649,7 +640,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("Ping", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.Background(), "/foo/ping", otel.WithSpanKind(otel.SpanKindClient))
+			task := otelApi.Start(context.Background(), "/foo/ping", otelApi.WithSpanKind(otelApi.SpanKindClient))
 			defer task.End(nil)
 
 			// Prepare HTTPS request
@@ -669,7 +660,7 @@ func TestServer(t *testing.T) {
 
 		t.Run("CustomPath", func(t *testing.T) {
 			// Start span
-			task := oop.Start(context.Background(), "/hello", otel.WithSpanKind(otel.SpanKindClient))
+			task := otelApi.Start(context.Background(), "/hello", otelApi.WithSpanKind(otelApi.SpanKindClient))
 			defer task.End(nil)
 
 			// Prepare HTTPS request
@@ -699,10 +690,10 @@ func TestServer(t *testing.T) {
 				}
 
 				// Start span
-				task := oop.Start(context.Background(), "/foo/server_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := otelApi.Start(context.Background(), "/foo/server_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
-				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/server_stream", task.Headers())
+				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/server_stream", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -737,10 +728,10 @@ func TestServer(t *testing.T) {
 				}
 
 				// Start span
-				task := oop.Start(context.Background(), "/foo/client_stream", otel.WithSpanKind(otel.SpanKindClient))
+				task := otelApi.Start(context.Background(), "/foo/client_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
-				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/client_stream", task.Headers())
+				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/client_stream", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -753,7 +744,7 @@ func TestServer(t *testing.T) {
 				// Send messages
 				for i := 0; i < 10; i++ {
 					t := <-time.After(100 * time.Millisecond)
-					c := &samplev1.GenericStreamChunk{
+					c := &sampleV1.GenericStreamChunk{
 						Sender: "test-client",
 						Stamp:  t.Unix(),
 					}
@@ -826,7 +817,7 @@ func TestServer(t *testing.T) {
 		hcl := getHTTPClient(srv, &clientCert)
 
 		// Start span
-		task := oop.Start(context.Background(), "/bar/ping", otel.WithSpanKind(otel.SpanKindClient))
+		task := otelApi.Start(context.Background(), "/bar/ping", otelApi.WithSpanKind(otelApi.SpanKindClient))
 
 		// Prepare HTTPS request
 		req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "https://127.0.0.1:12137/bar/ping", nil)
@@ -873,13 +864,13 @@ func TestServer(t *testing.T) {
 			}
 		}()
 
-		foo := samplev1.NewFooAPIClient(conn)
+		foo := sampleV1.NewFooAPIClient(conn)
 		_, err = foo.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 		_, err = foo.Request(context.Background(), &empty.Empty{})
 		assert.Nil(err, "request error")
 
-		bar := samplev1.NewBarAPIClient(conn)
+		bar := sampleV1.NewBarAPIClient(conn)
 		_, err = bar.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 		_, err = bar.Request(context.Background(), &empty.Empty{})
@@ -965,7 +956,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Use client connection
-		foo := samplev1.NewFooAPIClient(conn)
+		foo := sampleV1.NewFooAPIClient(conn)
 		_, err = foo.Ping(context.Background(), &empty.Empty{})
 		assert.Nil(err, "ping error")
 		_, err = foo.Health(context.Background(), &empty.Empty{})
@@ -991,25 +982,19 @@ func TestEchoServer(t *testing.T) {
 		ErrorField:  "error.message",
 	})
 
-	// OTEL options
-	opts := []otel.OperatorOption{
-		otel.WithServiceName("echo-server"),
-		otel.WithServiceVersion("0.1.0"),
-		otel.WithLogger(ll),
-		otel.WithResourceAttributes(otel.Attributes{
-			"custom.field": "foo",
-		}),
+	// enable OTEL monitoring
+	traceExp, metricExp := availableExporters()
+	otelOpts := []otelSdk.Option{
+		otelSdk.WithServiceName("echo-server"),
+		otelSdk.WithServiceVersion("0.1.0"),
+		otelSdk.WithBaseLogger(ll),
+		otelSdk.WithHostMetrics(),
+		otelSdk.WithExporter(traceExp),
+		otelSdk.WithMetricReader(sdkMetric.NewPeriodicReader(metricExp)),
 	}
-	if isCollectorAvailable() {
-		opts = append(opts, otel.WithExporterOTLP("localhost:4317", true, nil)...)
-	} else {
-		opts = append(opts, otel.WithExporterStdout(true)...)
-	}
-
-	// Observability operator
-	oop, err := otel.NewOperator(opts...)
-	assert.Nil(err, "initialize observability operator")
-	defer oop.Shutdown(context.Background())
+	monitoring, err := otelSdk.Setup(otelOpts...)
+	assert.Nil(err, "initialize operator")
+	defer monitoring.Flush(context.Background())
 
 	// Custom HTTP error handler
 	eh := func(
@@ -1021,7 +1006,7 @@ func TestEchoServer(t *testing.T) {
 		err error) {
 		for _, d := range status.Convert(err).Details() {
 			switch fe := d.(type) {
-			case *samplev1.FaultyError:
+			case *sampleV1.FaultyError:
 				// Add custom headers
 				res.Header().Set("content-type", enc.ContentType(fe))
 				for k, v := range fe.Metadata {
@@ -1047,7 +1032,6 @@ func TestEchoServer(t *testing.T) {
 		WithUserAgent("echo-client/0.1.0"),
 		WithCompression(),
 		WithKeepalive(10),
-		WithClientObservability(oop),
 	}
 
 	// Setup HTTP gateway
@@ -1064,7 +1048,6 @@ func TestEchoServer(t *testing.T) {
 
 	// Base server configuration options
 	serverOpts := []ServerOption{
-		WithObservability(oop),
 		WithPort(7878),
 		WithPanicRecovery(),
 		WithInputValidation(),
@@ -1097,7 +1080,7 @@ func TestEchoServer(t *testing.T) {
 	}
 
 	// Get API client
-	cl := samplev1.NewEchoAPIClient(conn)
+	cl := sampleV1.NewEchoAPIClient(conn)
 
 	t.Run("Ping", func(t *testing.T) {
 		_, err = cl.Ping(context.Background(), &empty.Empty{})
@@ -1105,12 +1088,12 @@ func TestEchoServer(t *testing.T) {
 	})
 
 	t.Run("EchoRequest", func(t *testing.T) {
-		r, err := cl.Echo(context.Background(), &samplev1.EchoRequest{Value: "hi there"})
+		r, err := cl.Echo(context.Background(), &sampleV1.EchoRequest{Value: "hi there"})
 		assert.Nil(err, "request error")
 		assert.Equal("you said: hi there", r.Result, "invalid response")
 
 		// Invalid argument
-		r2, err := cl.Echo(context.Background(), &samplev1.EchoRequest{Value: ""})
+		r2, err := cl.Echo(context.Background(), &sampleV1.EchoRequest{Value: ""})
 		assert.Nil(r2, "unexpected result")
 		assert.NotNil(err, "unexpected result")
 	})
@@ -1145,7 +1128,7 @@ func TestEchoServer(t *testing.T) {
 		// Submit requests until one fails
 		for {
 			// Start span
-			task := oop.Start(context.Background(), "/echo/faulty", otel.WithSpanKind(otel.SpanKindClient))
+			task := otelApi.Start(context.Background(), "/echo/faulty", otelApi.WithSpanKind(otelApi.SpanKindClient))
 
 			// Prepare HTTP request
 			req, _ := http.NewRequestWithContext(task.Context(), http.MethodPost, "http://127.0.0.1:7878/echo/faulty", nil)
@@ -1265,9 +1248,7 @@ func ExampleNewClientConnection() {
 	}()
 }
 
-// Verify a local collector instance is available using its `health check`
-// endpoint.
-func isCollectorAvailable() bool {
+func availableExporters() (sdkTrace.SpanExporter, sdkMetric.Exporter) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
@@ -1275,15 +1256,16 @@ func isCollectorAvailable() bool {
 	if res != nil {
 		_ = res.Body.Close()
 	}
-	if err != nil {
-		return false
+	if err == nil && res.StatusCode == http.StatusOK {
+		traceExp, metricExp, _ := otelSdk.ExporterOTLP("localhost:4317", true, nil)
+		return traceExp, metricExp
 	}
-	return res.StatusCode == http.StatusOK
+	traceExp, metricExp, _ := otelSdk.ExporterStdout(true)
+	return traceExp, metricExp
 }
 
 func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
 	// Setup transport
-	var cl http.Client
 	rt := http.DefaultTransport
 	if srv.tlsConfig != nil {
 		// Add TLS credentials
@@ -1297,44 +1279,39 @@ func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
 	}
 
 	// Get client
-	if srv.oop != nil {
-		httpMonitor := otelHttp.NewMonitor()
-		cl = httpMonitor.Client(rt) // instrumented client
-	} else {
-		cl = http.Client{Transport: rt} // regular client
-	}
-	return cl
+	httpMonitor := otelHttp.NewMonitor()
+	return httpMonitor.Client(rt) // instrumented client
 }
 
 // Foo service provider.
 type fooProvider struct{}
 
 func (fp *fooProvider) ServerSetup(server *grpc.Server) {
-	samplev1.RegisterFooAPIServer(server, &samplev1.Handler{Name: "foo"})
+	sampleV1.RegisterFooAPIServer(server, &sampleV1.Handler{Name: "foo"})
 }
 
 func (fp *fooProvider) GatewaySetup() GatewayRegisterFunc {
-	return samplev1.RegisterFooAPIHandler
+	return sampleV1.RegisterFooAPIHandler
 }
 
 // Bar service provider.
 type barProvider struct{}
 
 func (bp *barProvider) ServerSetup(server *grpc.Server) {
-	samplev1.RegisterBarAPIServer(server, &samplev1.Handler{Name: "bar"})
+	sampleV1.RegisterBarAPIServer(server, &sampleV1.Handler{Name: "bar"})
 }
 
 func (bp *barProvider) GatewaySetup() GatewayRegisterFunc {
-	return samplev1.RegisterBarAPIHandler
+	return sampleV1.RegisterBarAPIHandler
 }
 
 // Echo service provider.
 type echoProvider struct{}
 
 func (ep *echoProvider) ServerSetup(server *grpc.Server) {
-	samplev1.RegisterEchoAPIServer(server, &samplev1.EchoHandler{})
+	sampleV1.RegisterEchoAPIServer(server, &sampleV1.EchoHandler{})
 }
 
 func (ep *echoProvider) GatewaySetup() GatewayRegisterFunc {
-	return samplev1.RegisterEchoAPIHandler
+	return sampleV1.RegisterEchoAPIHandler
 }

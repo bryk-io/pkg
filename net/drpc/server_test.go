@@ -851,6 +851,6 @@ func getHTTPClient(creds *tls.Certificate) http.Client {
 func getRandomPort() (uint, string) {
 	rand.Seed(time.Now().UnixNano())
 	var port uint = 8080
-	port += uint(rand.Intn(12))
+	port += uint(rand.Intn(122))
 	return port, fmt.Sprintf(":%d", port)
 }

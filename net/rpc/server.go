@@ -17,7 +17,6 @@ import (
 	"github.com/soheilhy/cmux"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
-	"go.bryk.io/pkg/otel"
 	otelGrpc "go.bryk.io/pkg/otel/grpc"
 	otelHttp "go.bryk.io/pkg/otel/http"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
@@ -61,7 +60,6 @@ type Server struct {
 	gw               *http.Server                   // Gateway HTTP server
 	halt             context.CancelFunc             // Stop all internal processing
 	wsProxy          *ws.Proxy                      // WebSocket proxy
-	oop              *otel.Operator                 // Handle observability requirements
 	resourceLimits   ResourceLimits                 // Settings to prevent resources abuse
 	panicRecovery    bool                           // Enable panic recovery interceptor
 	inputValidation  bool                           // Enable automatic input validation
@@ -374,15 +372,14 @@ func (srv *Server) setupGateway() error {
 
 	// Gateway middleware
 	var gmw []func(http.Handler) http.Handler
-	if srv.oop != nil {
-		// Add OTEL as the first middleware in the chain automatically
-		hmOpts := []otelHttp.Option{}
-		if srv.gateway.spanFormatter != nil {
-			hmOpts = append(hmOpts, otelHttp.WithSpanNameFormatter(srv.gateway.spanFormatter))
-		}
-		hm := otelHttp.NewMonitor(hmOpts...)
-		gmw = append(gmw, hm.ServerMiddleware(srv.gateway.handlerName))
+
+	// Add OTEL as the first middleware in the chain automatically
+	hmOpts := []otelHttp.Option{}
+	if srv.gateway.spanFormatter != nil {
+		hmOpts = append(hmOpts, otelHttp.WithSpanNameFormatter(srv.gateway.spanFormatter))
 	}
+	hm := otelHttp.NewMonitor(hmOpts...)
+	gmw = append(gmw, hm.ServerMiddleware())
 	for _, m := range append(gmw, srv.gateway.middleware...) {
 		gwMuxH = m(gwMuxH)
 	}
@@ -434,11 +431,9 @@ func (srv *Server) setupGatewayInterface() error {
 // Return properly setup server middleware.
 func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream []grpc.StreamServerInterceptor) {
 	// Setup observability before anything else
-	if srv.oop != nil {
-		ui, si := otelGrpc.NewMonitor().Server()
-		unary = append(unary, ui)
-		stream = append(stream, si)
-	}
+	ui, si := otelGrpc.NewMonitor().Server()
+	unary = append(unary, ui)
+	stream = append(stream, si)
 
 	// Setup prometheus metrics before any functional middleware
 	if srv.prometheus != nil {

@@ -2,14 +2,11 @@ package sentry
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 
 	sdk "github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/otel/propagation"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
 // Reporter provides a Sentry integration for OpenTelemetry.
@@ -63,6 +60,9 @@ type Options struct {
 
 	// The maximum time to wait for events to be sent before shutdown.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout" yaml:"flush_timeout" json:"flush_timeout"`
+
+	// Maximum number of events per-span to keep. Defaults to 100.
+	MaxEvents int `mapstructure:"max_events" yaml:"max_events" json:"max_events"`
 }
 
 // NewReporter returns a new Sentry reporter instance.
@@ -92,6 +92,9 @@ func NewReporter(opts *Options) (*Reporter, error) {
 	if err != nil {
 		return nil, err
 	}
+	if opts.MaxEvents <= 0 {
+		opts.MaxEvents = 100 // default breadcrumbs count
+	}
 	if opts.FlushTimeout == 0 {
 		opts.FlushTimeout = 2 * time.Second // default flush timeout
 	}
@@ -119,81 +122,5 @@ func (sr *Reporter) Propagator() propagation.TextMapPropagator {
 // SpanProcessor handles the link between OpenTelemetry spans and
 // Sentry transactions.
 func (sr *Reporter) SpanProcessor() sdkTrace.SpanProcessor {
-	return newSentrySpanProcessor(sr.hub, sr.opts.FlushTimeout)
-}
-
-// Event (s) can be used to register activity worth reporting; this
-// usually describes an activity/tasks progression leading to a
-// potential error condition.
-//
-// There are some special attributes you can add to events:
-//   - event.kind: set to "default" if not provided
-//   - event.category: set to "event" if not provided
-//   - event.level: set to "info" if not provided.
-//   - event.data: provides additional payload data, "nil" by default
-//
-// event.kind values:
-//   - debug: typically a log message
-//   - info: provide additional details to help identify the root cause of an issue
-//   - error: error/warning occurring prior to a reported exception
-//   - navigation: `event.data` must include key `from` and `to`
-//   - http: http requests started from the app; `event.data` can include `http.request`
-//   - query: describe and report database interactions
-//   - user: describe user interactions
-//
-// https://develop.sentry.dev/sdk/event-payloads/breadcrumbs/#breadcrumb-types
-func (sr *Reporter) Event(ctx apiTrace.SpanContext, message string, attributes ...map[string]interface{}) {
-	if _, ok := sentrySpanMap.Get(ctx.SpanID()); !ok {
-		return // nothing to do
-	}
-
-	// default values
-	attrs := join(attributes...)
-	kind := "default"
-	level := "info"
-	category := "event"
-	data := make(map[string]interface{})
-	if k, ok := attrs["event.kind"]; ok {
-		kind = fmt.Sprintf("%v", k)
-	}
-	if lvl, ok := attrs["event.level"]; ok {
-		level = fmt.Sprintf("%v", lvl)
-	}
-	if cat, ok := attrs["event.category"]; ok {
-		category = fmt.Sprintf("%v", cat)
-	}
-	if dt, ok := attrs["event.data"]; ok {
-		if js, err := json.Marshal(dt); err == nil {
-			_ = json.Unmarshal(js, &data)
-		}
-	}
-
-	// add event as breadcrumb to current scope
-	sr.hub.Scope().AddBreadcrumb(&sdk.Breadcrumb{
-		Type:      kind,
-		Category:  category,
-		Message:   message,
-		Data:      data,
-		Level:     getLevel(level),
-		Timestamp: time.Now(),
-	}, 100)
-}
-
-// ReportError should be used to report an error condition to Sentry.
-// If the provided context contains a valid Sentry transaction, the
-// error will be linked to it.
-func (sr *Reporter) ReportError(ctx apiTrace.SpanContext, err error, attributes ...map[string]interface{}) {
-	sp, ok := sentrySpanMap.Get(ctx.SpanID())
-	if !ok {
-		// capture exception without trying to link it to specific trace
-		sr.hub.CaptureException(err)
-		return
-	}
-	// link exception to trace context
-	scope := sdk.NewScope()
-	scope.SetContext("trace", traceContext(sp).Map())
-	sr.client.CaptureException(err, &sdk.EventHint{OriginalException: err}, scope)
-
-	// mark span as errored
-	sp.Status = sdk.SpanStatusInternalError
+	return newSentrySpanProcessor(sr.hub, sr.opts.FlushTimeout, sr.opts.MaxEvents)
 }

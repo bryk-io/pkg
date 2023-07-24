@@ -10,7 +10,6 @@ import (
 
 	mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	"go.bryk.io/pkg/errors"
-	"go.bryk.io/pkg/otel"
 	otelGrpc "go.bryk.io/pkg/otel/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -29,7 +28,6 @@ type Client struct {
 	cert             *tls.Certificate
 	timeout          time.Duration
 	tlsConf          *tls.Config
-	oop              *otel.Operator
 	mu               sync.Mutex
 	useBalancer      bool
 	skipVerify       bool
@@ -118,11 +116,9 @@ func (c *Client) setup(options ...ClientOption) error {
 // Return properly setup client middleware.
 func (c *Client) getMiddleware() (unary []grpc.UnaryClientInterceptor, stream []grpc.StreamClientInterceptor) {
 	// Setup observability before anything else
-	if c.oop != nil {
-		ui, si := otelGrpc.NewMonitor().Client()
-		unary = append(unary, ui)
-		stream = append(stream, si)
-	}
+	ui, si := otelGrpc.NewMonitor().Client()
+	unary = append(unary, ui)
+	stream = append(stream, si)
 
 	// Add registered middleware
 	unary = append(unary, c.middlewareUnary...)

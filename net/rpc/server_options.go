@@ -6,7 +6,6 @@ import (
 
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
-	"go.bryk.io/pkg/otel"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -224,18 +223,6 @@ func WithWebSocketProxy(opts ...ws.ProxyOption) ServerOption {
 		}
 		srv.mu.Lock()
 		srv.wsProxy = proxy
-		srv.mu.Unlock()
-		return nil
-	}
-}
-
-// WithObservability instrument the server instance using observability
-// operator provided. If no operator is set, the default global instance
-// is used.
-func WithObservability(oop *otel.Operator) ServerOption {
-	return func(srv *Server) error {
-		srv.mu.Lock()
-		srv.oop = oop
 		srv.mu.Unlock()
 		return nil
 	}

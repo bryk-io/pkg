@@ -7,23 +7,26 @@ import (
 	contrib "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-// Monitor provide easy-to-use instrumentation primitives for HTTP clients and servers.
+// Monitor provide easy-to-use instrumentation primitives for HTTP clients
+// and servers.
 type Monitor interface {
-	// Client provides an HTTP client interface with automatic instrumentation of requests.
+	// Client provides an HTTP client interface with automatic instrumentation
+	// of requests.
 	Client(base http.RoundTripper) http.Client
 
 	// Handler adds instrumentation to the provided HTTP handler using the
 	// `operation` value provided as the span name.
 	Handler(operation string, handler http.Handler) http.Handler
 
-	// HandleFunc adds instrumentation to the provided HTTP handler function
+	// HandlerFunc adds instrumentation to the provided HTTP handler function
 	// using the `operation` value provided as the span name.
-	HandleFunc(operation string, fn http.HandlerFunc) http.Handler
+	HandlerFunc(operation string, fn http.HandlerFunc) http.Handler
 
-	// ServerMiddleware provides a mechanism to easily instrument an HTTP handler and
-	// automatically collect observability information for all handled requests. Order is
-	// important when using middleware, try to load observability support as early as possible.
-	ServerMiddleware(name string) func(http.Handler) http.Handler
+	// ServerMiddleware provides a mechanism to easily instrument an HTTP
+	// handler and automatically collect observability information for all
+	// handled requests. Order is important when using middleware, try to
+	// load observability support as early as possible.
+	ServerMiddleware() func(http.Handler) http.Handler
 }
 
 type httpMonitor struct {
@@ -50,7 +53,8 @@ func (e *httpMonitor) settings() []contrib.Option {
 	}
 }
 
-// Client provides an HTTP client interface with automatic instrumentation of requests.
+// Client provides an HTTP client interface with automatic instrumentation
+// of requests.
 func (e *httpMonitor) Client(base http.RoundTripper) http.Client {
 	settings := append(e.settings(),
 		contrib.WithSpanNameFormatter(func(_ string, r *http.Request) string {
@@ -71,16 +75,17 @@ func (e *httpMonitor) Handler(operation string, handler http.Handler) http.Handl
 	return contrib.NewHandler(handler, operation, e.settings()...)
 }
 
-// HandleFunc adds instrumentation to the provided HTTP handler function
+// HandlerFunc adds instrumentation to the provided HTTP handler function
 // using the `operation` value provided as the span name.
-func (e *httpMonitor) HandleFunc(operation string, hf http.HandlerFunc) http.Handler {
+func (e *httpMonitor) HandlerFunc(operation string, hf http.HandlerFunc) http.Handler {
 	return contrib.NewHandler(hf, operation, e.settings()...)
 }
 
-// ServerMiddleware provides a mechanism to easily instrument an HTTP handler and
-// automatically collect observability information for all handled requests. Order is
-// important when using middleware, try to load observability support as early as possible.
-func (e *httpMonitor) ServerMiddleware(name string) func(http.Handler) http.Handler {
+// ServerMiddleware provides a mechanism to easily instrument an HTTP
+// handler and automatically collect observability information for all
+// handled requests. Order is important when using middleware, try to
+// load observability support as early as possible.
+func (e *httpMonitor) ServerMiddleware() func(http.Handler) http.Handler {
 	// Attach a custom span name formatter to differentiate spans based on the
 	// HTTP method and path for each operation
 	options := e.settings()
@@ -88,13 +93,9 @@ func (e *httpMonitor) ServerMiddleware(name string) func(http.Handler) http.Hand
 		return e.nf(r)
 	}))
 	return func(handler http.Handler) http.Handler {
-		return contrib.NewHandler(handler, name, options...)
+		return contrib.NewHandler(handler, "", options...)
 	}
 }
-
-// SpanNameFormatter allows to adjust how a given transaction is reported
-// when handling an HTTP request on the client or server side.
-type SpanNameFormatter func(r *http.Request) string
 
 // Default span name formatter.
 func spanNameFormatter(r *http.Request) string {

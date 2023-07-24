@@ -68,6 +68,21 @@ func WithStack(err error) error {
 	}
 }
 
+// WithStackAt returns a new root error (i.e., without a cause) instance
+// which stacktrace will point to the line of code that called this function;
+// minus number of stacks specified in `at`.
+func WithStackAt(err error, at int) error {
+	if err == nil {
+		return nil
+	}
+	return &Error{
+		ts:     time.Now().UnixMilli(),
+		err:    stdErrors.New(err.Error()),
+		prev:   nil,
+		frames: getStack(at + 1),
+	}
+}
+
 // Errorf returns a new root error (i.e., without a cause) instance which
 // stacktrace will point to the line of code that called this function.
 //
@@ -159,6 +174,7 @@ func As(err error, target interface{}) bool {
 //   - Comparison is true between `src` and `target` cause
 func Is(src, target error) bool {
 	// Are both the same object?
+	// reflect.ValueOf(src).Equal(reflect.ValueOf(target))
 	if reflect.DeepEqual(src, target) {
 		return true
 	}

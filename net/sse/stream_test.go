@@ -68,9 +68,7 @@ func sampleStreamSetup(req *lib.Request) *Subscription {
 }
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		goleak.IgnoreTopFunction("github.com/golang/glog.(*loggingT).flushDaemon"),
-	)
+	goleak.VerifyTestMain(m)
 }
 
 func TestHandler(t *testing.T) {

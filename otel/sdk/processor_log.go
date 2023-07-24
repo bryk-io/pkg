@@ -1,4 +1,4 @@
-package otel
+package sdk
 
 import (
 	"context"
@@ -6,15 +6,20 @@ import (
 	"time"
 
 	"go.bryk.io/pkg/log"
+	"go.bryk.io/pkg/otel"
 	otelCodes "go.opentelemetry.io/otel/codes"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // Fields to remove when logging messages.
 var noLogFields = []string{
+	// commonly used to capture stacktraces
 	"stack",
 	"error.stack",
 	"exception.stacktrace",
+	// commonly used to hold original error value to report
+	// on Sentry
+	"sentry.error",
 }
 
 // Custom `sdkTrace.SpanProcessor` that logs all spans as they are completed.
@@ -59,10 +64,10 @@ func (f logSpans) ForceFlush(ctx context.Context) error {
 	return f.Next.ForceFlush(ctx)
 }
 
-func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) Attributes {
+func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) otel.Attributes {
 	// Get span attributes
-	fields := Attributes{}
-	fields.load(s.Attributes())
+	fields := otel.Attributes{}
+	fields.Load(s.Attributes())
 	fields.Set(lblSpanID, s.SpanContext().SpanID().String())
 	fields.Set(lblSpanKind, s.SpanKind().String())
 	fields.Set(lblTraceID, s.SpanContext().TraceID().String())
@@ -84,12 +89,12 @@ func (f logSpans) fields(s sdkTrace.ReadOnlySpan, end bool) Attributes {
 	return fields
 }
 
-func (f logSpans) event(event sdkTrace.Event, fields Attributes) (log.Level, Attributes) {
+func (f logSpans) event(event sdkTrace.Event, fields otel.Attributes) (log.Level, otel.Attributes) {
 	eventLvl := log.Debug
-	attrs := Attributes{}
+	attrs := otel.Attributes{}
 	attrs.Set("time", event.Time)
-	attrs.load(event.Attributes)
-	attrs.join(fields)
+	attrs.Load(event.Attributes)
+	attrs.Join(fields)
 	for _, nl := range noLogFields {
 		if st := attrs.Get(nl); st != nil {
 			delete(attrs, nl)

@@ -1,11 +1,17 @@
 package sentry
 
+// Based on the original: github.com/getsentry/sentry-go/otel
+
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	sdk "github.com/getsentry/sentry-go"
+	"go.bryk.io/pkg/errors"
+	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/otel/attribute"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
@@ -13,22 +19,26 @@ import (
 )
 
 type sentrySpanProcessor struct {
-	hub *sdk.Hub
-	ft  time.Duration
+	hub          *sdk.Hub
+	flushTimeout time.Duration
+	maxEvents    int
+	errCodec     errors.Codec
 }
 
 // Singleton instance of the Sentry span processor.
 // At the moment we do not support multiple instances.
 var sentrySpanProcessorInstance *sentrySpanProcessor
 
-func newSentrySpanProcessor(hub *sdk.Hub, ft time.Duration) sdkTrace.SpanProcessor {
+func newSentrySpanProcessor(hub *sdk.Hub, ft time.Duration, maxEvents int) sdkTrace.SpanProcessor {
 	if sentrySpanProcessorInstance != nil {
 		return sentrySpanProcessorInstance
 	}
 	sdk.AddGlobalEventProcessor(linkTraceContextToErrorEvent)
 	sentrySpanProcessorInstance := &sentrySpanProcessor{
-		hub: hub,
-		ft:  ft,
+		hub:          hub,
+		flushTimeout: ft,
+		maxEvents:    maxEvents,
+		errCodec:     errors.CodecJSON(false), // ! make this configurable
 	}
 	return sentrySpanProcessorInstance
 }
@@ -97,6 +107,23 @@ func (ssp *sentrySpanProcessor) OnEnd(s sdkTrace.ReadOnlySpan) {
 		updateSpanWithOtelData(sentrySpan, s)
 	}
 
+	// Add span events as bredcrumbs
+	for _, ev := range s.Events() {
+		if bc := asBreadcrumb(ev); bc != nil {
+			ssp.hub.Scope().AddBreadcrumb(bc, ssp.maxEvents)
+		}
+	}
+
+	// Report span error(s), if any
+	for _, ev := range s.Events() {
+		if err := extractError(ev, ssp.errCodec); err != nil {
+			ssp.hub.WithScope(func(scope *sdk.Scope) {
+				scope.SetContext("trace", traceContext(sentrySpan).Map())
+				ssp.hub.Client().CaptureException(err, &sdk.EventHint{OriginalException: err}, scope)
+			})
+		}
+	}
+
 	// capture span
 	sentrySpan.Status = getStatus(s)
 	sentrySpan.EndTime = s.EndTime()
@@ -113,11 +140,10 @@ func (ssp *sentrySpanProcessor) Shutdown(ctx context.Context) error {
 
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#forceflush-1
 func (ssp *sentrySpanProcessor) ForceFlush(ctx context.Context) error {
-	return flushSpanProcessor(ssp.hub, ssp.ft)
+	return flushSpanProcessor(ssp.hub, ssp.flushTimeout)
 }
 
 func flushSpanProcessor(hub *sdk.Hub, ft time.Duration) error {
-	// hub := sdk.GetHubFromContext(ctx)
 	defer hub.Flush(ft)
 	return nil
 }
@@ -135,15 +161,16 @@ func updateTransactionWithOtelData(transaction *sdk.Span, s sdkTrace.ReadOnlySpa
 	attributes := map[attribute.Key]string{}
 	resource := map[attribute.Key]string{}
 	for _, kv := range s.Attributes() {
-		attributes[kv.Key] = kv.Value.AsString()
+		attributes[kv.Key] = asString(kv.Value)
 	}
 	for _, kv := range s.Resource().Attributes() {
-		resource[kv.Key] = kv.Value.AsString()
+		resource[kv.Key] = asString(kv.Value)
 	}
-	transaction.SetContext("Open Telemetry", map[string]interface{}{
-		"Attributes": attributes,
-		"Resource":   resource,
-	})
+	otelCtx := map[string]interface{}{"Resource": resource}
+	if len(attributes) > 0 {
+		otelCtx["Attributes"] = attributes
+	}
+	transaction.SetContext("Open Telemetry", otelCtx)
 
 	// get span attributes
 	spanAttributes := parseSpanAttributes(s)
@@ -161,7 +188,7 @@ func updateSpanWithOtelData(span *sdk.Span, s sdkTrace.ReadOnlySpan) {
 	span.Description = spanAttributes.Description
 	span.SetData("otel.kind", s.SpanKind().String())
 	for _, kv := range s.Attributes() {
-		span.SetData(string(kv.Key), kv.Value.AsString())
+		span.SetData(string(kv.Key), asString(kv.Value))
 	}
 }
 
@@ -229,4 +256,92 @@ func isSentryRequestURL(ctx context.Context, url string) bool {
 		return false
 	}
 	return strings.Contains(url, dsn.GetAPIURL().String())
+}
+
+// Event (s) can be used to register activity worth reporting; this
+// usually describes an activity/tasks progression leading to a
+// potential error condition.
+//
+// There are some special attributes you can add to events:
+//   - event.kind: set to "default" if not provided
+//   - event.category: set to "event" if not provided
+//   - event.level: set to "info" if not provided.
+//   - event.data: provides additional payload data, "nil" by default
+//
+// event.kind values:
+//   - debug: typically a log message
+//   - info: provide additional details to help identify the root cause of an issue
+//   - error: error/warning occurring prior to a reported exception
+//   - navigation: `event.data` must include key `from` and `to`
+//   - http: http requests started from the app; `event.data` can include `http.request`
+//   - query: describe and report database interactions
+//   - user: describe user interactions
+//
+// https://develop.sentry.dev/sdk/event-payloads/breadcrumbs/#breadcrumb-types
+func asBreadcrumb(ev sdkTrace.Event) *sdk.Breadcrumb {
+	// don't report exceptions as events; these will be reported independently
+	if ev.Name == "exception" {
+		return nil
+	}
+
+	attrs := otel.Attributes{}
+	attrs.Load(ev.Attributes)
+	kind := "default"
+	level := "info"
+	category := "event"
+	data := make(map[string]interface{})
+	if k, ok := attrs["event.kind"]; ok {
+		kind = fmt.Sprintf("%v", k)
+	}
+	if lvl, ok := attrs["event.level"]; ok {
+		level = fmt.Sprintf("%v", lvl)
+	}
+	if cat, ok := attrs["event.category"]; ok {
+		category = fmt.Sprintf("%v", cat)
+	}
+	if dt, ok := attrs["event.data"]; ok {
+		if js, err := json.Marshal(dt); err == nil {
+			_ = json.Unmarshal(js, &data)
+		}
+	}
+	return &sdk.Breadcrumb{
+		Type:      kind,
+		Category:  category,
+		Message:   ev.Name,
+		Data:      data,
+		Level:     getLevel(level),
+		Timestamp: ev.Time,
+	}
+}
+
+// Look for "sentry.error" data in "exception" events to be restored
+// and reported on Sentry.
+func extractError(ev sdkTrace.Event, codec errors.Codec) error {
+	// only process exception events
+	if ev.Name != "exception" {
+		return nil
+	}
+
+	// look for error details in event attributes
+	attrs := otel.Attributes{}
+	attrs.Load(ev.Attributes)
+	errMSg := attrs.Get("exception.message") // simple error message
+	errPayload := attrs.Get("sentry.error")  // original error report
+
+	// no error report available but a simple error message;
+	// return simple formatted error
+	if errPayload == nil && errMSg != nil {
+		return errors.WithStackAt(fmt.Errorf("%s", errMSg), 4)
+	}
+
+	// attempt to recover error instance from report
+	payload, ok := errPayload.(string)
+	if !ok {
+		return nil // invalid error payload
+	}
+	ok, recErr := codec.Unmarshal([]byte(payload))
+	if !ok {
+		return nil // failed to decode error payload
+	}
+	return recErr // return recovered error
 }
