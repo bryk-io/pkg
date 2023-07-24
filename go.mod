@@ -27,6 +27,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.bryk.io/miracl v0.5.1
 	go.mongodb.org/mongo-driver v1.12.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.42.0
 	go.opentelemetry.io/contrib/instrumentation/host v0.42.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.42.0
