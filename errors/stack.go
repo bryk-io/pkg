@@ -29,7 +29,7 @@ func init() {
 // in a callstack.
 type StackFrame struct {
 	// The path to the file containing this ProgramCounter.
-	File string `json:"file,omitempty"`
+	File string `json:"filename,omitempty"`
 
 	// The line number in that file.
 	LineNumber int `json:"line_number,omitempty"`

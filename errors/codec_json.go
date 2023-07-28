@@ -15,7 +15,7 @@ func CodecJSON(pretty bool) Codec {
 type errReport struct {
 	Msg    string                 `json:"error,omitempty"`
 	Stamp  int64                  `json:"stamp,omitempty"`
-	Trace  []StackFrame           `json:"trace,omitempty"`
+	Frames []StackFrame           `json:"frames,omitempty"`
 	Hints  []string               `json:"hints,omitempty"`
 	Tags   map[string]interface{} `json:"tags,omitempty"`
 	Events []Event                `json:"events,omitempty"`
@@ -31,7 +31,7 @@ func (c *jsonCodec) Marshal(err error) ([]byte, error) {
 	var oe *Error
 	if As(err, &oe) {
 		rec.Stamp = oe.Stamp()
-		rec.Trace = oe.PortableTrace() // oe.StackTrace()
+		rec.Frames = oe.PortableTrace() // oe.StackTrace()
 		rec.Hints = oe.Hints()
 		rec.Tags = oe.Tags()
 		rec.Events = oe.Events()
@@ -52,7 +52,7 @@ func (c *jsonCodec) Unmarshal(src []byte) (bool, error) {
 	// restore recovered error details
 	rec := new(Error)
 	rec.ts = rep.Stamp
-	rec.frames = rep.Trace
+	rec.frames = rep.Frames
 	rec.hints = rep.Hints
 	rec.tags = rep.Tags
 	rec.events = rep.Events

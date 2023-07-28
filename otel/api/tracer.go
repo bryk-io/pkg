@@ -51,18 +51,19 @@ func (s span) End(err error) {
 	// exception event metadata attributes
 	attrs := otel.Attributes{}
 
-	// preserve original error value to be reported when
-	// using the Sentry integration
-	if errPayload, encErr := errCodec.Marshal(err); encErr == nil {
-		attrs.Set("sentry.error", string(errPayload))
-	}
-
 	// record error
 	opts := []apiTrace.EventOption{}
 	var se errors.HasStack
 	if errors.As(err, &se) {
-		// preserve original error stacktrace
+		// preserve original error value to be reported when
+		// using the Sentry integration
+		if errPayload, encErr := errCodec.Marshal(err); encErr == nil {
+			attrs.Set("sentry.error", string(errPayload))
+		}
+
+		// preserve original trace in `exception.stacktrace`
 		attrs.Set(string(semConv.ExceptionStacktraceKey), fmt.Sprintf("%+v", err))
+		opts = append(opts, apiTrace.WithStackTrace(false))
 	} else {
 		// if there's no stacktrace in the error already, let the
 		// framework capture one
@@ -100,4 +101,11 @@ func (s span) Event(msg string, attrs ...otel.Attributes) {
 	fields := otel.Attributes{}
 	fields.Join(attrs...)
 	s.sp.AddEvent(msg, apiTrace.WithAttributes(fields.Expand()...))
+}
+
+// SetAttribute adjust `key` to report `value` as attribute of the Span.
+// If a `key` already exists for an attribute of the Span it will be
+// overwritten with `value`.
+func (s span) SetAttribute(key string, value interface{}) {
+	s.sp.SetAttributes(otel.Attributes{key: value}.Expand()...)
 }

@@ -263,19 +263,23 @@ func isSentryRequestURL(ctx context.Context, url string) bool {
 // potential error condition.
 //
 // There are some special attributes you can add to events:
-//   - event.kind: set to "default" if not provided
+//   - event.kind: set to "debug" if not provided
 //   - event.category: set to "event" if not provided
-//   - event.level: set to "info" if not provided.
 //   - event.data: provides additional payload data, "nil" by default
+//   - event.level: set to "debug" if not provided. Defines event's severity;
+//     allowed values are, from highest to lowest: fatal, error, warning, info, and debug.
 //
 // event.kind values:
 //   - debug: typically a log message
 //   - info: provide additional details to help identify the root cause of an issue
+//   - query: describe and report database interactions
+//   - ui: a user interaction with your app's UI.
+//   - user: describe user interactions
+//   - transaction: describe a tracing event
 //   - error: error/warning occurring prior to a reported exception
 //   - navigation: `event.data` must include key `from` and `to`
-//   - http: http requests started from the app; `event.data` can include `http.request`
-//   - query: describe and report database interactions
-//   - user: describe user interactions
+//   - http: http requests started from the app; `event.data` can include attributes
+//     such as: `method`, `url`, `status_code`, `reason`, `headers`, `cookies`
 //
 // https://develop.sentry.dev/sdk/event-payloads/breadcrumbs/#breadcrumb-types
 func asBreadcrumb(ev sdkTrace.Event) *sdk.Breadcrumb {
@@ -286,8 +290,8 @@ func asBreadcrumb(ev sdkTrace.Event) *sdk.Breadcrumb {
 
 	attrs := otel.Attributes{}
 	attrs.Load(ev.Attributes)
-	kind := "default"
-	level := "info"
+	kind := "debug"
+	level := "debug"
 	category := "event"
 	data := make(map[string]interface{})
 	if k, ok := attrs["event.kind"]; ok {

@@ -18,51 +18,43 @@ type spanAttributes struct {
 	Source      sdk.TransactionSource
 }
 
+// If set in the OTEL span attributes, this key will be used to
+// override the default operation name reported to Sentry.
+const operationKey = attribute.Key("operation")
+
 func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
-	user := extractUser(s.Attributes())
+	// default values
+	var result = spanAttributes{
+		Op:          "", // becomes "default" in Relay
+		Description: s.Name(),
+		User:        extractUser(s.Attributes()),
+		Source:      sdk.SourceCustom,
+	}
+
+	// process common attributes
 	for _, attr := range s.Attributes() {
-		if attr.Key == semConv.HTTPMethodKey {
-			result := descriptionForHTTPMethod(s)
-			result.User = user
-			return result
-		}
-		if attr.Key == semConv.DBSystemKey {
-			result := descriptionForDBSystem(s)
-			result.User = user
-			return result
-		}
-		if attr.Key == semConv.RPCSystemKey {
-			return spanAttributes{
-				Op:          "rpc",
-				Description: s.Name(),
-				User:        user,
-				Source:      sdk.SourceRoute,
-			}
-		}
-		if attr.Key == semConv.MessagingSystemKey {
-			return spanAttributes{
-				Op:          "messaging",
-				Description: s.Name(),
-				User:        user,
-				Source:      sdk.SourceRoute,
-			}
-		}
-		if attr.Key == semConv.FaaSTriggerKey {
-			return spanAttributes{
-				Op:          asString(attr.Value),
-				Description: s.Name(),
-				User:        user,
-				Source:      sdk.SourceRoute,
-			}
+		switch attr.Key {
+		case semConv.HTTPMethodKey:
+			result = descriptionForHTTPMethod(s)
+		case semConv.DBSystemKey:
+			result = descriptionForDBSystem(s)
+		case semConv.RPCSystemKey:
+			result.Op = "rpc"
+			result.Source = sdk.SourceRoute
+		case semConv.MessagingSystemKey:
+			result.Op = "messaging"
+			result.Source = sdk.SourceRoute
+		case semConv.FaaSTriggerKey:
+			result.Op = asString(attr.Value)
+			result.Source = sdk.SourceRoute
+			result.Description = s.Name()
+		case operationKey:
+			result.Op = asString(attr.Value)
+			result.Source = sdk.SourceTask
 		}
 	}
 
-	return spanAttributes{
-		Op:          "", // becomes "default" in Relay
-		Description: s.Name(),
-		User:        user,
-		Source:      sdk.SourceCustom,
-	}
+	return result
 }
 
 func descriptionForDBSystem(s sdkTrace.ReadOnlySpan) spanAttributes {

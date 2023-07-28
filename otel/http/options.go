@@ -16,3 +16,11 @@ func WithSpanNameFormatter(nf SpanNameFormatter) Option {
 		mon.nf = nf
 	}
 }
+
+// WithNetworkEvents instructs the monitor to collect read and
+// write network events. These events are discarded by default.
+func WithNetworkEvents() Option {
+	return func(mon *httpMonitor) {
+		mon.ev = true
+	}
+}

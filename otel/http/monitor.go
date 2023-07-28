@@ -31,6 +31,7 @@ type Monitor interface {
 
 type httpMonitor struct {
 	nf SpanNameFormatter
+	ev bool
 }
 
 // NewMonitor returns a ready to use monitor instance that can be used to
@@ -48,9 +49,11 @@ func NewMonitor(opts ...Option) Monitor {
 func (e *httpMonitor) settings() []contrib.Option {
 	// Propagator, metric provider and trace provider are taking from globals
 	// setup during the otel.Operator initialization.
-	return []contrib.Option{
-		contrib.WithMessageEvents(contrib.ReadEvents, contrib.WriteEvents),
+	opts := []contrib.Option{}
+	if e.ev {
+		opts = append(opts, contrib.WithMessageEvents(contrib.ReadEvents, contrib.WriteEvents))
 	}
+	return opts
 }
 
 // Client provides an HTTP client interface with automatic instrumentation
