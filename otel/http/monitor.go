@@ -31,6 +31,7 @@ type Monitor interface {
 
 type httpMonitor struct {
 	nf SpanNameFormatter
+	ft []Filter
 	ev bool
 }
 
@@ -39,6 +40,7 @@ type httpMonitor struct {
 func NewMonitor(opts ...Option) Monitor {
 	mon := &httpMonitor{
 		nf: spanNameFormatter,
+		ft: []Filter{},
 	}
 	for _, opt := range opts {
 		opt(mon)
@@ -52,6 +54,9 @@ func (e *httpMonitor) settings() []contrib.Option {
 	opts := []contrib.Option{}
 	if e.ev {
 		opts = append(opts, contrib.WithMessageEvents(contrib.ReadEvents, contrib.WriteEvents))
+	}
+	for _, ft := range e.ft {
+		opts = append(opts, contrib.WithFilter(contrib.Filter(ft)))
 	}
 	return opts
 }

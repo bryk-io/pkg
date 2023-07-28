@@ -18,16 +18,23 @@ type spanAttributes struct {
 	Source      sdk.TransactionSource
 }
 
-// If set in the OTEL span attributes, this key will be used to
-// override the default operation name reported to Sentry.
-const operationKey = attribute.Key("operation")
+const (
+	// If set in the OTEL span attributes, this key will be used to
+	// override the default operation name reported to Sentry.
+	operationKey = attribute.Key("operation")
+
+	// Keys used to extract user data from the OTEL span attributes.
+	userIDKey    = attribute.Key("user.id")
+	userIPKey    = attribute.Key("user.ip")
+	userEmailKey = attribute.Key("user.email")
+	userNameKey  = attribute.Key("user.username")
+)
 
 func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 	// default values
 	var result = spanAttributes{
 		Op:          "", // becomes "default" in Relay
 		Description: s.Name(),
-		User:        extractUser(s.Attributes()),
 		Source:      sdk.SourceCustom,
 	}
 
@@ -53,7 +60,7 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 			result.Description = s.Name()
 		}
 	}
-
+	result.User = extractUser(s.Attributes()) // attach user data
 	return result
 }
 
@@ -157,16 +164,16 @@ func extractUser(attr []attribute.KeyValue) *sdk.User {
 	user := new(sdk.User)
 	for _, k := range attr {
 		switch k.Key {
-		case "user.id":
+		case userIDKey:
 			user.ID = k.Value.AsString()
 			report = true
-		case "user.ip":
+		case userIPKey, semConv.HTTPClientIPKey:
 			user.IPAddress = k.Value.AsString()
 			report = true
-		case "user.email":
+		case userEmailKey:
 			user.Email = k.Value.AsString()
 			report = true
-		case "user.username":
+		case userNameKey:
 			user.Username = k.Value.AsString()
 			report = true
 		}
