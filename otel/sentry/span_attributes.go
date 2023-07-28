@@ -34,6 +34,9 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 	// process common attributes
 	for _, attr := range s.Attributes() {
 		switch attr.Key {
+		case operationKey: // explicitly set operation name
+			result.Op = asString(attr.Value)
+			result.Source = sdk.SourceTask
 		case semConv.HTTPMethodKey:
 			result = descriptionForHTTPMethod(s)
 		case semConv.DBSystemKey:
@@ -48,9 +51,6 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 			result.Op = asString(attr.Value)
 			result.Source = sdk.SourceRoute
 			result.Description = s.Name()
-		case operationKey:
-			result.Op = asString(attr.Value)
-			result.Source = sdk.SourceTask
 		}
 	}
 

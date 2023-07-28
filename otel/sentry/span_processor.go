@@ -304,8 +304,8 @@ func asBreadcrumb(ev sdkTrace.Event) *sdk.Breadcrumb {
 		category = fmt.Sprintf("%v", cat)
 	}
 	if dt, ok := attrs["event.data"]; ok {
-		if js, err := json.Marshal(dt); err == nil {
-			_ = json.Unmarshal(js, &data)
+		if payload, ok := dt.(string); ok {
+			_ = json.Unmarshal([]byte(payload), &data)
 		}
 	}
 	return &sdk.Breadcrumb{
