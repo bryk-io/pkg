@@ -94,7 +94,7 @@ func (ssp *sentrySpanProcessor) OnEnd(s sdkTrace.ReadOnlySpan) {
 		return
 	}
 
-	// do not handle Sentry request spans; internally used to report spans
+	// ignore Sentry requests; internally used to report spans
 	if isSentryRequestSpan(sentrySpan.Context(), s) {
 		sentrySpanMap.Delete(otelSpanID)
 		return
@@ -128,6 +128,10 @@ func (ssp *sentrySpanProcessor) OnEnd(s sdkTrace.ReadOnlySpan) {
 	sentrySpan.Status = getStatus(s)
 	sentrySpan.EndTime = s.EndTime()
 	sentrySpan.Finish()
+	if sentrySpan.IsTransaction() {
+		// clear transaction scope to avoid duplicate events reported
+		ssp.hub.Scope().Clear()
+	}
 	sentrySpanMap.Delete(otelSpanID)
 }
 
