@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-
-	"go.bryk.io/pkg/otel"
 )
 
 // Span represents a unit of work, performed over a certain period of time.
@@ -48,10 +46,13 @@ type SpanManaged interface {
 	IsSampled() bool
 
 	// Event produces a log marker during the execution of the span.
-	Event(msg string, attributes ...otel.Attributes)
+	Event(msg string, attributes ...map[string]interface{})
 
 	// SetAttribute adjust `key` to report `value` as attribute of the Span.
 	// If a `key` already exists for an attribute of the Span it will be
 	// overwritten with `value`.
 	SetAttribute(key string, value interface{})
+
+	// SetAttributes adjust multiple attributes of the Span.
+	SetAttributes(attributes map[string]interface{})
 }

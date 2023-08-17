@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	sdk "github.com/getsentry/sentry-go"
@@ -23,6 +24,7 @@ type sentrySpanProcessor struct {
 	flushTimeout time.Duration
 	maxEvents    int
 	errCodec     errors.Codec
+	mu           sync.Mutex
 }
 
 // Singleton instance of the Sentry span processor.
@@ -100,9 +102,17 @@ func (ssp *sentrySpanProcessor) OnEnd(s sdkTrace.ReadOnlySpan) {
 		return
 	}
 
+	// https://docs.sentry.io/platforms/go/concurrency/
+	ssp.mu.Lock()
+	currentHub := ssp.hub.Clone()
+	ssp.mu.Unlock()
+	currentHub.ConfigureScope(func(scope *sdk.Scope) {
+		scope.SetContext("trace", traceContext(sentrySpan).Map())
+	})
+
 	// attach OTEL data to Sentry span
 	if sentrySpan.IsTransaction() {
-		updateTransactionWithOtelData(sentrySpan, s, ssp.hub)
+		updateTransactionWithOtelData(sentrySpan, s, currentHub)
 	} else {
 		updateSpanWithOtelData(sentrySpan, s)
 	}
@@ -110,17 +120,18 @@ func (ssp *sentrySpanProcessor) OnEnd(s sdkTrace.ReadOnlySpan) {
 	// Add span events as bredcrumbs
 	for _, ev := range s.Events() {
 		if bc := asBreadcrumb(ev); bc != nil {
-			ssp.hub.Scope().AddBreadcrumb(bc, ssp.maxEvents)
+			// > this currently show breadcrumbs only on the specific span
+			// > that generates them, for example when an error occurs. In
+			// > order to show them on the transaction, we need to add them
+			// > to the transaction scope as well.
+			currentHub.AddBreadcrumb(bc, nil)
 		}
 	}
 
 	// Report span error(s), if any
 	for _, ev := range s.Events() {
 		if err := extractError(ev, ssp.errCodec); err != nil {
-			ssp.hub.WithScope(func(scope *sdk.Scope) {
-				scope.SetContext("trace", traceContext(sentrySpan).Map())
-				ssp.hub.Client().CaptureException(err, &sdk.EventHint{OriginalException: err}, scope)
-			})
+			currentHub.CaptureException(err)
 		}
 	}
 
@@ -128,10 +139,6 @@ func (ssp *sentrySpanProcessor) OnEnd(s sdkTrace.ReadOnlySpan) {
 	sentrySpan.Status = getStatus(s)
 	sentrySpan.EndTime = s.EndTime()
 	sentrySpan.Finish()
-	if sentrySpan.IsTransaction() {
-		// clear transaction scope to avoid duplicate events reported
-		ssp.hub.Scope().Clear()
-	}
 	sentrySpanMap.Delete(otelSpanID)
 }
 
@@ -322,8 +329,8 @@ func asBreadcrumb(ev sdkTrace.Event) *sdk.Breadcrumb {
 	}
 }
 
-// Look for "sentry.error" data in "exception" events to be restored
-// and reported on Sentry.
+// Look for "exception.report" data in "exception" events to be
+// restored and reported on Sentry.
 func extractError(ev sdkTrace.Event, codec errors.Codec) error {
 	// only process exception events
 	if ev.Name != "exception" {
@@ -333,8 +340,8 @@ func extractError(ev sdkTrace.Event, codec errors.Codec) error {
 	// look for error details in event attributes
 	attrs := otel.Attributes{}
 	attrs.Load(ev.Attributes)
-	errMSg := attrs.Get("exception.message") // simple error message
-	errPayload := attrs.Get("sentry.error")  // original error report
+	errMSg := attrs.Get("exception.message")    // simple error message
+	errPayload := attrs.Get("exception.report") // original error report
 
 	// no error report available but a simple error message;
 	// return simple formatted error

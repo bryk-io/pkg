@@ -20,9 +20,9 @@ func WithSpanKind(kind SpanKind) SpanOption {
 // task. These attributes are used to describe the work a Span represents.
 // If multiple of these options are passed the attributes of each
 // successive option will extend/override any previously set value.
-func WithAttributes(attrs otel.Attributes) SpanOption {
+func WithAttributes(attrs map[string]interface{}) SpanOption {
 	return func(conf *spanConfig) {
-		conf.attrs = attrs
+		conf.attrs = otel.Attributes(attrs)
 	}
 }
 

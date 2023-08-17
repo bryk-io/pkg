@@ -2,7 +2,7 @@ name: "codeQL"
 on:
   push:
     branches:
-      - '*'
+      - "*"
   pull_request:
     branches:
       - main
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['go']
+        language: ["go"]
     steps:
       # Checkout code
       - name: Checkout repository
@@ -29,7 +29,7 @@ jobs:
           echo 'commit_msg<<EOF' >> $GITHUB_ENV
           git log --format=%B -n 1 ${{ github.sha }} >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      
+
       # Prepare runner environment
       - name: Set up runner environment
         run: ./.github/workflows/assets/utils.sh setup
@@ -43,7 +43,7 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
-          # By default, queries listed here will override any specified in a config file. 
+          # By default, queries listed here will override any specified in a config file.
           # Prefix the list here with "+" to use these queries and those in the config file.
           # queries: ./path/to/local/query, your-org/your-repo/queries@main
 

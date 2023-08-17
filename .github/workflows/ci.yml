@@ -28,7 +28,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
 
       # Get commit message
       - name: Get commit message
@@ -47,7 +47,7 @@ jobs:
       - name: Scan dependencies
         if: ${{ !contains(env.commit_msg, '[skip scan-deps]') }}
         uses: sonatype-nexus-community/nancy-github-action@v1.0.3
-      
+
       # Scan for leaked secrets
       # Can be excluded if the commit message contains: [skip scan-secrets]
       # https://github.com/marketplace/actions/trufflehog-oss
@@ -81,8 +81,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.20.x
-      
+          go-version: 1.21.x
+
       # Get commit message
       - name: Get commit message
         run: |
@@ -111,7 +111,7 @@ jobs:
         uses: bufbuild/buf-breaking-action@v1.1.2
         if: steps.buf-lint.outcome == 'success' && !contains(env.commit_msg, '[skip buf-breaking]')
         with:
-          against: 'https://github.com/${{ github.repository }}.git#branch=${{ github.event.repository.default_branch }}'
+          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.repository.default_branch }}"
         env:
           BUF_INPUT_HTTPS_USERNAME: ${{ github.actor }}
           BUF_INPUT_HTTPS_PASSWORD: ${{ secrets.ACCESS_TOKEN }}
@@ -123,7 +123,7 @@ jobs:
     needs: protos
     strategy:
       matrix:
-        go-version: [1.19.x, 1.20.x]
+        go-version: [1.19.x, 1.20.x, 1.21.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -174,4 +174,3 @@ jobs:
           name: assets
           path: |
             coverage.html
-

@@ -101,6 +101,13 @@ func (s *sampleApp) ServerHandler() http.Handler {
 		}
 		_, _ = w.Write(msg)
 	})
+	router.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request) {
+		s.SimpleTask(r.Context())
+		// this will cause the request to be canceled after returning
+		// the response to the client
+		<-time.After(100 * time.Millisecond)
+		_, _ = w.Write([]byte("ok"))
+	})
 	return router
 }
 
@@ -168,6 +175,27 @@ func TestTracer(t *testing.T) {
 			}
 			_ = res.Body.Close()
 		})
+
+		t.Run("Slow", func(t *testing.T) {
+			task := Start(context.TODO(), "delegate to '/slow'", WithSpanKind(SpanKindClient))
+			defer task.End(nil)
+
+			ctx, cancel := context.WithTimeout(task.Context(), 100*time.Millisecond)
+			defer cancel()
+
+			req, _ := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"/slow", nil)
+			res, err := cl.Do(req)
+			if err != nil {
+				if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(ctx.Err(), context.Canceled) {
+					task.Event("request terminated by client", AsWarning())
+				} else {
+					task.End(err)
+				}
+			}
+			if res != nil && res.Body != nil {
+				_ = res.Body.Close()
+			}
+		})
 	})
 
 	t.Run("AMQP", func(t *testing.T) {
@@ -202,7 +230,7 @@ func setupInstrumentation() (*sdk.Instrumentation, error) {
 
 	// Application settings
 	settings := []sdk.Option{
-		sdk.WithServiceName("sample-service"),
+		sdk.WithServiceName("dummy-project"),
 		sdk.WithServiceVersion("0.1.0"),
 		sdk.WithSpanLimits(sdkTrace.NewSpanLimits()),
 		sdk.WithSampler(sdkTrace.ParentBased(sdkTrace.TraceIDRatioBased(0.9))),
@@ -227,7 +255,7 @@ func setupInstrumentation() (*sdk.Instrumentation, error) {
 		FlushTimeout:                3 * time.Second,
 		EnablePerformanceMonitoring: true, // capture performance metrics
 		TracesSampleRate:            1.0,  // capture all traces
-		ProfilingSampleRate:         1.0,  // profile all operations
+		ProfilingSampleRate:         0.5,  // profile 50% of traces
 		MaxEvents:                   50,   // max breadcrumb count per event
 	})
 	settings = append(settings,

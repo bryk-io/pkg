@@ -38,6 +38,14 @@ func AsTransaction() otel.Attributes {
 	}
 }
 
+// AsOperation returns a set of attributes to mark an event as an
+// operation with a given name.
+func AsOperation(name string) otel.Attributes {
+	return otel.Attributes{
+		"operation": name,
+	}
+}
+
 // AsHTTP returns a set of attributes to mark an event as describing
 // an HTTP request started by the application.
 func AsHTTP(r *http.Request) otel.Attributes {
@@ -63,9 +71,14 @@ func AsNavigation(to, from string) otel.Attributes {
 	}
 }
 
-// AsEventData returns a set of attributes to add some data to an event.
+// AsEventData sets the `event.data` attribute to the provided value.
 func AsEventData(data interface{}) otel.Attributes {
 	return otel.Attributes{
 		"event.data": data,
 	}
+}
+
+// AsTags returns a set of attributes from the provided key-value pairs.
+func AsTags(kv map[string]interface{}) otel.Attributes {
+	return otel.Attributes(kv)
 }
