@@ -1,4 +1,6 @@
 name: "codeQL"
+env:
+  commit_msg: ""
 on:
   push:
     branches:
