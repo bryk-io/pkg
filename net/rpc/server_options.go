@@ -34,7 +34,7 @@ func WithServiceProvider(sp ServiceProvider) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
 		defer srv.mu.Unlock()
-		srv.services = append(srv.services, sp)
+		srv.services[sp.ServiceDesc().ServiceName] = sp
 		return nil
 	}
 }
@@ -256,6 +256,23 @@ func WithReflection() ServerOption {
 		srv.mu.Lock()
 		defer srv.mu.Unlock()
 		srv.reflection = true
+		return nil
+	}
+}
+
+// WithHealthCheck enables the server to provide health check information
+// to clients. If an error is returned by the provided health check function
+// the service will be marked as unavailable and respond with a status code
+// of `NOT_SERVING`.
+//
+// More information about the health check protocol:
+//
+//	https://github.com/grpc/grpc/blob/master/doc/health-checking.md
+func WithHealthCheck(check HealthCheck) ServerOption {
+	return func(srv *Server) error {
+		srv.mu.Lock()
+		defer srv.mu.Unlock()
+		srv.healthCheck = check
 		return nil
 	}
 }

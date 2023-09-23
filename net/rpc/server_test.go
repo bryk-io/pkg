@@ -132,6 +132,7 @@ func TestServer(t *testing.T) {
 		// Start a new server with minimal settings
 		srv, err := NewServer(
 			WithServiceProvider(new(fooProvider)),
+			WithHealthCheck(dummyHealthCheck),
 			WithPrometheus(prom),
 		)
 		if err != nil {
@@ -1284,8 +1285,17 @@ func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
 	return httpMonitor.Client(rt) // instrumented client
 }
 
+// Dummy health check; never fails.
+func dummyHealthCheck(ctx context.Context, svc string) error {
+	return nil
+}
+
 // Foo service provider.
 type fooProvider struct{}
+
+func (fp *fooProvider) ServiceDesc() grpc.ServiceDesc {
+	return sampleV1.FooAPI_ServiceDesc
+}
 
 func (fp *fooProvider) ServerSetup(server *grpc.Server) {
 	sampleV1.RegisterFooAPIServer(server, &sampleV1.Handler{Name: "foo"})
@@ -1298,6 +1308,10 @@ func (fp *fooProvider) GatewaySetup() GatewayRegisterFunc {
 // Bar service provider.
 type barProvider struct{}
 
+func (bp *barProvider) ServiceDesc() grpc.ServiceDesc {
+	return sampleV1.BarAPI_ServiceDesc
+}
+
 func (bp *barProvider) ServerSetup(server *grpc.Server) {
 	sampleV1.RegisterBarAPIServer(server, &sampleV1.Handler{Name: "bar"})
 }
@@ -1308,6 +1322,10 @@ func (bp *barProvider) GatewaySetup() GatewayRegisterFunc {
 
 // Echo service provider.
 type echoProvider struct{}
+
+func (ep *echoProvider) ServiceDesc() grpc.ServiceDesc {
+	return sampleV1.EchoAPI_ServiceDesc
+}
 
 func (ep *echoProvider) ServerSetup(server *grpc.Server) {
 	sampleV1.RegisterEchoAPIServer(server, &sampleV1.EchoHandler{})
