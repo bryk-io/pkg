@@ -39,17 +39,17 @@ exporters:
     tls:
       insecure: true
 service:
-  extensions: [ health_check ]
+  extensions: [health_check]
   pipelines:
     traces:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch, resource ]
-      exporters: [ logging, jaeger, zipkin ]
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [logging, jaeger, zipkin]
     metrics:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch, resource ]
-      exporters: [ logging ]
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [logging]
     logs:
-      receivers: [ otlp ]
-      processors: [ memory_limiter, batch, resource ]
-      exporters: [ logging ]
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [logging]

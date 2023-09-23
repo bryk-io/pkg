@@ -1050,6 +1050,7 @@ func TestEchoServer(t *testing.T) {
 	serverOpts := []ServerOption{
 		WithPort(7878),
 		WithPanicRecovery(),
+		WithReflection(),
 		WithInputValidation(),
 		WithHTTPGateway(gw),
 		WithServiceProvider(&echoProvider{}),

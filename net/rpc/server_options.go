@@ -253,6 +253,8 @@ func WithPrometheus(prometheus otelProm.Operator) ServerOption {
 //	https://github.com/grpc/grpc/blob/master/doc/command_line_tool.md
 func WithReflection() ServerOption {
 	return func(srv *Server) error {
+		srv.mu.Lock()
+		defer srv.mu.Unlock()
 		srv.reflection = true
 		return nil
 	}
