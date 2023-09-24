@@ -25,12 +25,10 @@ func (hs *healthSvc) ServerSetup(server *grpc.Server) {
 }
 
 func (hs *healthSvc) Check(ctx context.Context, req *healthV1.HealthCheckRequest) (*healthV1.HealthCheckResponse, error) { // nolint: lll
-	// if the service name is not registered, the server returns a
-	// `NOT_FOUND` gRPC status.
-	if req.Service != "" {
-		if _, ok := hs.srv.services[req.Service]; !ok {
-			return nil, status.Errorf(codes.NotFound, "unknown service: %s", req.Service)
-		}
+	// if a service name is provided and not registered, the server returns
+	// a `NOT_FOUND` gRPC status.
+	if _, ok := hs.srv.services[req.Service]; !ok && req.Service != "" {
+		return nil, status.Errorf(codes.NotFound, "unknown service: %s", req.Service)
 	}
 	// status field should be set to `SERVING` or `NOT_SERVING` accordingly.
 	status := healthV1.HealthCheckResponse_SERVING
@@ -51,17 +49,17 @@ func (hs *healthSvc) Watch(req *healthV1.HealthCheckRequest, stream healthV1.Hea
 	// and close the stream when the client cancels the request
 	// or the health check fails.
 	// nolint: lll
-	go func(status healthV1.HealthCheckResponse_ServingStatus, r *healthV1.HealthCheckRequest, client healthV1.Health_WatchServer) {
+	go func(st healthV1.HealthCheckResponse_ServingStatus, r *healthV1.HealthCheckRequest, client healthV1.Health_WatchServer) {
 		// previous status detected
-		previousStatus := status
+		previousStatus := st
 
-		// send periodic (every minute) updates to the client
+		// do periodic health checks (every minute)
 		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
 		for {
 			select {
+			// health check
 			case <-ticker.C:
-				// check status again
 				res, err := hs.Check(client.Context(), r)
 				if err != nil {
 					return

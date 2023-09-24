@@ -2,13 +2,13 @@ package gorm
 
 import (
 	"gorm.io/gorm"
-	gormOtel "gorm.io/plugin/opentelemetry/tracing"
 )
 
 // Plugin can be used to instrument any application using GORM.
-// To register the plugin symply call:
+// To register the plugin symply call `db.Use`.
 //
-//	db.Use(gormOtel.Plugin())
-func Plugin() gorm.Plugin {
-	return gormOtel.NewPlugin()
+//	plg := otelGorm.Plugin(otelGorm.WithIgnoredError(context.Canceled))
+//	db.Use(plg)
+func Plugin(opts ...Option) gorm.Plugin {
+	return newPlugin(opts...)
 }
