@@ -104,7 +104,8 @@ func TestWithStandard(t *testing.T) {
 	})
 }
 
-func TestDiscard(t *testing.T) {
+// nolint: revive
+func TestDiscard(_ *testing.T) {
 	log := Discard()
 	log.Debug("none of this messages")
 	log.Info("will produce any output")
@@ -131,6 +132,7 @@ func ExampleWithStandard() {
 	}).Info("loggers support structured information")
 }
 
+// nolint: revive
 func ExampleDiscard() {
 	log := Discard()
 	log.Debug("none of this messages")

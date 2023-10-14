@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Span represents a unit of work, performed over a certain period of time.
@@ -35,6 +37,10 @@ type SpanManaged interface {
 	// Context of the span instance. Creating a new span with this context
 	// will establish a parent -> child relationship.
 	Context() context.Context
+
+	// Unwrap returns the underlying OpenTelemetry span instance.
+	// Useful for integrating with 3rd party libraries.
+	Unwrap() trace.Span
 
 	// ID returns the span identifier, if any.
 	ID() string

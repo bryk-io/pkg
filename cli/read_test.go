@@ -12,6 +12,7 @@ func ExampleReadSecure() {
 	password, err := ReadSecure("Enter your password: ")
 	if err != nil {
 		// Handle error
+		panic(err)
 	}
 	log.Printf("you entered: %s", password)
 }
@@ -21,6 +22,7 @@ func ExampleReadPipedInput() {
 	input, err := ReadPipedInput(32)
 	if len(input) > 0 && err != nil {
 		// Handle error
+		panic(err)
 	}
 	log.Printf("data received: %s", input)
 }

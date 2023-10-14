@@ -48,6 +48,17 @@ func Start(ctx context.Context, name string, opts ...SpanOption) Span {
 	return GetTracer().Start(ctx, name, opts...)
 }
 
+// SpanFromContext returns the current Span from ctx.
+//
+// If no Span is currently set in ctx an implementation of a Span
+// that performs no operations is returned.
+func SpanFromContext(ctx context.Context) Span {
+	return span{
+		ctx: ctx,
+		sp:  apiTrace.SpanFromContext(ctx),
+	}
+}
+
 // Export available span details. Useful when manually propagating a task
 // context across process boundaries.
 func Export(ctx context.Context) ([]byte, error) {

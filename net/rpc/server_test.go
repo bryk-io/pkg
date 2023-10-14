@@ -1286,7 +1286,7 @@ func getHTTPClient(srv *Server, cert *tls.Certificate) http.Client {
 }
 
 // Dummy health check; never fails.
-func dummyHealthCheck(ctx context.Context, svc string) error {
+func dummyHealthCheck(_ context.Context, _ string) error {
 	return nil
 }
 

@@ -203,15 +203,12 @@ func (sh *Instance) Start() {
 	// Start read-line processing
 	for {
 		line, err := sh.rl.Readline()
-		if errors.Is(err, readline.ErrInterrupt) {
-			if len(line) == 0 {
-				break
-			} else {
-				continue
-			}
-		} else if errors.Is(err, io.EOF) {
+		// exit on interrupt or EOF
+		if errors.Is(err, readline.ErrInterrupt) || errors.Is(err, io.EOF) {
 			return
 		}
+
+		// check if line is empty
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue

@@ -15,7 +15,7 @@ type rateTap struct {
 
 func (t *rateTap) handler(ctx context.Context, info *tap.Info) (context.Context, error) {
 	if !t.limit.Allow() {
-		return nil, status.Errorf(codes.ResourceExhausted, "service rate limit exceeded")
+		return nil, status.Errorf(codes.ResourceExhausted, "service rate limit exceeded: %s", info.FullMethodName)
 	}
 	return ctx, nil
 }

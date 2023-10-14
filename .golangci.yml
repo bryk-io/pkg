@@ -25,7 +25,6 @@ linters:
     - typecheck
     - gocyclo
     - goconst
-    - depguard
     - misspell
     - lll
     - nakedret
@@ -55,6 +54,7 @@ linters:
     - deadcode
     - unused
     - dupl
+    - depguard
     # https://github.com/golangci/golangci-lint/issues/2649
     - structcheck
     - wastedassign

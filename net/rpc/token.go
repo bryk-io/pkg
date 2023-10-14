@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/credentials"
 )
@@ -21,6 +22,7 @@ func (at authToken) GetRequestMetadata(ctx context.Context, uri ...string) (map[
 	}
 	return map[string]string{
 		"authorization": at.kind + " " + at.value,
+		"uri":           strings.Join(uri, ","),
 	}, nil
 }
 

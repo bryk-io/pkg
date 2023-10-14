@@ -48,6 +48,12 @@ type span struct {
 	ctx context.Context
 }
 
+// Unwrap returns the underlying OpenTelemetry span instance.
+// Useful for integrating with 3rd party libraries.
+func (s span) Unwrap() apiTrace.Span {
+	return s.sp
+}
+
 // End will mark the span as completed. If `err` is not nil, the
 // status for the span will be marked as failed. If the provided
 // error implements the `errors.HasStack` interface, the original

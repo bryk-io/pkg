@@ -20,7 +20,7 @@ type healthSvc struct {
 	srv *Server
 }
 
-func (hs *healthSvc) ServerSetup(server *grpc.Server) {
+func (hs *healthSvc) ServerSetup(_ *grpc.Server) {
 	healthV1.RegisterHealthServer(hs.srv.grpc, hs)
 }
 

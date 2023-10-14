@@ -26,8 +26,17 @@ func WithAttributes(attrs map[string]interface{}) SpanOption {
 	}
 }
 
+// WithStartOptions allows passing additional options to the span
+// creation process.
+func WithStartOptions(opts ...apiTrace.SpanStartOption) SpanOption {
+	return func(conf *spanConfig) {
+		conf.opts = append(conf.opts, opts...)
+	}
+}
+
 type spanConfig struct {
 	kind  SpanKind
+	opts  []apiTrace.SpanStartOption
 	attrs otel.Attributes
 }
 
@@ -40,5 +49,6 @@ func (sc *spanConfig) startOpts() (opts []apiTrace.SpanStartOption) {
 	if sc.attrs != nil {
 		opts = append(opts, apiTrace.WithAttributes(sc.attrs.Expand()...))
 	}
+	opts = append(opts, sc.opts...)
 	return opts
 }

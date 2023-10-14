@@ -150,7 +150,7 @@ func (ssp *sentrySpanProcessor) Shutdown(ctx context.Context) error {
 }
 
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#forceflush-1
-func (ssp *sentrySpanProcessor) ForceFlush(ctx context.Context) error {
+func (ssp *sentrySpanProcessor) ForceFlush(_ context.Context) error {
 	return flushSpanProcessor(ssp.hub, ssp.flushTimeout)
 }
 
