@@ -219,7 +219,6 @@ func TestFlows(t *testing.T) {
 	_ = res.Body.Close()
 
 	// Main assets
-	rand.Seed(time.Now().Unix())
 	assert := tdd.New(t)
 	server := "amqp://guest:guest@localhost:5672"
 	ll := xlog.WithZero(xlog.ZeroOptions{

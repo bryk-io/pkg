@@ -75,7 +75,7 @@ type Message = driver.Publishing
 type Publisher struct {
 	log     xlog.Logger     // internal logger
 	rpc     *rpc            // RPC interface, if enabled
-	session *session        // active AMPQ session
+	session *session        // active AMQP session
 	ready   chan bool       // listener for notifications when the producer connection is available
 	pause   chan bool       // listener for notifications when the producer connection is unavailable
 	status  bool            // current AMQP session status
