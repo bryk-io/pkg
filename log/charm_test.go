@@ -2,17 +2,15 @@ package log
 
 import (
 	"testing"
-
-	"go.uber.org/zap"
+	"time"
 )
 
-func TestWithZap(t *testing.T) {
-	zz := zap.NewExample()
-	defer func() {
-		_ = zz.Sync()
-	}()
-
-	log := WithZap(zz)
+func TestCharmLogger(t *testing.T) {
+	log := WithCharm(CharmOptions{
+		TimeFormat:   time.Kitchen,
+		ReportCaller: true,
+		Prefix:       "my-component",
+	})
 
 	sampleFields := Fields{
 		"foo": 1,
@@ -21,7 +19,7 @@ func TestWithZap(t *testing.T) {
 	}
 
 	t.Run("Sub", func(t *testing.T) {
-		sub := log.Sub(Fields{"prefix": "sub"})
+		sub := log.Sub(Fields{"comp": "sub"})
 		sub.Debug("testing a debug message")
 		sub.WithFields(sampleFields).Debug("this message has fields")
 		sub.Info("testing a debug message")
@@ -93,7 +91,6 @@ func TestWithZap(t *testing.T) {
 
 	t.Run("Panic", func(t *testing.T) {
 		t.Run("Simple", func(t *testing.T) {
-			t.SkipNow()
 			defer func() {
 				recover()
 			}()
@@ -109,15 +106,13 @@ func TestWithZap(t *testing.T) {
 	})
 }
 
-func ExampleWithZap() {
-	// Setup zap instance
-	zz, _ := zap.NewProduction()
-	defer func() {
-		_ = zz.Sync()
-	}()
-
+func ExampleWithCharm() {
 	// Create logger instance
-	log := WithZap(zz)
+	log := WithCharm(CharmOptions{
+		TimeFormat:   time.Kitchen,
+		ReportCaller: true,
+		Prefix:       "my-component",
+	})
 
 	// Use log handler
 	log.Debug("use log handler now")

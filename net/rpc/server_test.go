@@ -45,9 +45,10 @@ func TestServer(t *testing.T) {
 	}
 
 	assert := tdd.New(t)
-	ll := log.WithZero(log.ZeroOptions{
-		PrettyPrint: true,
-		ErrorField:  "error.message",
+	ll := log.WithCharm(log.CharmOptions{
+		TimeFormat:   time.RFC3339,
+		ReportCaller: true,
+		Prefix:       "rpc-server",
 	})
 
 	// Custom server metric
@@ -978,9 +979,10 @@ func TestServer(t *testing.T) {
 
 func TestEchoServer(t *testing.T) {
 	assert := tdd.New(t)
-	ll := log.WithZero(log.ZeroOptions{
-		PrettyPrint: true,
-		ErrorField:  "error.message",
+	ll := log.WithCharm(log.CharmOptions{
+		TimeFormat:   time.RFC3339,
+		ReportCaller: true,
+		Prefix:       "echo-server",
 	})
 
 	// enable OTEL monitoring

@@ -48,14 +48,16 @@ type ZeroOptions struct {
 	Sink io.Writer
 }
 
-// WithZero provides a log handler using the zerolog library.
+// WithZero provides a log h using the zerolog library.
+//
+//	More information: https://github.com/rs/zerolog
 func WithZero(options ZeroOptions) Logger {
 	// Use `error` as default error field
 	if options.ErrorField == "" {
 		options.ErrorField = "error"
 	}
 	zerolog.ErrorFieldName = options.ErrorField
-	handler := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	zl := zerolog.New(os.Stderr).With().Timestamp().Logger()
 	var output io.Writer
 	if options.Sink != nil {
 		// use user provided sink directly
@@ -68,9 +70,9 @@ func WithZero(options ZeroOptions) Logger {
 			output = zeroCW(output)
 		}
 	}
-	handler = handler.Output(output)
 	return &zeroHandler{
-		log: handler,
+		log:    zl.Output(output),
+		fields: metadata.New(),
 	}
 }
 
@@ -78,154 +80,146 @@ type zeroHandler struct {
 	mu     sync.Mutex
 	log    zerolog.Logger
 	lvl    Level
-	fields *metadata.MD
+	fields metadata.MD
 }
 
-func (zh *zeroHandler) SetLevel(lvl Level) {
-	zh.mu.Lock()
-	zh.lvl = lvl
-	zh.mu.Unlock()
+func (h *zeroHandler) SetLevel(lvl Level) {
+	h.mu.Lock()
+	h.lvl = lvl
+	h.mu.Unlock()
 }
 
-func (zh *zeroHandler) Sub(tags metadata.Map) Logger {
+func (h *zeroHandler) Sub(tags Fields) Logger {
 	return &zeroHandler{
-		log: zh.log.With().Fields(tags).Logger(),
-		lvl: zh.lvl,
+		log:    h.log.With().Fields(tags).Logger(),
+		lvl:    h.lvl,
+		fields: metadata.New(),
 	}
 }
 
-func (zh *zeroHandler) WithFields(fields metadata.Map) Logger {
-	f := metadata.FromMap(fields)
-	zh.mu.Lock()
-	zh.fields = &f
-	zh.mu.Unlock()
-	return zh
+func (h *zeroHandler) WithFields(fields Fields) Logger {
+	h.mu.Lock()
+	h.fields.Load(fields)
+	h.mu.Unlock()
+	return h
 }
 
-func (zh *zeroHandler) WithField(key string, value interface{}) Logger {
-	zh.mu.Lock()
-	if zh.fields == nil {
-		f := metadata.New()
-		zh.fields = &f
-	}
-	zh.fields.Set(key, value)
-	zh.mu.Unlock()
-	return zh
+func (h *zeroHandler) WithField(key string, value interface{}) Logger {
+	h.mu.Lock()
+	h.fields.Set(key, value)
+	h.mu.Unlock()
+	return h
 }
 
-func (zh *zeroHandler) Debug(args ...interface{}) {
-	if zh.lvl > Debug {
+func (h *zeroHandler) Debug(args ...interface{}) {
+	if h.lvl > Debug {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Debug()).Msg(fmt.Sprint(cleanArgs...))
+	h.setFields(h.log.Debug()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (zh *zeroHandler) Debugf(format string, args ...interface{}) {
-	if zh.lvl > Debug {
+func (h *zeroHandler) Debugf(format string, args ...interface{}) {
+	if h.lvl > Debug {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Debug()).Msgf(format, cleanArgs...)
+	h.setFields(h.log.Debug()).Msgf(format, cleanArgs...)
 }
 
-func (zh *zeroHandler) Info(args ...interface{}) {
-	if zh.lvl > Info {
+func (h *zeroHandler) Info(args ...interface{}) {
+	if h.lvl > Info {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Info()).Msg(fmt.Sprint(cleanArgs...))
+	h.setFields(h.log.Info()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (zh *zeroHandler) Infof(format string, args ...interface{}) {
-	if zh.lvl > Info {
+func (h *zeroHandler) Infof(format string, args ...interface{}) {
+	if h.lvl > Info {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Info()).Msgf(format, cleanArgs...)
+	h.setFields(h.log.Info()).Msgf(format, cleanArgs...)
 }
 
-func (zh *zeroHandler) Warning(args ...interface{}) {
-	if zh.lvl > Warning {
+func (h *zeroHandler) Warning(args ...interface{}) {
+	if h.lvl > Warning {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Warn()).Msg(fmt.Sprint(cleanArgs...))
+	h.setFields(h.log.Warn()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (zh *zeroHandler) Warningf(format string, args ...interface{}) {
-	if zh.lvl > Warning {
+func (h *zeroHandler) Warningf(format string, args ...interface{}) {
+	if h.lvl > Warning {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Warn()).Msgf(format, cleanArgs...)
+	h.setFields(h.log.Warn()).Msgf(format, cleanArgs...)
 }
 
-func (zh *zeroHandler) Error(args ...interface{}) {
-	if zh.lvl > Error {
+func (h *zeroHandler) Error(args ...interface{}) {
+	if h.lvl > Error {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Error()).Msg(fmt.Sprint(cleanArgs...))
+	h.setFields(h.log.Error()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (zh *zeroHandler) Errorf(format string, args ...interface{}) {
-	if zh.lvl > Error {
+func (h *zeroHandler) Errorf(format string, args ...interface{}) {
+	if h.lvl > Error {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Error()).Msgf(format, cleanArgs...)
+	h.setFields(h.log.Error()).Msgf(format, cleanArgs...)
 }
 
-func (zh *zeroHandler) Panic(args ...interface{}) {
-	if zh.lvl > Panic {
+func (h *zeroHandler) Panic(args ...interface{}) {
+	if h.lvl > Panic {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Panic()).Msg(fmt.Sprint(cleanArgs...))
+	h.setFields(h.log.Panic()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (zh *zeroHandler) Panicf(format string, args ...interface{}) {
-	if zh.lvl > Panic {
+func (h *zeroHandler) Panicf(format string, args ...interface{}) {
+	if h.lvl > Panic {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Panic()).Msgf(format, cleanArgs...)
+	h.setFields(h.log.Panic()).Msgf(format, cleanArgs...)
 }
 
-func (zh *zeroHandler) Fatal(args ...interface{}) {
-	if zh.lvl > Fatal {
+func (h *zeroHandler) Fatal(args ...interface{}) {
+	if h.lvl > Fatal {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Fatal()).Msg(fmt.Sprint(cleanArgs...))
+	h.setFields(h.log.Fatal()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (zh *zeroHandler) Fatalf(format string, args ...interface{}) {
-	if zh.lvl > Fatal {
+func (h *zeroHandler) Fatalf(format string, args ...interface{}) {
+	if h.lvl > Fatal {
 		return
 	}
 	cleanArgs := sanitize(args...)
-	zh.setFields(zh.log.Fatal()).Msgf(format, cleanArgs...)
+	h.setFields(h.log.Fatal()).Msgf(format, cleanArgs...)
 }
 
-func (zh *zeroHandler) Print(level Level, args ...interface{}) {
-	cleanArgs := sanitize(args...)
-	lprint(zh, level, cleanArgs...)
+func (h *zeroHandler) Print(level Level, args ...interface{}) {
+	lPrint(h, level, sanitize(args...)...)
 }
 
-func (zh *zeroHandler) Printf(level Level, format string, args ...interface{}) {
-	cleanArgs := sanitize(args...)
-	lprintf(zh, level, format, cleanArgs...)
+func (h *zeroHandler) Printf(level Level, format string, args ...interface{}) {
+	lPrintf(h, level, format, sanitize(args...)...)
 }
 
-func (zh *zeroHandler) setFields(ev *zerolog.Event) *zerolog.Event {
-	zh.mu.Lock()
-	if zh.fields != nil {
-		ev.Fields(zh.fields.Values())
-		zh.fields.Clear()
-	}
-	zh.mu.Unlock()
+func (h *zeroHandler) setFields(ev *zerolog.Event) *zerolog.Event {
+	h.mu.Lock()
+	ev.Fields(h.fields.Values())
+	h.fields.Clear()
+	h.mu.Unlock()
 	return ev
 }
 

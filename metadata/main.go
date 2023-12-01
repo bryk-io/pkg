@@ -2,9 +2,6 @@ package metadata
 
 import "sync"
 
-// Map is just an alias for the simple and not-thread-safe `map`.
-type Map = map[string]interface{}
-
 // MD provides a basic dataset that is safe to use concurrently.
 type MD struct {
 	data map[string]interface{}
@@ -98,9 +95,14 @@ func (m MD) Clear() {
 
 // Join all values set in `other` into the current instance.
 func (m MD) Join(other ...MD) {
+	m.mu.Lock()
 	for _, b := range other {
+		if b.IsEmpty() {
+			continue
+		}
 		for k, v := range b.data {
-			m.Set(k, v)
+			m.data[k] = v
 		}
 	}
+	m.mu.Unlock()
 }

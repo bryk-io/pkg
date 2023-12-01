@@ -12,15 +12,22 @@ import (
 
 // WithStandard provides a log handler using only standard library packages.
 func WithStandard(log *stdL.Logger) Logger {
-	return &stdLogger{log: log}
+	return &stdLogger{
+		log:    log,
+		tags:   metadata.New(),
+		fields: metadata.New(),
+	}
 }
+
+// Default formatting string.
+const defaultFormat string = "%v"
 
 type stdLogger struct {
 	mu      sync.Mutex
 	log     *stdL.Logger
 	lvl     Level
-	tags    *metadata.MD
-	fields  *metadata.MD
+	tags    metadata.MD
+	fields  metadata.MD
 	discard bool
 }
 
@@ -30,30 +37,25 @@ func (sl *stdLogger) SetLevel(lvl Level) {
 	sl.mu.Unlock()
 }
 
-func (sl *stdLogger) Sub(tags metadata.Map) Logger {
-	t := metadata.FromMap(tags)
+func (sl *stdLogger) Sub(tags Fields) Logger {
 	return &stdLogger{
 		log:     sl.log,
 		lvl:     sl.lvl,
-		tags:    &t,
+		tags:    metadata.FromMap(tags),
+		fields:  metadata.New(),
 		discard: sl.discard,
 	}
 }
 
-func (sl *stdLogger) WithFields(fields metadata.Map) Logger {
-	f := metadata.FromMap(fields)
+func (sl *stdLogger) WithFields(fields Fields) Logger {
 	sl.mu.Lock()
-	sl.fields = &f
+	sl.fields.Load(fields)
 	sl.mu.Unlock()
 	return sl
 }
 
 func (sl *stdLogger) WithField(key string, value interface{}) Logger {
 	sl.mu.Lock()
-	if sl.fields == nil {
-		f := metadata.New()
-		sl.fields = &f
-	}
 	sl.fields.Set(key, value)
 	sl.mu.Unlock()
 	return sl
@@ -63,72 +65,63 @@ func (sl *stdLogger) Debug(args ...interface{}) {
 	if sl.lvl > Debug {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.Debugf(defaultFormat, cleanArgs...)
+	sl.Debugf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Debugf(format string, args ...interface{}) {
 	if sl.lvl > Debug {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.print("DEBUG", format, cleanArgs...)
+	sl.print("DEBUG", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Info(args ...interface{}) {
 	if sl.lvl > Info {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.Infof(defaultFormat, cleanArgs...)
+	sl.Infof(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Infof(format string, args ...interface{}) {
 	if sl.lvl > Info {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.print("INFO", format, cleanArgs...)
+	sl.print("INFO", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Warning(args ...interface{}) {
 	if sl.lvl > Warning {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.Warningf(defaultFormat, cleanArgs...)
+	sl.Warningf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Warningf(format string, args ...interface{}) {
 	if sl.lvl > Warning {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.print("WARNING", format, cleanArgs...)
+	sl.print("WARNING", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Error(args ...interface{}) {
 	if sl.lvl > Error {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.Errorf(defaultFormat, cleanArgs...)
+	sl.Errorf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Errorf(format string, args ...interface{}) {
 	if sl.lvl > Error {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.print("ERROR", format, cleanArgs...)
+	sl.print("ERROR", format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Panic(args ...interface{}) {
 	if sl.lvl > Panic {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.Panicf(defaultFormat, cleanArgs...)
+	sl.Panicf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Panicf(format string, args ...interface{}) {
@@ -147,8 +140,7 @@ func (sl *stdLogger) Fatal(args ...interface{}) {
 	if sl.lvl > Fatal {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.Fatalf(defaultFormat, cleanArgs...)
+	sl.Fatalf(defaultFormat, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Fatalf(format string, args ...interface{}) {
@@ -158,72 +150,45 @@ func (sl *stdLogger) Fatalf(format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	sl.print("FATAL", format, cleanArgs...)
+	sl.print("FATAL", format, sanitize(args...)...)
 	os.Exit(1)
 }
 
 func (sl *stdLogger) Print(level Level, args ...interface{}) {
-	cleanArgs := sanitize(args...)
-	lprint(sl, level, cleanArgs...)
+	lPrint(sl, level, sanitize(args...)...)
 }
 
 func (sl *stdLogger) Printf(level Level, format string, args ...interface{}) {
-	cleanArgs := sanitize(args...)
-	lprintf(sl, level, format, cleanArgs...)
-}
-
-func (sl *stdLogger) hasFields() bool {
-	sl.mu.Lock()
-	defer sl.mu.Unlock()
-	if sl.fields != nil && !sl.fields.IsEmpty() {
-		return true
-	}
-	if sl.tags != nil && !sl.tags.IsEmpty() {
-		return true
-	}
-	return false
-}
-
-func (sl *stdLogger) clearFields() {
-	if sl.fields != nil {
-		sl.fields.Clear()
-	}
-}
-
-func (sl *stdLogger) getFields() map[string]interface{} {
-	fields := metadata.New()
-	if sl.fields != nil {
-		fields.Join(*sl.fields)
-	}
-	if sl.tags != nil {
-		fields.Join(*sl.tags)
-	}
-	return fields.Values()
+	lPrintf(sl, level, format, sanitize(args...)...)
 }
 
 func (sl *stdLogger) print(level string, format string, args ...interface{}) {
 	if sl.discard {
 		return
 	}
-	if sl.hasFields() {
-		defer sl.clearFields()
-		sl.log.Print(output(level, sl.getFields(), format, args...))
-		return
-	}
-	sl.log.Printf("%s: %s", level, fmt.Sprintf(format, args...))
+	sl.mu.Lock()
+	fields := metadata.New()
+	fields.Join(sl.tags, sl.fields)
+	sl.fields.Clear()
+	sl.mu.Unlock()
+	sl.log.Print(output(level, fields.Values(), format, args...))
 }
 
 func output(level string, fields map[string]interface{}, format string, args ...interface{}) string {
+	// use default format if none is provided
 	if format == "" {
 		format = defaultFormat
 	}
+	// if no fields are provided a simple `LEVEL: message` output is returned
+	if len(fields) == 0 {
+		return fmt.Sprintf("%s: %s", level, fmt.Sprintf(format, args...))
+	}
+	// otherwise, include the fields in the output
 	s := make([]string, len(fields))
 	i := 0
 	for k, v := range fields {
-		s[i] = fmt.Sprintf("%s:%v", k, v)
+		s[i] = fmt.Sprintf("%s=%v", k, v)
 		i++
 	}
-	prefix := fmt.Sprintf("%s: (%s)", level, strings.Join(s, "|"))
-	return fmt.Sprintf(prefix+" "+format, args...)
+	return fmt.Sprintf("%s: %s %s", level, fmt.Sprintf(format, args...), strings.Join(s, " "))
 }

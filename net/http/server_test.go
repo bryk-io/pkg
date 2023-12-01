@@ -54,7 +54,7 @@ func TestNewServer(t *testing.T) {
 			mwRecover.Handler(),
 			mwProxy.Handler(),
 			mwGzip.Handler(9),
-			mwLogging.Handler(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
+			mwLogging.Handler(xlog.WithCharm(xlog.CharmOptions{ReportCaller: true}), nil),
 			mwHeaders.Handler(map[string]string{
 				"x-bar": "bar",
 				"x-foo": "foo",

@@ -27,7 +27,7 @@ func sampleStreamSetup(req *lib.Request) *Subscription {
 	opts := []StreamOption{
 		WithMessageRetry(2500),
 		WithSendTimeout(3 * time.Second),
-		WithLogger(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true})),
+		WithLogger(xlog.WithCharm(xlog.CharmOptions{ReportCaller: true, Prefix: "client"})),
 	}
 	userSt, _ := NewStream("sample-stream", opts...)
 	sub := userSt.Subscribe(req.Context(), req.RemoteAddr)
@@ -88,7 +88,7 @@ func TestHandler(t *testing.T) {
 		http.WithMiddleware(
 			mwRecover.Handler(),
 			mwGzip.Handler(9),
-			mwLogging.Handler(xlog.WithZero(xlog.ZeroOptions{PrettyPrint: true}), nil),
+			mwLogging.Handler(xlog.WithCharm(xlog.CharmOptions{ReportCaller: true, Prefix: "server"}), nil),
 		),
 	}
 

@@ -7,14 +7,13 @@ import (
 	"reflect"
 	"strings"
 
-	"go.bryk.io/pkg/metadata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
 )
 
 // Attributes provide an easy-to-use mechanism to handle span
 // and message metadata.
-type Attributes metadata.Map
+type Attributes map[string]interface{}
 
 // Set a specific attribute, overrides any previously set value.
 func (attrs Attributes) Set(key string, value interface{}) {

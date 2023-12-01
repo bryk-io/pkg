@@ -2,8 +2,6 @@ package log
 
 import (
 	"sync"
-
-	"go.bryk.io/pkg/metadata"
 )
 
 type composite struct {
@@ -111,7 +109,7 @@ func (c *composite) Printf(level Level, format string, args ...interface{}) {
 	}
 }
 
-func (c *composite) WithFields(fields metadata.Map) Logger {
+func (c *composite) WithFields(fields Fields) Logger {
 	c.mu.Lock()
 	for i, el := range c.list {
 		c.list[i] = el.WithFields(fields)
@@ -129,7 +127,7 @@ func (c *composite) WithField(key string, value interface{}) Logger {
 	return c
 }
 
-func (c *composite) Sub(tags metadata.Map) Logger {
+func (c *composite) Sub(tags Fields) Logger {
 	cs := &composite{
 		list: make([]Logger, len(c.list)),
 	}

@@ -11,14 +11,14 @@ import (
 func WithLogrus(log logrus.FieldLogger) Logger {
 	return &logrusHandler{
 		log:    log,
-		fields: nil,
+		fields: metadata.New(),
 	}
 }
 
 type logrusHandler struct {
 	log    logrus.FieldLogger
 	lvl    Level
-	fields *metadata.MD
+	fields metadata.MD
 	mu     sync.Mutex
 }
 
@@ -28,236 +28,144 @@ func (lh *logrusHandler) SetLevel(lvl Level) {
 	lh.mu.Unlock()
 }
 
-func (lh *logrusHandler) Sub(tags metadata.Map) Logger {
+func (lh *logrusHandler) Sub(tags Fields) Logger {
 	return &logrusHandler{
-		log: lh.log.WithFields(logrus.Fields(tags)),
-		lvl: lh.lvl,
+		log:    lh.log.WithFields(logrus.Fields(tags)),
+		lvl:    lh.lvl,
+		fields: metadata.New(),
 	}
 }
 
-func (lh *logrusHandler) WithFields(fields metadata.Map) Logger {
-	f := metadata.FromMap(fields)
+func (lh *logrusHandler) WithFields(fields Fields) Logger {
 	lh.mu.Lock()
-	lh.fields = &f
+	lh.fields.Load(fields)
 	lh.mu.Unlock()
 	return lh
 }
 
 func (lh *logrusHandler) WithField(key string, value interface{}) Logger {
 	lh.mu.Lock()
-	if lh.fields == nil {
-		f := metadata.New()
-		lh.fields = &f
-	}
 	lh.fields.Set(key, value)
 	lh.mu.Unlock()
 	return lh
 }
 
 func (lh *logrusHandler) Debug(args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Debug {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Debug(cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Debug(cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Debug(sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Debugf(format string, args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Debug {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Debugf(format, cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Debugf(format, cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Debugf(format, sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Info(args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Info {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Info(cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Info(cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Info(sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Infof(format string, args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Info {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Infof(format, cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Infof(format, cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Infof(format, sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Warning(args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Warning {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Warning(cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Warning(cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Warning(sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Warningf(format string, args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Warning {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Warnf(format, cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Warnf(format, cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Warnf(format, sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Error(args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Error {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Error(cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Error(cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Error(sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Errorf(format string, args ...interface{}) {
+	lh.mu.Lock()
+	defer lh.mu.Unlock()
 	if lh.lvl > Error {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Errorf(format, cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Errorf(format, cleanArgs...)
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Errorf(format, sanitize(args...)...)
+	lh.fields.Clear()
 }
 
 func (lh *logrusHandler) Panic(args ...interface{}) {
 	if lh.lvl > Panic {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.mu.Unlock()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panic(cleanArgs...)
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Panic(cleanArgs...)
+	defer lh.fields.Clear()
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panic(sanitize(args...)...)
 }
 
 func (lh *logrusHandler) Panicf(format string, args ...interface{}) {
 	if lh.lvl > Panic {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panicf(format, cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Panicf(format, cleanArgs...)
+	defer lh.fields.Clear()
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panicf(format, sanitize(args...)...)
 }
 
 func (lh *logrusHandler) Fatal(args ...interface{}) {
 	if lh.lvl > Fatal {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.mu.Unlock()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatal(cleanArgs...)
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Fatal(cleanArgs...)
+	defer lh.fields.Clear()
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatal(sanitize(args...)...)
 }
 
 func (lh *logrusHandler) Fatalf(format string, args ...interface{}) {
 	if lh.lvl > Fatal {
 		return
 	}
-	cleanArgs := sanitize(args...)
-	lh.mu.Lock()
-	if lh.fields != nil {
-		defer lh.clearFields()
-		lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatalf(format, cleanArgs...)
-		lh.mu.Unlock()
-		return
-	}
-	lh.mu.Unlock()
-	lh.log.Fatalf(format, cleanArgs...)
+	defer lh.fields.Clear()
+	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatalf(format, sanitize(args...)...)
 }
 
 func (lh *logrusHandler) Print(level Level, args ...interface{}) {
-	cleanArgs := sanitize(args...)
-	lprint(lh, level, cleanArgs...)
+	lPrint(lh, level, sanitize(args...)...)
 }
 
 func (lh *logrusHandler) Printf(level Level, format string, args ...interface{}) {
-	cleanArgs := sanitize(args...)
-	lprintf(lh, level, format, cleanArgs...)
-}
-
-func (lh *logrusHandler) clearFields() {
-	if lh.fields != nil {
-		lh.fields.Clear()
-	}
+	lPrintf(lh, level, format, sanitize(args...)...)
 }

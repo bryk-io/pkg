@@ -1,14 +1,11 @@
 package log
 
-import (
-	"strings"
-
-	"go.bryk.io/pkg/metadata"
-)
+// maximum number of fields that can be added to a log entry.
+const maxFields = 50
 
 // Fields provides additional contextual information on logs;
 // particularly useful for structured messages.
-type Fields = metadata.Map
+type Fields = map[string]interface{}
 
 // Level values assign a severity value to logged messages.
 type Level uint
@@ -60,9 +57,6 @@ func (l Level) String() string {
 		return "invalid-level"
 	}
 }
-
-// Default formatting string.
-const defaultFormat string = "%v"
 
 // SimpleLogger defines the requirements of the log handler as a minimal
 // interface to allow for easy customization and prevent hard dependencies
@@ -159,53 +153,4 @@ type Logger interface {
 
 	// Printf logs a formatted message at the specified `level`.
 	Printf(level Level, format string, args ...interface{})
-}
-
-func lprint(ll SimpleLogger, lv Level, args ...interface{}) {
-	switch lv {
-	case Debug:
-		ll.Debug(args...)
-	case Info:
-		ll.Info(args...)
-	case Warning:
-		ll.Warning(args...)
-	case Error:
-		ll.Error(args...)
-	case Panic:
-		ll.Panic(args...)
-	case Fatal:
-		ll.Fatal(args...)
-	}
-}
-
-func lprintf(ll SimpleLogger, lv Level, format string, args ...interface{}) {
-	switch lv {
-	case Debug:
-		ll.Debugf(format, args...)
-	case Info:
-		ll.Infof(format, args...)
-	case Warning:
-		ll.Warningf(format, args...)
-	case Error:
-		ll.Errorf(format, args...)
-	case Panic:
-		ll.Panicf(format, args...)
-	case Fatal:
-		ll.Fatalf(format, args...)
-	}
-}
-
-func sanitize(args ...interface{}) []interface{} {
-	var (
-		vs string
-		ok bool
-		sv = make([]interface{}, len(args))
-	)
-	for i, v := range args {
-		if vs, ok = v.(string); ok {
-			v = strings.Replace(strings.Replace(vs, "\n", "", -1), "\r", "", -1)
-		}
-		sv[i] = v
-	}
-	return sv
 }

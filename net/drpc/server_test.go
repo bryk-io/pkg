@@ -105,9 +105,9 @@ func TestServer(t *testing.T) {
 	assert := tdd.New(t)
 
 	// Main logger
-	ll := xlog.WithZero(xlog.ZeroOptions{
-		PrettyPrint: true,
-		ErrorField:  "error",
+	ll := xlog.WithCharm(xlog.CharmOptions{
+		ReportCaller: true,
+		Prefix:       "drpc-server",
 	})
 
 	// Server middleware

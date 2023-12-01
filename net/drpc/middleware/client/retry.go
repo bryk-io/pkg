@@ -49,7 +49,7 @@ func (md retry) Invoke(ctx context.Context, rpc string, enc drpc.Encoding, in, o
 		}
 
 		// Operation fields
-		fields := metadata.FromMap(metadata.Map{
+		fields := metadata.FromMap(map[string]interface{}{
 			"error":         err.Error(),
 			"retry.attempt": md.tries,
 		})
@@ -85,7 +85,7 @@ func (md retry) NewStream(ctx context.Context, rpc string, enc drpc.Encoding) (d
 		}
 
 		// Operation fields
-		fields := metadata.FromMap(metadata.Map{
+		fields := metadata.FromMap(map[string]interface{}{
 			"error":         err.Error(),
 			"retry.attempt": md.tries,
 		})
