@@ -1,4 +1,4 @@
-# Summary
+# Package `errors`
 
 When dealing with unexpected or undesired behavior on any system (like issues and
 exceptions) the more information available, structured and otherwise, the better.
@@ -22,7 +22,7 @@ The main goals of this package are:
 
 ## Inspiration
 
-This library is mainly inspired on the original https://github.com/cockroachdb/errors
+This library is mainly inspired on the original <https://github.com/cockroachdb/errors>
 package, while adding some specific adjustments. For additional information about the
 original package refer to [PR-36987](https://github.com/cockroachdb/cockroach/pull/36987).
 
@@ -68,7 +68,7 @@ another error via `Unwrap()` and/or `Cause()`.
 An error wrapper is an object that implements the error interface, and also refers to
 another error via `Unwrap()` and/or `Cause()`.
 
-- Wrapper constructors, i.e., `Wrap()` can be applied safely to a `nil` error; the function 
+- Wrapper constructors, i.e., `Wrap()` can be applied safely to a `nil` error; the function
   will behave as no-op in this case.
 
 ## Custom error types

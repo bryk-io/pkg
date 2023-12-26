@@ -17,11 +17,13 @@ type Client struct {
 	hc *http.Client
 }
 
-// NewClient returns a ready-to-use new client instance.
-func NewClient() (*Client, error) {
-	return &Client{
-		hc: http.DefaultClient,
-	}, nil
+// NewClient returns a ready-to-use new client instance. If `hc` is nil
+// `http.DefaultClient` will be used by default.
+func NewClient(hc *http.Client) (*Client, error) {
+	if hc == nil {
+		hc = http.DefaultClient
+	}
+	return &Client{hc}, nil
 }
 
 // Subscribe opens a new subscription instance for the provided HTTP request.

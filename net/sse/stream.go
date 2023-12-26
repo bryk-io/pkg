@@ -13,8 +13,8 @@ import (
 // subscribers (i.e., clients).
 type Stream struct {
 	id      string                   // stream identifier
-	counter int                      // send message counter
-	clients map[string]*Subscription // 'online' clients
+	counter int                      // sent message counter
+	clients map[string]*Subscription // online/active clients
 	timeout time.Duration            // push operation timeout
 	retry   uint                     // messages 'retry' value
 	log     xlog.Logger              // main logging interface
@@ -82,18 +82,21 @@ func (st *Stream) Close() {
 // provided `id` value MUST be unique. If a subscriber already exists
 // with the `id`, a reference to it will be returned.
 func (st *Stream) Subscribe(ctx context.Context, id string) *Subscription {
+	// protect internal state
 	st.mu.Lock()
 	defer st.mu.Unlock()
+
+	// existing client
 	cl, ok := st.clients[id]
 	if ok {
 		return cl
 	}
+
+	// register client
 	st.log.WithFields(xlog.Fields{
 		"sse.stream.id": st.id,
 		"sse.client":    id,
 	}).Info("adding new subscriber")
-
-	// register client
 	ctx, halt := context.WithCancel(ctx)
 	st.clients[id] = &Subscription{
 		id:   id,
@@ -105,8 +108,8 @@ func (st *Stream) Subscribe(ctx context.Context, id string) *Subscription {
 
 	// register halt event handler
 	go func(sb *Subscription) {
-		<-sb.ctx.Done()
-		st.Unsubscribe(sb.id)
+		<-sb.ctx.Done()       // subscription abandoned/closed by the client
+		st.Unsubscribe(sb.id) // remove from stream
 	}(st.clients[id])
 	return st.clients[id]
 }
@@ -131,14 +134,19 @@ func (st *Stream) Unsubscribe(id string) bool {
 
 // Broadcast a new event to all subscribers.
 func (st *Stream) push(ev Event) {
+	// protect internal state
 	st.mu.Lock()
-	// assign message id
-	st.counter++
-	ev.id = st.counter
 	defer st.mu.Unlock()
+
+	// stream is already closing
 	if st.done {
 		return // no-op
 	}
+
+	// assign message id
+	st.counter++
+	ev.id = st.counter
+
 	// publish to all clients
 	for _, cl := range st.clients {
 		st.wg.Add(1) // add task at stream level
@@ -146,6 +154,7 @@ func (st *Stream) push(ev Event) {
 		go func(cl *Subscription, ev Event) {
 			defer cl.wg.Done() // mark task as done at subscription level
 			defer st.wg.Done() // mark task as done at stream level
+
 			select {
 			// subscription is closed
 			case <-cl.Done():

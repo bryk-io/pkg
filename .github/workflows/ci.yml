@@ -17,7 +17,7 @@ jobs:
     steps:
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Configure runner environment
       - name: Set up runner environment
@@ -28,7 +28,7 @@ jobs:
 
       # Go
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: 1.21.x
 
@@ -70,7 +70,7 @@ jobs:
     steps:
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Configure runner environment
       - name: Set up runner environment
@@ -81,7 +81,7 @@ jobs:
 
       # Go
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: 1.21.x
 
@@ -95,9 +95,9 @@ jobs:
       # Setup buf
       - name: Setup buf
         id: buf-setup
-        uses: bufbuild/buf-setup-action@v1.17.0
+        uses: bufbuild/buf-setup-action@v1.28.1
         with:
-          version: 1.17.0
+          version: 1.28.1
           github_token: ${{ github.token }}
 
       # Static analysis
@@ -132,7 +132,7 @@ jobs:
     steps:
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Configure runner environment
       - name: Set up runner environment
@@ -143,7 +143,7 @@ jobs:
 
       # Go
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
 

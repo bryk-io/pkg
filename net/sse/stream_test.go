@@ -30,7 +30,12 @@ func sampleStreamSetup(req *lib.Request) *Subscription {
 		WithLogger(xlog.WithCharm(xlog.CharmOptions{ReportCaller: true, Prefix: "client"})),
 	}
 	userSt, _ := NewStream("sample-stream", opts...)
+
+	// use user address as subscription identifier, this will prevent
+	// users for opening more than 1 subscription for this example
 	sub := userSt.Subscribe(req.Context(), req.RemoteAddr)
+
+	// automatically send events and messages to the client
 	go func() {
 		counter := 0
 		sendEvent := time.NewTicker(1 * time.Second)
@@ -99,7 +104,7 @@ func TestHandler(t *testing.T) {
 	}()
 
 	// Open client
-	cl, _ := NewClient()
+	cl, _ := NewClient(nil)
 
 	t.Run("ClosedByServer", func(t *testing.T) {
 		// Consume events until closed by server

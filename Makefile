@@ -9,7 +9,7 @@ LD_FLAGS += -s -w
 # locally (on a dev container) or using a builder image.
 buf:=buf
 ifndef REMOTE_CONTAINERS_SOCKETS
-	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.17.0 buf
+	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.28.1 buf
 endif
 
 # For commands that require a specific package path, default to all local
@@ -31,9 +31,8 @@ build:
 ## codeql: Run a CodeQL scan operation locally
 # https://codeql.github.com/docs/
 codeql:
-	@-rm -rf codeql-results.csv codeql-db
-	codeql database create --overwrite --language go codeql-db
-	codeql database analyze codeql-db --format csv --output codeql-results.csv
+	codeql database create --overwrite .codeql/db --language go
+	codeql database analyze .codeql/db --format=sarif-latest --output=.codeql/issues.sarif
 
 ## deps: Verify dependencies and remove intermediary products
 deps:

@@ -260,16 +260,14 @@ func mapCharmLevel(lvl Level) charm.Level {
 }
 
 func expand(m map[string]interface{}) []interface{} {
-	size := len(m) * 2
-	if size > maxFields {
-		size = maxFields
-	}
-	args := make([]interface{}, size)
-	i := 0
+	args := []interface{}{}
+	ctr := 0
 	for k, v := range m {
-		args[i] = k
-		args[i+1] = v
-		i += 2
+		args = append(args, k, v)
+		ctr++
+		if ctr >= maxFields {
+			break
+		}
 	}
 	return args
 }

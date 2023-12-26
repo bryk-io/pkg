@@ -1,4 +1,4 @@
-# Useful Logs
+# Package `log`
 
 Producing good logs is important; so important in fact that there are SEVERAL
 ways to do it in Go. Either with the standard library itself or using some very
