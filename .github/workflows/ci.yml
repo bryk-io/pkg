@@ -1,6 +1,10 @@
 name: ci
 env:
   commit_msg: ""
+permissions:
+  contents: read
+  # allow the actions to annotate code in a PR
+  checks: write
 on:
   push:
     branches:
@@ -54,7 +58,7 @@ jobs:
       # Can be excluded if the commit message contains: [skip scan-secrets]
       # https://github.com/marketplace/actions/trufflehog-oss
       - name: Scan for leaked secrets
-        uses: trufflesecurity/trufflehog@v3.26.0
+        uses: trufflesecurity/trufflehog@v3.63.7
         if: ${{ !contains(env.commit_msg, '[skip scan-secrets]') }}
         with:
           path: ./
@@ -160,6 +164,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v1.54.2
+          args: --timeout=30m
 
       # Run unit tests
       - name: Test
@@ -171,8 +176,8 @@ jobs:
 
       # Save artifacts
       - name: Save artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: assets
           path: |
-            coverage.html
+            coverage-${{ matrix.go-version }}.html
