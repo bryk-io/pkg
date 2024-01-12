@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/log v0.3.1
 	github.com/chzyer/readline v1.5.1
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
-	github.com/getsentry/sentry-go v0.25.0
+	github.com/getsentry/sentry-go v0.26.0
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/websocket v1.5.1
@@ -45,8 +45,8 @@ require (
 	go.temporal.io/sdk v1.25.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.17.0
-	golang.org/x/net v0.19.0
+	golang.org/x/crypto v0.18.0
+	golang.org/x/net v0.20.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/term v0.16.0
 	golang.org/x/time v0.5.0

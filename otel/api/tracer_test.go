@@ -69,12 +69,14 @@ func (s *sampleApp) Fibonacci(ctx context.Context, n uint) (uint64, error) {
 	task := Start(ctx, "calculate-fibonacci", taskOpts...)
 	defer task.End(nil)
 
+	task.Event("validating input", AsInfo())
 	if n <= 1 {
 		return uint64(n), nil
 	}
 	if n > 1000 {
 		// finish task early and capture error details
 		err := errors.New("max value is 1000")
+		task.Event("cancel operation", AsWarning())
 		task.End(err)
 		return 0, err
 	}
@@ -82,7 +84,7 @@ func (s *sampleApp) Fibonacci(ctx context.Context, n uint) (uint64, error) {
 	for i := uint(2); i < n; i++ {
 		n2, n1 = n1, n1+n2
 	}
-	task.Event("capture meaningful event during operation", otel.Attributes{"event.level": "debug"})
+	task.Event("capture meaningful event during operation", AsInfo())
 	return n2 + n1, nil
 }
 
