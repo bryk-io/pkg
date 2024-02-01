@@ -1,4 +1,4 @@
 {
   "name": "Go 1.21",
-  "image": "ghcr.io/bryk-io/devcontainer-go:1.21.0"
+  "image": "ghcr.io/bryk-io/devcontainer-go:1.21.6"
 }
