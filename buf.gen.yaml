@@ -5,42 +5,43 @@ managed:
   optimize_for: SPEED
   cc_enable_arenas: false
   java_multiple_files: true
-  # go_package_prefix:
-  #   # <module_name>   : name in go.mod 
-  #   # <relative_path> : generated code output 
-  #   # default: <module_name>/<relative_path>
-  #   except:
-  #     - buf.build/googleapis/googleapis
+  go_package_prefix:
+    # same value as `module` in go.mod
+    default: go.bryk.io/pkg
+    # don't build/rewrite import paths for external dependencies
+    except:
+      - buf.build/googleapis/googleapis
+      - buf.build/bufbuild/protovalidate
+      - buf.build/grpc-ecosystem/grpc-gateway
 # For each plugin:
-#   - plugin: buf generate will look for a binary named protoc-gen-NAME
+#   - plugin: buf will look for a remote plugin
+#   - name: buf generate will look for a binary named protoc-gen-NAME
 #   - out: path relative to the output directory
 #   - opt: options to provide to the plugin
 plugins:
-  # buf.build/protocolbuffers/go:v1.28.1
-  - plugin: go
+  - plugin: buf.build/protocolbuffers/go:v1.32.0
     out: .
     opt:
       - paths=source_relative
-  # buf.build/grpc/go:v1.2.0
-  - plugin: go-grpc
+  - plugin: buf.build/grpc/go:v1.3.0
     out: .
     opt:
       - paths=source_relative
       - require_unimplemented_servers=true
-  - plugin: grpc-gateway
+  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.19.1
+    out: .
+    opt:
+      - logtostderr=true
+  - plugin: buf.build/grpc-ecosystem/gateway:v2.19.1
     out: .
     opt:
       - paths=source_relative
       - logtostderr=true
-  - plugin: openapiv2
-    out: .
-    opt:
-      - logtostderr=true
-  - plugin: validate
-    out: .
-    opt:
-      - lang=go
-  - plugin: go-drpc
-    out: .
-    opt:
-      - paths=source_relative
+  # - plugin: buf.build/bufbuild/validate-go:v1.0.4
+  #   out: .
+  #   opt:
+  #     - paths=source_relative
+  # - name: go-drpc
+  #   out: .
+  #   opt:
+  #     - paths=source_relative

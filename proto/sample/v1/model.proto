@@ -2,9 +2,7 @@ syntax = "proto3";
 
 package sample.v1;
 
-option go_package = "sample/v1;samplev1";
-
-import "third_party/envoyproxy/validate/validate.proto";
+import "buf/validate/validate.proto";
 
 // Reachability test response.
 message Pong {
@@ -21,7 +19,7 @@ message HealthResponse {
 // Generic request response.
 message Response {
   // A key on the entity
-  string name = 1 [(validate.rules).string = {min_len: 2, max_len: 5}];
+  string name = 1 [(buf.validate.field).string = {min_len: 2, max_len: 5}];
 }
 
 // Sample response structure.

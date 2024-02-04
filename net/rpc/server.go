@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bufbuild/protovalidate-go"
 	mwAuth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	mwRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	mwValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -60,6 +61,7 @@ type Server struct {
 	gw               *http.Server                   // Gateway HTTP server
 	halt             context.CancelFunc             // Stop all internal processing
 	wsProxy          *ws.Proxy                      // WebSocket proxy
+	protoValidator   *protovalidate.Validator       // Protobuf validator (based on reflection)
 	resourceLimits   ResourceLimits                 // Settings to prevent resources abuse
 	panicRecovery    bool                           // Enable panic recovery interceptor
 	inputValidation  bool                           // Enable automatic input validation
@@ -459,6 +461,12 @@ func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream 
 	if srv.inputValidation {
 		unary = append(unary, mwValidator.UnaryServerInterceptor())
 		stream = append(stream, mwValidator.StreamServerInterceptor())
+	}
+
+	// If enabled, execute protobuf validation using the `protovalidate` package
+	if srv.protoValidator != nil {
+		unary = append(unary, pvUnaryServerInterceptor(srv.protoValidator))
+		stream = append(stream, pvStreamServerInterceptor(srv.protoValidator))
 	}
 
 	// Add registered middleware

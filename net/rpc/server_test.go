@@ -1055,6 +1055,7 @@ func TestEchoServer(t *testing.T) {
 		WithPanicRecovery(),
 		WithReflection(),
 		WithInputValidation(),
+		WithProtoValidate(),
 		WithHTTPGateway(gw),
 		WithServiceProvider(&echoProvider{}),
 		WithResourceLimits(ResourceLimits{

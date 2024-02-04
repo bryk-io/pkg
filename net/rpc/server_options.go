@@ -4,6 +4,7 @@ import (
 	"context"
 	"syscall"
 
+	"github.com/bufbuild/protovalidate-go"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
@@ -118,6 +119,21 @@ func WithInputValidation() ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
 		srv.inputValidation = true
+		srv.mu.Unlock()
+		return nil
+	}
+}
+
+// WithProtoValidate enables automatic input validation using the `protovalidate`
+// package. Any validation errors will be returned with status code `InvalidArgument`.
+// https://github.com/bufbuild/protovalidate
+func WithProtoValidate() ServerOption {
+	return func(srv *Server) (err error) {
+		srv.mu.Lock()
+		srv.protoValidator, err = protovalidate.New()
+		if err != nil {
+			return err
+		}
 		srv.mu.Unlock()
 		return nil
 	}
