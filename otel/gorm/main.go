@@ -19,14 +19,14 @@ func Plugin(opts ...Option) gorm.Plugin {
 
 // Logger returns a GORM log handler that uses the provided base logger
 // to report operations. The `slow` parameter can be used to define the
-// threshold to tag slow operations; if not provided a default value of
-// 200ms will be used.
-func Logger(log xlog.Logger, slow time.Duration) glog.Interface {
+// threshold to tag slow operations in ms; if not provided a default value
+// of 200 will be used.
+func Logger(log xlog.Logger, slow uint) glog.Interface {
 	if slow == 0 {
-		slow = 200 * time.Millisecond
+		slow = 200
 	}
 	return &logger{
 		ll:   log,
-		slow: slow,
+		slow: time.Duration(slow) * time.Millisecond,
 	}
 }

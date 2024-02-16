@@ -5,8 +5,8 @@ import (
 	"encoding/pem"
 	"fmt"
 
-	"go.bryk.io/pkg/crypto/internal"
 	"go.bryk.io/pkg/errors"
+	cryptoutils "go.bryk.io/pkg/internal/crypto"
 	c "golang.org/x/crypto/curve25519"
 )
 
@@ -28,7 +28,7 @@ func New() (*KeyPair, error) {
 // calling the "Destroy" method.
 func FromSeed(seed []byte) (*KeyPair, error) {
 	// Expand provided seed to obtain the private key material
-	priv, err := internal.Expand(seed, 32, nil)
+	priv, err := cryptoutils.Expand(seed, 32, nil)
 	if err != nil {
 		return nil, errors.New("failed to expand seed")
 	}

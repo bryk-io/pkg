@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"go.bryk.io/pkg/crypto/internal"
 	"go.bryk.io/pkg/errors"
+	cryptoutils "go.bryk.io/pkg/internal/crypto"
 	c "golang.org/x/crypto/curve25519"
 	e "golang.org/x/crypto/ed25519"
 )
@@ -41,7 +41,7 @@ func Unmarshal(src []byte) (*KeyPair, error) {
 // provided seed material. The KP instance needs to be securely removed
 // from memory by calling the "Destroy" method.
 func FromSeed(seed []byte) (*KeyPair, error) {
-	secret, err := internal.Expand(seed, e.SeedSize, nil)
+	secret, err := cryptoutils.Expand(seed, e.SeedSize, nil)
 	if err != nil {
 		return nil, errors.New("failed to expand seed")
 	}

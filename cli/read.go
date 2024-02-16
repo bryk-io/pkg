@@ -15,6 +15,7 @@ import (
 // provided won't be displayed on the screen.
 func ReadSecure(prompt string) ([]byte, error) {
 	fmt.Print(prompt)
+	defer fmt.Println()
 	return term.ReadPassword(0)
 }
 
