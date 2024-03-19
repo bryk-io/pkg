@@ -51,6 +51,7 @@ func (s *sampleApp) ComplexTask(ctx context.Context) (err error) {
 
 	// randomly fail half the time
 	if n := rand.Intn(9); n%2 == 0 {
+		// this function returns a "deeply nested" error chain
 		err = sampleA()
 		task.End(err)
 	}
@@ -105,8 +106,8 @@ func (s *sampleApp) ServerHandler() http.Handler {
 	})
 	router.HandleFunc("/slow", func(w http.ResponseWriter, r *http.Request) {
 		s.SimpleTask(r.Context())
-		// this will cause the request to be canceled after returning
-		// the response to the client
+		// this will cause the request to be canceled (due to context timeout)
+		// BEFORE returning the response to the client
 		<-time.After(100 * time.Millisecond)
 		_, _ = w.Write([]byte("ok"))
 	})
@@ -137,7 +138,7 @@ func TestTracer(t *testing.T) {
 
 	t.Run("Server", func(t *testing.T) {
 		// get HTTP monitor to easily instrument HTTP clients and servers
-		monitor := otelHttp.NewMonitor()
+		monitor := otelHttp.NewMonitor(otelHttp.WithTraceInHeader("x-request-id"))
 
 		// random port
 		port, endpoint := getRandomPort()

@@ -32,6 +32,15 @@ func WithNetworkEvents() Option {
 	}
 }
 
+// WithTraceInHeader allows to set a custom header to report the
+// transaction ID. The server will use this header to report the trace
+// ID to the client.
+func WithTraceInHeader(h string) Option {
+	return func(mon *httpMonitor) {
+		mon.rt = h
+	}
+}
+
 // WithFilter adds a filter function to the monitor. If any filter
 // indicates to exclude a request then the request will not be traced.
 // All filters must allow a request to be traced for a Span to be created.

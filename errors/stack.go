@@ -155,7 +155,11 @@ func packageAndName(fn string) (pkg string, name string) {
 // Remove local system paths from the source file locations to produce more
 // portable traces.
 func printFile(file string) string {
-	file = strings.Replace(file, goRoot, "GOROOT", 1)
-	file = strings.Replace(file, goPath, "GOPATH", 1)
+	if goRoot != "" {
+		file = strings.Replace(file, goRoot, "GOROOT", 1)
+	}
+	if goPath != "" {
+		file = strings.Replace(file, goPath, "GOPATH", 1)
+	}
 	return file
 }

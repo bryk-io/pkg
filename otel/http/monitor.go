@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	contrib "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Monitor provide easy-to-use instrumentation primitives for HTTP clients
@@ -30,9 +31,10 @@ type Monitor interface {
 }
 
 type httpMonitor struct {
-	nf SpanNameFormatter
-	ft []Filter
-	ev bool
+	nf SpanNameFormatter // span name formatter
+	ft []Filter          // operation filters
+	rt string            // report trace ID
+	ev bool              // report events
 }
 
 // NewMonitor returns a ready to use monitor instance that can be used to
@@ -80,13 +82,13 @@ func (e *httpMonitor) Client(base http.RoundTripper) http.Client {
 // Handler adds instrumentation to the provided HTTP handler using the
 // `operation` value provided as the span name.
 func (e *httpMonitor) Handler(operation string, handler http.Handler) http.Handler {
-	return contrib.NewHandler(handler, operation, e.settings()...)
+	return contrib.NewHandler(e.getHandler(handler), operation, e.settings()...)
 }
 
 // HandlerFunc adds instrumentation to the provided HTTP handler function
 // using the `operation` value provided as the span name.
 func (e *httpMonitor) HandlerFunc(operation string, hf http.HandlerFunc) http.Handler {
-	return contrib.NewHandler(hf, operation, e.settings()...)
+	return contrib.NewHandler(e.getHandler(hf), operation, e.settings()...)
 }
 
 // ServerMiddleware provides a mechanism to easily instrument an HTTP
@@ -101,11 +103,30 @@ func (e *httpMonitor) ServerMiddleware() func(http.Handler) http.Handler {
 		return e.nf(r)
 	}))
 	return func(handler http.Handler) http.Handler {
-		return contrib.NewHandler(handler, "", options...)
+		return contrib.NewHandler(e.getHandler(handler), "", options...)
 	}
+}
+
+// Returns a handler that, if enabled, reports the trace ID in the response.
+func (e *httpMonitor) getHandler(next http.Handler) http.Handler {
+	if e.rt == "" {
+		return next
+	}
+	return reportTraceID(next, e.rt)
 }
 
 // Default span name formatter.
 func spanNameFormatter(r *http.Request) string {
 	return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+}
+
+func reportTraceID(next http.Handler, h string) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		span := trace.SpanFromContext(r.Context())
+		if span.SpanContext().IsValid() {
+			w.Header().Set(h, span.SpanContext().TraceID().String())
+		}
+		next.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
 }
