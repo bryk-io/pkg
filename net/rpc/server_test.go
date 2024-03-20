@@ -147,7 +147,7 @@ func TestServer(t *testing.T) {
 		<-ready
 
 		// Get client connection
-		conn, err := NewClientConnection(srv.GetEndpoint(), clientOpts...)
+		conn, err := NewClientConnection(srv.Endpoint(), clientOpts...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -243,7 +243,7 @@ func TestServer(t *testing.T) {
 		<-ready
 
 		// Get connection
-		conn, err := NewClientConnection(srv.GetEndpoint(), clientOpts...)
+		conn, err := NewClientConnection(srv.Endpoint(), clientOpts...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -290,7 +290,7 @@ func TestServer(t *testing.T) {
 		<-ready
 
 		// Get client connection
-		conn, err := NewClientConnection(srv.GetEndpoint(), clientOpts...)
+		conn, err := NewClientConnection(srv.Endpoint(), clientOpts...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -571,7 +571,7 @@ func TestServer(t *testing.T) {
 			}),
 		}
 		customOptions = append(customOptions, clientOpts...)
-		conn, err := NewClientConnection(srv.GetEndpoint(), customOptions...)
+		conn, err := NewClientConnection(srv.Endpoint(), customOptions...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -847,7 +847,7 @@ func TestServer(t *testing.T) {
 			}),
 		}
 		customOptions = append(customOptions, clientOpts...)
-		conn, err := NewClientConnection(srv.GetEndpoint(), customOptions...)
+		conn, err := NewClientConnection(srv.Endpoint(), customOptions...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -948,7 +948,7 @@ func TestServer(t *testing.T) {
 			}),
 		}
 		customOptions = append(customOptions, clientOpts...)
-		conn, err := NewClientConnection(srv.GetEndpoint(), customOptions...)
+		conn, err := NewClientConnection(srv.Endpoint(), customOptions...)
 		if err != nil {
 			assert.Fail(err.Error())
 			return
@@ -1078,7 +1078,7 @@ func TestEchoServer(t *testing.T) {
 	<-serverReady
 
 	// Get client connection
-	conn, err := NewClientConnection(srv.GetEndpoint(), clientOpts...)
+	conn, err := NewClientConnection(srv.Endpoint(), clientOpts...)
 	if err != nil {
 		assert.Fail(err.Error())
 		return

@@ -19,7 +19,6 @@ import (
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
 	otelGrpc "go.bryk.io/pkg/otel/grpc"
-	otelHttp "go.bryk.io/pkg/otel/http"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
 	"golang.org/x/net/netutil"
 	"golang.org/x/sync/errgroup"
@@ -80,8 +79,8 @@ func NewServer(options ...ServerOption) (*Server, error) {
 	return srv, nil
 }
 
-// GetEndpoint returns the server's main entry point.
-func (srv *Server) GetEndpoint() string {
+// Endpoint returns the server's main entry point.
+func (srv *Server) Endpoint() string {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 	if srv.net == netUNIX {
@@ -349,7 +348,7 @@ func (srv *Server) setupGateway() error {
 	}
 
 	// Establish gateway <-> server connection
-	if err := srv.gateway.connect(srv.GetEndpoint()); err != nil {
+	if err := srv.gateway.connect(srv.Endpoint()); err != nil {
 		return err
 	}
 
@@ -380,16 +379,7 @@ func (srv *Server) setupGateway() error {
 	}
 
 	// Gateway middleware
-	var gmw []func(http.Handler) http.Handler
-
-	// Add OTEL as the first middleware in the chain automatically
-	hmOpts := []otelHttp.Option{}
-	if srv.gateway.spanFormatter != nil {
-		hmOpts = append(hmOpts, otelHttp.WithSpanNameFormatter(srv.gateway.spanFormatter))
-	}
-	hm := otelHttp.NewMonitor(hmOpts...)
-	gmw = append(gmw, hm.ServerMiddleware())
-	for _, m := range append(gmw, srv.gateway.middleware...) {
+	for _, m := range srv.gateway.middleware {
 		gwMuxH = m(gwMuxH)
 	}
 

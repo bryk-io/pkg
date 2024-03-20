@@ -15,8 +15,13 @@ import (
 var noLogFields = []string{
 	// commonly used to capture stacktraces
 	"stack",
+	"stacktrace",
 	"error.stack",
+	"error.stacktrace",
+	"error.report",
+	"exception.stack",
 	"exception.stacktrace",
+	"exception.report",
 	// commonly used to hold original error value to report
 	// on Sentry
 	"sentry.error",

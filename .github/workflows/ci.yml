@@ -1,10 +1,12 @@
 name: ci
 env:
+  # used to hold the commit message
   commit_msg: ""
+# https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
 permissions:
   contents: read
-  # allow the actions to annotate code in a PR
-  checks: write
+  pull-requests: read
+  checks: write # allow the actions to annotate code in a PR
 on:
   push:
     branches:
@@ -13,6 +15,13 @@ on:
     branches:
       - main
   workflow_dispatch: {}
+#    Inputs are available under: github.event.inputs.{name}
+#    inputs:
+#      name:
+#        description: 'Variable description'
+#        required: true
+#        default: 'default value here'
+# https://docs.github.com/en/actions/reference/events-that-trigger-workflows#workflow_dispatch
 jobs:
   # Scan direct Go dependencies for known vulnerabilities
   scan:
@@ -58,11 +67,11 @@ jobs:
       # Can be excluded if the commit message contains: [skip scan-secrets]
       # https://github.com/marketplace/actions/trufflehog-oss
       - name: Scan for leaked secrets
-        uses: trufflesecurity/trufflehog@v3.63.7
+        uses: trufflesecurity/trufflehog@main
         if: ${{ !contains(env.commit_msg, '[skip scan-secrets]') }}
         with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
+          base: "" # scan entire branch
+          head: ${{ github.ref_name }}
           extra_args: --debug --only-verified
 
   # Validate the protocol buffer definitions on the project
@@ -99,9 +108,9 @@ jobs:
       # Setup buf
       - name: Setup buf
         id: buf-setup
-        uses: bufbuild/buf-setup-action@v1.28.1
+        uses: bufbuild/buf-setup-action@v1.29.0
         with:
-          version: 1.28.1
+          version: 1.29.0
           github_token: ${{ github.token }}
 
       # Static analysis
@@ -161,10 +170,11 @@ jobs:
       # Style consistency and static analysis using 'golangci-lint'
       # https://github.com/marketplace/actions/run-golangci-lint
       - name: Static analysis
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           version: v1.54.2
-          args: --timeout=30m
+          skip-pkg-cache: true
+          skip-build-cache: true
 
       # Run unit tests
       - name: Test
@@ -178,6 +188,6 @@ jobs:
       - name: Save artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: assets
+          name: assets-${{ matrix.go-version }}
           path: |
-            coverage-${{ matrix.go-version }}.html
+            coverage.html
