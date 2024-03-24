@@ -240,6 +240,7 @@ func setupInstrumentation() (*sdk.Instrumentation, error) {
 		sdk.WithExporter(traceExp),
 		sdk.WithMetricReader(sdkMetric.NewPeriodicReader(metricExp)),
 		sdk.WithHostMetrics(),
+		sdk.WithExemplars(),
 		sdk.WithRuntimeMetrics(time.Duration(10) * time.Second),
 		sdk.WithResourceAttributes(otel.Attributes{"resource.level.field": "bar"}),
 		sdk.WithBaseLogger(log.WithZero(log.ZeroOptions{

@@ -131,3 +131,13 @@ func WithRuntimeMetrics(interval time.Duration) Option {
 		op.runtimeMetricsInt = interval
 	}
 }
+
+// WithExemplars enable experimental support for exemplars by settings
+// the adequate ENV variables
+//
+// https://github.com/open-telemetry/opentelemetry-go/blob/main/sdk/metric/internal/x/README.md
+func WithExemplars() Option {
+	return func(op *Instrumentation) {
+		op.exemplars = true
+	}
+}

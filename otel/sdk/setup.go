@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"go.bryk.io/pkg/log"
@@ -32,6 +33,7 @@ type Instrumentation struct {
 	spanLimits        sdkTrace.SpanLimits             // default span limits
 	props             []propagation.TextMapPropagator // list of individual text map propagators
 	sampler           sdkTrace.Sampler                // trace sampler strategy used
+	exemplars         bool                            // enable exemplar support
 }
 
 // Setup a new OpenTelemetry instrumented application.
@@ -132,6 +134,17 @@ func (app *Instrumentation) setupProviders() {
 	// If no metrics exporter was provided, skip provider setup.
 	if app.metricExporter == nil {
 		return
+	}
+
+	// Enable exemplar support.
+	// https://github.com/open-telemetry/opentelemetry-go/blob/main/sdk/metric/internal/x/README.md#exemplars
+	if app.exemplars {
+		if err := os.Setenv("OTEL_GO_X_EXEMPLAR", "true"); err != nil {
+			app.log.WithField("error.message", err.Error()).Warning("failed to enable exemplar support")
+		}
+		if err := os.Setenv("OTEL_METRICS_EXEMPLAR_FILTER", "always_on"); err != nil {
+			app.log.WithField("error.message", err.Error()).Warning("failed to enable exemplar support")
+		}
 	}
 
 	// Create meter provider instance using the provided "reader".
