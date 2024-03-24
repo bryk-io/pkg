@@ -12,6 +12,8 @@ require (
 	github.com/chzyer/readline v1.5.1
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/getsentry/sentry-go v0.27.0
+	github.com/google/sqlcommenter/go/core v0.1.2
+	github.com/google/sqlcommenter/go/database/sql v0.1.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/websocket v1.5.1

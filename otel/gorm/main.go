@@ -1,8 +1,11 @@
 package gorm
 
 import (
+	"database/sql"
 	"time"
 
+	"github.com/google/sqlcommenter/go/core"
+	sqlC "github.com/google/sqlcommenter/go/database/sql"
 	xlog "go.bryk.io/pkg/log"
 	"gorm.io/gorm"
 	glog "gorm.io/gorm/logger"
@@ -29,4 +32,26 @@ func Logger(log xlog.Logger, slow uint) glog.Interface {
 		ll:   log,
 		slow: time.Duration(slow) * time.Millisecond,
 	}
+}
+
+// Open provides a wrapper around the standard sql.Open function to
+// enable SQL commenter instrumentation. When used with GORM the returned
+// `*sql.DB` instance can be used as `gorm.ConnPool`
+//
+// More information: https://google.github.io/sqlcommenter/go/database_sql/
+func Open(driver, conn string) (*sql.DB, error) {
+	return sqlC.Open(driver, conn, core.CommenterOptions{
+		Config: core.CommenterConfig{
+			// base sql driver
+			EnableDBDriver: true,
+			// OTEL support
+			EnableTraceparent: true,
+			// web framework
+			EnableRoute:       true,
+			EnableFramework:   true,
+			EnableController:  true,
+			EnableAction:      true,
+			EnableApplication: true,
+		},
+	})
 }
