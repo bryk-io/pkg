@@ -218,12 +218,22 @@ func WithStreamMiddleware(entry ...grpc.StreamServerInterceptor) ServerOption {
 	}
 }
 
-// WithHTTPGateway configures a gateway interface to allow for HTTP access to
+// WithHTTPGateway registers a gateway interface to allow for HTTP access to
 // the server.
 func WithHTTPGateway(gw *Gateway) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
 		srv.gateway = gw
+		srv.mu.Unlock()
+		return nil
+	}
+}
+
+// WithHTTPGatewayOptions adjust the behavior of the HTTP gateway.
+func WithHTTPGatewayOptions(opts ...GatewayOption) ServerOption {
+	return func(srv *Server) error {
+		srv.mu.Lock()
+		srv.gatewayOpts = append(srv.gatewayOpts, opts...)
 		srv.mu.Unlock()
 		return nil
 	}

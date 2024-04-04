@@ -9,7 +9,7 @@ LD_FLAGS += -s -w
 # locally we fallback to use a builder image.
 buf:=buf
 ifeq (, $(shell which buf))
-	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.29.0 buf
+	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.30.0 buf
 endif
 
 # For commands that require a specific package path, default to all local

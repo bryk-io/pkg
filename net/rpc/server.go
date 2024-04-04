@@ -53,6 +53,7 @@ type Server struct {
 	ctx              context.Context                // Context shared by server's internal tasks
 	gwNl             net.Listener                   // HTTP gateway network interface, if required
 	gateway          *Gateway                       // HTTP gateway
+	gatewayOpts      []GatewayOption                // HTTP gateway options
 	port             int                            // TCP port, if used
 	tlsConfig        *tls.Config                    // TLS configuration
 	tokenValidator   authFunc                       // Custom method to provide token-based authenticator
@@ -336,10 +337,24 @@ func (srv *Server) setupNetworkInterface(network, address string) (net.Listener,
 }
 
 // Configure the server's HTTP gateway network interface and multiplexer.
+// nolint: gocyclo
 func (srv *Server) setupGateway() error {
-	// Verify if there's a gateway instance to set up
-	if srv.gateway == nil {
+	var err error
+	switch {
+	// no gateway or options, nothing to do
+	case srv.gateway == nil && len(srv.gatewayOpts) == 0:
 		return nil
+	// no gateway instance but options provided, create a new one
+	case srv.gateway == nil && len(srv.gatewayOpts) > 0:
+		srv.gateway, err = NewGateway(srv.gatewayOpts...)
+		if err != nil {
+			return err
+		}
+	// gateway instance and options provided, setup the gateway
+	case srv.gateway != nil && len(srv.gatewayOpts) > 0:
+		if err = srv.gateway.setup(srv.gatewayOpts...); err != nil {
+			return err
+		}
 	}
 
 	// Setup gateway network interface

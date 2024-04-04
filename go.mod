@@ -5,12 +5,12 @@ go 1.19
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240221180331-f05a6f4403ce.1
 	dario.cat/mergo v1.0.0
-	github.com/awnumar/memguard v0.22.4
+	github.com/awnumar/memguard v0.22.5
 	github.com/briandowns/spinner v1.23.0
 	github.com/bufbuild/protovalidate-go v0.6.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/chzyer/readline v1.5.1
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/google/sqlcommenter/go/core v0.1.2
 	github.com/google/sqlcommenter/go/database/sql v0.1.1
@@ -24,7 +24,7 @@ require (
 	github.com/muesli/termenv v0.15.2
 	github.com/piprate/json-gold v0.5.0
 	github.com/prometheus/client_golang v1.19.0
-	github.com/prometheus/client_model v0.6.0
+	github.com/prometheus/client_model v0.6.1
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/rs/zerolog v1.32.0
 	github.com/sirupsen/logrus v1.9.3
@@ -50,16 +50,16 @@ require (
 	go.temporal.io/sdk v1.26.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.21.0
-	golang.org/x/net v0.22.0
-	golang.org/x/sync v0.6.0
-	golang.org/x/term v0.18.0
+	golang.org/x/crypto v0.22.0
+	golang.org/x/net v0.24.0
+	golang.org/x/sync v0.7.0
+	golang.org/x/term v0.19.0
 	golang.org/x/time v0.5.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240304212257-790db918fca8
 	google.golang.org/grpc v1.62.1
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gorm v1.25.8
+	gorm.io/gorm v1.25.9
 	gorm.io/plugin/opentelemetry v0.1.4
 	storj.io/drpc v0.0.34
 )
@@ -133,7 +133,7 @@ require (
 	go.temporal.io/api v1.29.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
-	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240304212257-790db918fca8 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
