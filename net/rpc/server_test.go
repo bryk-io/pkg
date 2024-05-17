@@ -122,7 +122,6 @@ func TestServer(t *testing.T) {
 
 	// Client configuration options
 	clientOpts := []ClientOption{
-		WaitForReady(),
 		WithUserAgent("sample-client/0.1.0"),
 		WithCompression(),
 		WithKeepalive(10),
@@ -564,7 +563,6 @@ func TestServer(t *testing.T) {
 		// Get client connection
 		customOptions := []ClientOption{
 			WithInsecureSkipVerify(),
-			WaitForReady(),
 			WithTimeout(1 * time.Second),
 			WithClientTLS(ClientTLSConfig{
 				CustomCAs: [][]byte{ca},
@@ -839,7 +837,7 @@ func TestServer(t *testing.T) {
 		// Get client connection
 		customOptions := []ClientOption{
 			WithServerNameOverride("node-01"),
-			WaitForReady(),
+			// WaitForReady(),
 			WithTimeout(1 * time.Second),
 			WithAuthCertificate(cert, key),
 			WithClientTLS(ClientTLSConfig{
@@ -940,7 +938,7 @@ func TestServer(t *testing.T) {
 		// Get client connection
 		customOptions := []ClientOption{
 			WithInsecureSkipVerify(),
-			WaitForReady(),
+			// WaitForReady(),
 			WithTimeout(1 * time.Second),
 			WithAuthToken(sampleToken),
 			WithClientTLS(ClientTLSConfig{
@@ -1208,10 +1206,7 @@ func ExampleContextWithMetadata() {
 // Use a client instance to generate a connection.
 func ExampleNewClient() {
 	// client options
-	options := []ClientOption{
-		WaitForReady(),
-		WithTimeout(1 * time.Second),
-	}
+	options := []ClientOption{WithTimeout(1 * time.Second)}
 	client, err := NewClient(options...)
 	if err != nil {
 		panic(err)
@@ -1234,10 +1229,7 @@ func ExampleNewClient() {
 // Get a connection without a client instance.
 func ExampleNewClientConnection() {
 	// client options
-	options := []ClientOption{
-		WaitForReady(),
-		WithTimeout(1 * time.Second),
-	}
+	options := []ClientOption{WithTimeout(1 * time.Second)}
 
 	// Get connection
 	conn, err := NewClientConnection("server.com:9090", options...)

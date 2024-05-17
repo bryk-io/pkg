@@ -89,16 +89,6 @@ func WithTimeout(timeout time.Duration) ClientOption {
 	}
 }
 
-// WaitForReady makes the connection to block until it becomes ready.
-func WaitForReady() ClientOption {
-	return func(c *Client) error {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		c.dialOpts = append(c.dialOpts, grpc.WithBlock())
-		return nil
-	}
-}
-
 // WithClientTLS set parameters to establish a secure connection channel with the
 // server.
 func WithClientTLS(opts ClientTLSConfig) ClientOption {
