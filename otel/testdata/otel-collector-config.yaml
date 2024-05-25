@@ -30,8 +30,10 @@ processors:
 exporters:
   logging:
     loglevel: debug
-  jaeger:
-    endpoint: "jaeger:14250"
+  # Jaeger now supports OTLP directly.
+  # https://opentelemetry.io/blog/2023/jaeger-exporter-collector-migration/
+  otlp/jaeger:
+    endpoint: "jaeger:4317"
     tls:
       insecure: true
   zipkin:
@@ -44,7 +46,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]
-      exporters: [logging, jaeger, zipkin]
+      exporters: [logging, otlp/jaeger, zipkin]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]

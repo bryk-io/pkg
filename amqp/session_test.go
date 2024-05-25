@@ -84,7 +84,6 @@ func init() {
 // Generate a random message.
 func randomMessage() Message {
 	seed := make([]byte, 6)
-	_, _ = rand.Read(seed)
 	return sampleProducer.Message(seed)
 }
 

@@ -31,7 +31,6 @@ func (s *sampleApp) SimpleTask(ctx context.Context) {
 	defer task.End(nil)
 
 	// do some stuff that take a variable amount of time
-	rand.Seed(time.Now().Unix())
 	delay := rand.Intn(50)
 	<-time.After(time.Duration(delay) * time.Millisecond)
 	task.Event("delay elapsed", otel.Attributes{"app.delay": delay})
@@ -287,7 +286,6 @@ func availableExporters() (sdkTrace.SpanExporter, sdkMetric.Exporter) {
 }
 
 func childOperation(ctx context.Context, level int) <-chan bool {
-	rand.Seed(time.Now().Unix())
 	response := make(chan bool)
 
 	// Max depth level
@@ -322,7 +320,6 @@ func childOperation(ctx context.Context, level int) <-chan bool {
 }
 
 func getRandomPort() (int, string) {
-	rand.Seed(time.Now().UnixNano())
 	var port = 8080
 	port += rand.Intn(122)
 	return port, fmt.Sprintf("http://localhost:%d", port)

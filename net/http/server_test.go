@@ -176,7 +176,6 @@ func ExampleNewServer() {
 }
 
 func getRandomPort() (int, string) {
-	rand.Seed(time.Now().UnixNano())
 	var port = 8080
 	port += rand.Intn(122)
 	return port, fmt.Sprintf("http://localhost:%d", port)

@@ -2,7 +2,8 @@ package tred
 
 import (
 	"bytes"
-	"math/rand"
+	"crypto/rand"
+	mr "math/rand"
 	"strings"
 	"sync"
 	"testing"
@@ -143,10 +144,10 @@ func TestConcurrency(t *testing.T) {
 	w, _ := NewWorker(conf)
 
 	// Get pool of random data streams
-	pool := rand.Intn(50)
+	pool := mr.Intn(50)
 	var stuff [][]byte
 	for i := 0; i < pool; i++ {
-		stuff = append(stuff, make([]byte, (1024*1024)*rand.Intn(9)+1))
+		stuff = append(stuff, make([]byte, (1024*1024)*mr.Intn(9)+1))
 		rand.Read(stuff[i])
 	}
 	wg := sync.WaitGroup{}

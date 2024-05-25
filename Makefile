@@ -68,6 +68,8 @@ test:
 	# -count=1 -p=1 (disable cache and parallel execution)
 	go test -race -v -coverprofile=coverage.report ./$(pkg)
 	go tool cover -html coverage.report -o coverage.html
+	# https://github.com/nikolaydubina/go-cover-treemap
+	# go-cover-treemap -coverprofile coverage.report > coverage.svg
 
 ## updates: List available updates for direct dependencies
 # https://github.com/golang/go/wiki/Modules#how-to-upgrade-and-downgrade-dependencies

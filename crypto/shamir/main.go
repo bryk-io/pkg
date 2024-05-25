@@ -2,7 +2,6 @@ package shamir
 
 import (
 	"math/rand"
-	"time"
 
 	"go.bryk.io/pkg/errors"
 )
@@ -38,7 +37,6 @@ func Split(secret []byte, parts, threshold int) ([][]byte, error) {
 	}
 
 	// Generate random list of x coordinates
-	rand.Seed(time.Now().UnixNano())
 	xCoordinates := rand.Perm(255)
 
 	// Allocate the output array, initialize the final byte

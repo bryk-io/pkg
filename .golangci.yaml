@@ -53,8 +53,11 @@ linters:
     - wastedassign
 issues:
   exclude-use-default: false
+  exclude-dirs:
+    # using some deprecated low level "elliptic" functions
+    - crypto/vrf/*
   exclude-rules:
-    - path: _test\.go
+    - path: (.+)_test.go
       linters:
         - gocyclo
         - errcheck
@@ -62,13 +65,22 @@ issues:
         - gosec
         - lll
         - nakedret
+        - revive
         - funlen
         - nestif
         - noctx
+# https://golangci-lint.run/usage/linters/#linters-configuration
 linters-settings:
   errcheck:
-    check-type-assertions: true
     check-blank: false
+    check-type-assertions: true
+    disable-default-exclusions: false
+    # https://github.com/kisielk/errcheck#excluding-functions
+    exclude-functions:
+      - (io.Closer).Close
+      - (net/http.ResponseWriter).Write
+      - (strings.Builder).WriteByte
+      - (strings.Builder).WriteString
   govet:
     enable:
       - atomic
@@ -88,7 +100,7 @@ linters-settings:
       - unusedresult
       - tests
       # - shadow
-      #- fieldalignment
+      # - fieldalignment
   gofmt:
     simplify: true
   gocyclo:

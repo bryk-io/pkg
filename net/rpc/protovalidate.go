@@ -12,7 +12,7 @@ import (
 
 func pvUnaryServerInterceptor(pv *protovalidate.Validator) grpc.UnaryServerInterceptor {
 	// nolint: lll
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		msg, ok := req.(protoreflect.ProtoMessage)
 		if !ok {
 			return nil, status.Error(codes.InvalidArgument, "invalid message type")
@@ -26,7 +26,7 @@ func pvUnaryServerInterceptor(pv *protovalidate.Validator) grpc.UnaryServerInter
 
 func pvStreamServerInterceptor(pv *protovalidate.Validator) grpc.StreamServerInterceptor {
 	// nolint: lll
-	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		wrapper := &recvWrapper{pv: pv, ServerStream: stream}
 		return handler(srv, wrapper)
 	}
