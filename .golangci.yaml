@@ -44,12 +44,12 @@ linters:
     # - wrapcheck
     # - ifshort
     # - varcheck
+    # - deadcode
+    # - structcheck
   disable:
-    - deadcode
     - unused
     - dupl
     - depguard
-    - structcheck
     - wastedassign
 issues:
   exclude-use-default: false
