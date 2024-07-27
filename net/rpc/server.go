@@ -38,7 +38,7 @@ type authFunc func(ctx context.Context) (context.Context, error)
 // Server provides an easy-to-setup RPC server handler with several utilities.
 type Server struct {
 	tlsOptions       ServerTLSConfig                // TLS settings
-	services         map[string]ServiceProvider     // Services enabled on the server
+	services         []ServiceProvider              // Services enabled on the server
 	clientCAs        [][]byte                       // Custom CAs used for client authentication
 	middlewareUnary  []grpc.UnaryServerInterceptor  // Unary methods middleware
 	middlewareStream []grpc.StreamServerInterceptor // Stream methods middleware
@@ -179,7 +179,7 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 	// Enable health checks protocol
 	if srv.healthCheck != nil {
 		hsp := &healthSvc{srv: srv}
-		srv.services[hsp.ServiceDesc().ServiceName] = hsp
+		srv.services = append(srv.services, hsp)
 	}
 
 	// Initialize server metrics
@@ -214,7 +214,7 @@ func (srv *Server) reset() {
 	srv.ctx, srv.halt = context.WithCancel(context.Background())
 	srv.net = netTCP
 	srv.port = 12137
-	srv.services = make(map[string]ServiceProvider)
+	srv.services = []ServiceProvider{}
 	srv.address = "127.0.0.1"
 	srv.tlsConfig = nil
 	srv.clientCAs = [][]byte{}

@@ -1049,13 +1049,13 @@ func TestEchoServer(t *testing.T) {
 
 	// Base server configuration options
 	serverOpts := []ServerOption{
+		WithServiceProvider(&echoProvider{}),
 		WithPort(7878),
 		WithPanicRecovery(),
 		WithReflection(),
 		WithInputValidation(),
 		WithProtoValidate(),
 		WithHTTPGateway(gw),
-		WithServiceProvider(&echoProvider{}),
 		WithResourceLimits(ResourceLimits{
 			Connections: 100,
 			Requests:    100,
@@ -1288,10 +1288,6 @@ func dummyHealthCheck(_ context.Context, _ string) error {
 // Foo service provider.
 type fooProvider struct{}
 
-func (fp *fooProvider) ServiceDesc() grpc.ServiceDesc {
-	return sampleV1.FooAPI_ServiceDesc
-}
-
 func (fp *fooProvider) ServerSetup(server *grpc.Server) {
 	sampleV1.RegisterFooAPIServer(server, &sampleV1.Handler{Name: "foo"})
 }
@@ -1303,10 +1299,6 @@ func (fp *fooProvider) GatewaySetup() GatewayRegisterFunc {
 // Bar service provider.
 type barProvider struct{}
 
-func (bp *barProvider) ServiceDesc() grpc.ServiceDesc {
-	return sampleV1.BarAPI_ServiceDesc
-}
-
 func (bp *barProvider) ServerSetup(server *grpc.Server) {
 	sampleV1.RegisterBarAPIServer(server, &sampleV1.Handler{Name: "bar"})
 }
@@ -1317,10 +1309,6 @@ func (bp *barProvider) GatewaySetup() GatewayRegisterFunc {
 
 // Echo service provider.
 type echoProvider struct{}
-
-func (ep *echoProvider) ServiceDesc() grpc.ServiceDesc {
-	return sampleV1.EchoAPI_ServiceDesc
-}
 
 func (ep *echoProvider) ServerSetup(server *grpc.Server) {
 	sampleV1.RegisterEchoAPIServer(server, &sampleV1.EchoHandler{})

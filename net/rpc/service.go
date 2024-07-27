@@ -17,9 +17,6 @@ type ServiceProvider interface {
 	// ServerSetup should perform any initialization requirements for the
 	// particular service and register it with the provided server instance.
 	ServerSetup(server *grpc.Server)
-
-	// ServiceDesc returns the standard specification for the service.
-	ServiceDesc() grpc.ServiceDesc
 }
 
 // HTTPServiceProvider is an entity that provides functionality to be

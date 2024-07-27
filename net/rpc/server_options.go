@@ -30,12 +30,12 @@ type ServerOption func(*Server) error
 type TokenValidator func(token string) (codes.Code, string)
 
 // WithServiceProvider adds an RPC service handler to the server instance, at least one
-// service or service provider is required when starting the server.
+// service provider is required when starting the server.
 func WithServiceProvider(sp ServiceProvider) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
 		defer srv.mu.Unlock()
-		srv.services[sp.ServiceDesc().ServiceName] = sp
+		srv.services = append(srv.services, sp)
 		return nil
 	}
 }

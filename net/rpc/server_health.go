@@ -5,9 +5,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	healthV1 "google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/status"
 )
 
 // HealthCheck is a function that can be used to report whether a service
@@ -25,11 +23,6 @@ func (hs *healthSvc) ServerSetup(_ *grpc.Server) {
 }
 
 func (hs *healthSvc) Check(ctx context.Context, req *healthV1.HealthCheckRequest) (*healthV1.HealthCheckResponse, error) { // nolint: lll
-	// if a service name is provided and not registered, the server returns
-	// a `NOT_FOUND` gRPC status.
-	if _, ok := hs.srv.services[req.Service]; !ok && req.Service != "" {
-		return nil, status.Errorf(codes.NotFound, "unknown service: %s", req.Service)
-	}
 	// status field should be set to `SERVING` or `NOT_SERVING` accordingly.
 	status := healthV1.HealthCheckResponse_SERVING
 	if err := hs.srv.healthCheck(ctx, req.Service); err != nil {
