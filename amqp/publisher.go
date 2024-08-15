@@ -90,7 +90,7 @@ type Publisher struct {
 // reconnects if/when required.
 func NewPublisher(addr string, options ...Option) (*Publisher, error) {
 	// Open session
-	s, err := open(getName("publisher"), addr, options...)
+	s, err := open(addr, options...)
 	if err != nil {
 		return nil, err
 	}

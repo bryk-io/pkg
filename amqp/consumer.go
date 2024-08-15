@@ -56,7 +56,7 @@ type Consumer struct {
 // handle reconnects if/when required.
 func NewConsumer(addr string, options ...Option) (*Consumer, error) {
 	// Open session
-	s, err := open(getName("consumer"), addr, options...)
+	s, err := open(addr, options...)
 	if err != nil {
 		return nil, err
 	}

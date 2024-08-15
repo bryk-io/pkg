@@ -2,8 +2,6 @@ module go.bryk.io/pkg
 
 go 1.21
 
-toolchain go1.22.3
-
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2
 	dario.cat/mergo v1.0.0

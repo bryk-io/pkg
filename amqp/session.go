@@ -66,11 +66,10 @@ type session struct {
 }
 
 // Open a new session instance.
-func open(name string, addr string, options ...Option) (*session, error) {
+func open(addr string, options ...Option) (*session, error) {
 	// Base session instance
 	ctx, halt := context.WithCancel(context.Background())
 	s := &session{
-		name:          name,
 		addr:          addr,
 		reconnect:     make(chan bool, 5),
 		status:        make(chan bool, 1),
@@ -83,12 +82,13 @@ func open(name string, addr string, options ...Option) (*session, error) {
 		mc:            []chan<- bool{},
 		mr:            []chan<- Return{},
 	}
-
-	// Apply provided settings
 	for _, opt := range options {
 		if err := opt(s); err != nil {
 			return nil, err
 		}
+	}
+	if s.name == "" {
+		s.name = getName("session")
 	}
 
 	// Automatically start event processing in the background

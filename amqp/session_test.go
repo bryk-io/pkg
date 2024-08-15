@@ -2,7 +2,8 @@ package amqp
 
 import (
 	"context"
-	"math/rand"
+	"crypto/rand"
+	mr "math/rand"
 	"net/http"
 	"testing"
 	"time"
@@ -84,6 +85,7 @@ func init() {
 // Generate a random message.
 func randomMessage() Message {
 	seed := make([]byte, 6)
+	_, _ = rand.Read(seed)
 	return sampleProducer.Message(seed)
 }
 
@@ -98,7 +100,7 @@ func handleDeliveries(ch <-chan Delivery, ll xlog.Logger) {
 		}).Debug("message received")
 
 		// random fake latency
-		<-time.After(time.Duration(rand.Intn(100)) * time.Millisecond)
+		<-time.After(time.Duration(mr.Intn(100)) * time.Millisecond)
 
 		// acknowledge message to mark it as `handled`
 		if err := msg.Ack(false); err != nil {
@@ -241,7 +243,7 @@ func TestFlows(t *testing.T) {
 
 	t.Run("Session", func(t *testing.T) {
 		// Bare session with no activity
-		session, err := open(getName("sample"), server, getOptions("custom-name")...)
+		session, err := open(server, getOptions("custom-name")...)
 		assert.Nil(err, "failed to open session")
 
 		// Monitor session
@@ -485,10 +487,15 @@ func TestFlows(t *testing.T) {
 		// RPC
 		// https://www.rabbitmq.com/tutorials/tutorial-six-go.html
 		t.Run("06", func(t *testing.T) {
-			// Create consumer-1 and wait for its connection to be ready
+			// Create consumer and wait for its connection to be ready
 			c1, err := NewConsumer(server, getOptions("consumer-1", WithRPC())...)
 			assert.Nil(err, "failed to start consumer")
 			<-c1.Ready()
+
+			// Create publisher and wait for its connection to be ready
+			pub, err := NewPublisher(server, getOptions("publisher-1", WithRPC())...)
+			assert.Nil(err, "failed to create publisher")
+			<-pub.Ready()
 
 			// Start receiving messages
 			// Consumer is used as a worker instance waiting for
@@ -507,14 +514,6 @@ func TestFlows(t *testing.T) {
 				}
 			}()
 
-			// Create publisher
-			pub, err := NewPublisher(server, getOptions("publisher-1", WithRPC())...)
-			assert.Nil(err, "failed to create publisher")
-			<-pub.Ready()
-
-			// Wait a bit for extra setup
-			<-time.After(1 * time.Second)
-
 			// Dispatch RPC request
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			response, err := pub.SubmitRPC(ctx, "sample.rpc", randomMessage())
@@ -530,7 +529,6 @@ func TestFlows(t *testing.T) {
 			cancel()
 
 			// Wait for a bit and stop
-			<-time.After(2 * time.Second)
 			assert.Nil(c1.Close(), "close consumer-1")
 			assert.Nil(pub.Close(), "close publisher-1")
 		})
