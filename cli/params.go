@@ -2,7 +2,6 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"go.bryk.io/pkg/errors"
 )
 
@@ -38,7 +37,7 @@ type Param struct {
 }
 
 // SetupCommandParams will properly configure the command with the provided parameter list.
-func SetupCommandParams(c *cobra.Command, params []Param, vp *viper.Viper) error {
+func SetupCommandParams(c *cobra.Command, params []Param) error {
 	for _, p := range params {
 		var err error
 		switch v := p.ByDefault.(type) {
@@ -65,11 +64,6 @@ func SetupCommandParams(c *cobra.Command, params []Param, vp *viper.Viper) error
 		}
 		if err != nil {
 			return err
-		}
-		if vp != nil {
-			if err := errors.WithStack(vp.BindPFlag(p.FlagKey, c.Flags().Lookup(p.Name))); err != nil {
-				return err
-			}
 		}
 		if p.Required {
 			if err := errors.WithStack(c.MarkFlagRequired(p.Name)); err != nil {

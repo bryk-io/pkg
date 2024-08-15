@@ -1,4 +1,4 @@
-package cli
+package viper
 
 import (
 	"fmt"
@@ -7,17 +7,30 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/viper"
+	"github.com/spf13/cobra"
+	lib "github.com/spf13/viper"
+	"go.bryk.io/pkg/cli"
 	"go.bryk.io/pkg/errors"
 )
 
+// BindFlags will detect flags used to link parameters to the command and
+// properly bind each one to the provided viper instance.
+func BindFlags(cmd *cobra.Command, params []cli.Param, vp *lib.Viper) error {
+	for _, p := range params {
+		if err := errors.WithStack(vp.BindPFlag(p.FlagKey, cmd.Flags().Lookup(p.Name))); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Config provides a simple interface to manage application settings using Viper.
 type Config struct {
-	id        string       // main app identifier
-	file      string       // config file name (without extension)
-	ext       string       // implicit extension for the config file when not present
-	locations []string     // additional locations to look for a config file
-	vp        *viper.Viper // internal viper instance
+	id        string     // main app identifier
+	file      string     // config file name (without extension)
+	ext       string     // implicit extension for the config file when not present
+	locations []string   // additional locations to look for a config file
+	vp        *lib.Viper // internal viper instance
 }
 
 // ConfigOptions adjust the internal behavior of the configuration handler.
@@ -52,7 +65,7 @@ func ConfigHandler(app string, opts *ConfigOptions) *Config {
 	opts.defaults()
 	c := &Config{
 		id:        app,
-		vp:        viper.New(),
+		vp:        lib.New(),
 		file:      opts.FileName,
 		ext:       opts.FileType,
 		locations: append([]string{}, opts.Locations...),
@@ -86,7 +99,7 @@ func ConfigHandler(app string, opts *ConfigOptions) *Config {
 // optionally ignore the error produced when no configuration file was found.
 func (c *Config) ReadFile(ignoreNotFound bool) error {
 	if err := c.vp.ReadInConfig(); err != nil {
-		if errors.As(err, new(viper.ConfigFileNotFoundError)) && ignoreNotFound {
+		if errors.As(err, new(lib.ConfigFileNotFoundError)) && ignoreNotFound {
 			return nil
 		}
 		return err
@@ -132,6 +145,6 @@ func (c *Config) Unmarshal(receiver interface{}, key string) error {
 
 // Internals expose the private viper instance used by the configuration manager;
 // use with care.
-func (c *Config) Internals() *viper.Viper {
+func (c *Config) Internals() *lib.Viper {
 	return c.vp
 }

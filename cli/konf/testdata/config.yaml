@@ -1,0 +1,5 @@
+http:
+  port: 8080
+  idle_timeout: 10
+  middleware:
+    compression: 5

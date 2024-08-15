@@ -120,6 +120,7 @@ func spanNameFormatter(r *http.Request) string {
 	return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 }
 
+// Attach the trace identifier in a specified response header.
 func reportTraceID(next http.Handler, h string) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		span := trace.SpanFromContext(r.Context())
