@@ -5,7 +5,7 @@ env:
 # https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
   checks: write # allow the actions to annotate code in a PR
 on:
   push:
@@ -108,28 +108,13 @@ jobs:
       # Setup buf
       - name: Setup buf
         id: buf-setup
-        uses: bufbuild/buf-setup-action@v1.31.0
+        uses: bufbuild/buf-action@v1
         with:
-          version: 1.31.0
-          github_token: ${{ github.token }}
-
-      # Static analysis
-      - name: Static analysis
-        id: buf-lint
-        uses: bufbuild/buf-lint-action@v1.0.3
-        if: ${{ steps.buf-setup.outcome == 'success' }}
-
-      # Detect breaking changes
-      # Can be excluded if the commit message contains: [skip buf-breaking]
-      - name: Detect breaking changes
-        id: buf-breaking
-        uses: bufbuild/buf-breaking-action@v1.1.2
-        if: steps.buf-lint.outcome == 'success' && !contains(env.commit_msg, '[skip buf-breaking]')
-        with:
-          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.repository.default_branch }}"
-        env:
-          BUF_INPUT_HTTPS_USERNAME: ${{ github.actor }}
-          BUF_INPUT_HTTPS_PASSWORD: ${{ secrets.ACCESS_TOKEN }}
+          version: 1.35.0
+          lint: true
+          breaking: true
+          push: false
+          github_token: ${{ secrets.ACCESS_TOKEN }} # github.token
 
   # Runs on every push and pull request on the selected branches.
   # Can also be executed manually.
