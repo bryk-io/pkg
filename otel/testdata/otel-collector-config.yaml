@@ -7,7 +7,9 @@ extensions:
 receivers:
   otlp:
     protocols:
+      # default endpoint: localhost:4317
       grpc:
+      # default endpoint: localhost:4318
       http:
         cors:
           allowed_origins: ["*"]

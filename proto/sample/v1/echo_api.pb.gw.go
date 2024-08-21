@@ -129,6 +129,7 @@ func local_request_EchoAPI_Slow_0(ctx context.Context, marshaler runtime.Marshal
 // UnaryRPC     :call EchoAPIServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterEchoAPIHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, server EchoAPIServer) error {
 
 	mux.Handle("POST", pattern_EchoAPI_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -262,21 +263,21 @@ func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 // RegisterEchoAPIHandlerFromEndpoint is same as RegisterEchoAPIHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterEchoAPIHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.DialContext(ctx, endpoint, opts...)
+	conn, err := grpc.NewClient(endpoint, opts...)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -294,7 +295,7 @@ func RegisterEchoAPIHandler(ctx context.Context, mux *runtime.ServeMux, conn *gr
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "EchoAPIClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "EchoAPIClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "EchoAPIClient" to call the correct interceptors.
+// "EchoAPIClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterEchoAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, client EchoAPIClient) error {
 
 	mux.Handle("POST", pattern_EchoAPI_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

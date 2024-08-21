@@ -77,22 +77,22 @@ func (p plugin) Initialize(db *gorm.DB) error {
 		hook     gormHookFunc
 		name     string
 	}{
-		{cb.Create().Before("gorm:create"), p.before("gorm.Create"), "before:create"},
+		{cb.Create().Before("gorm:create"), p.before("orm.Create"), "before:create"},
 		{cb.Create().After("gorm:create"), p.after(), "after:create"},
 
-		{cb.Query().Before("gorm:query"), p.before("gorm.Query"), "before:select"},
+		{cb.Query().Before("gorm:query"), p.before("orm.Query"), "before:select"},
 		{cb.Query().After("gorm:query"), p.after(), "after:select"},
 
-		{cb.Delete().Before("gorm:delete"), p.before("gorm.Delete"), "before:delete"},
+		{cb.Delete().Before("gorm:delete"), p.before("orm.Delete"), "before:delete"},
 		{cb.Delete().After("gorm:delete"), p.after(), "after:delete"},
 
-		{cb.Update().Before("gorm:update"), p.before("gorm.Update"), "before:update"},
+		{cb.Update().Before("gorm:update"), p.before("orm.Update"), "before:update"},
 		{cb.Update().After("gorm:update"), p.after(), "after:update"},
 
-		{cb.Row().Before("gorm:row"), p.before("gorm.Row"), "before:row"},
+		{cb.Row().Before("gorm:row"), p.before("orm.Row"), "before:row"},
 		{cb.Row().After("gorm:row"), p.after(), "after:row"},
 
-		{cb.Raw().Before("gorm:raw"), p.before("gorm.Raw"), "before:raw"},
+		{cb.Raw().Before("gorm:raw"), p.before("orm.Raw"), "before:raw"},
 		{cb.Raw().After("gorm:raw"), p.after(), "after:raw"},
 	}
 
@@ -191,6 +191,6 @@ func dbSystem(tx *gorm.DB) attribute.KeyValue {
 	case "clickhouse":
 		return semConv.DBSystemKey.String("clickhouse")
 	default:
-		return attribute.KeyValue{}
+		return semConv.DBSystemOtherSQL
 	}
 }

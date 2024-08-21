@@ -11,12 +11,14 @@ import (
 	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkResource "go.opentelemetry.io/otel/sdk/resource"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
@@ -53,9 +55,19 @@ func WithExporterStdout(pretty bool) []Option {
 // trace and metric exporters to send the generated telemetry data to an OTLP
 // exporter instance.
 // https://opentelemetry.io/docs/collector/
-func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string) []Option {
-	var opts []Option
-	se, me, err := ExporterOTLP(endpoint, insecure, headers)
+func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string, protocol string) []Option {
+	var (
+		opts []Option
+		se   sdkTrace.SpanExporter
+		me   sdkMetric.Exporter
+		err  error
+	)
+	if protocol == "grpc" {
+		se, me, err = ExporterOTLP(endpoint, insecure, headers)
+	}
+	if protocol == "http" {
+		se, me, err = ExporterOTLPByHTTP(endpoint, insecure, headers)
+	}
 	if err == nil {
 		opts = append(opts, WithExporter(se))
 		opts = append(opts, WithMetricReader(sdkMetric.NewPeriodicReader(me)))
@@ -65,7 +77,7 @@ func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string)
 
 // ExporterStdout returns a new trace exporter to send telemetry data
 // to standard output.
-func ExporterStdout(pretty bool) (*stdouttrace.Exporter, sdkMetric.Exporter, error) {
+func ExporterStdout(pretty bool) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) {
 	var traceOpts []stdouttrace.Option
 	if pretty {
 		traceOpts = append(traceOpts, stdouttrace.WithPrettyPrint())
@@ -85,8 +97,49 @@ func ExporterStdout(pretty bool) (*stdouttrace.Exporter, sdkMetric.Exporter, err
 	return traceExp, metricExp, nil
 }
 
-// ExporterOTLP returns an initialized OTLP exporter instance.
-func ExporterOTLP(endpoint string, insecure bool, headers map[string]string) (*otlptrace.Exporter, sdkMetric.Exporter, error) { // nolint:lll
+// ExporterOTLPByHTTP returns an initialized OTLP exporter instance utilizing
+// HTTP with protobuf payloads. The default endpoint for the collector
+// is "localhost:4318".
+func ExporterOTLPByHTTP(endpoint string, insecure bool, headers map[string]string) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) { // nolint:lll
+	if endpoint == "" {
+		endpoint = "localhost:4318"
+	}
+	ctx := context.Background()
+	traceOpts := []otlptracehttp.Option{
+		otlptracehttp.WithEndpoint(endpoint),
+		otlptracehttp.WithHeaders(headers),
+		otlptracehttp.WithCompression(otlptracehttp.GzipCompression),
+	}
+	metricOpts := []otlpmetrichttp.Option{
+		otlpmetrichttp.WithEndpoint(endpoint),
+		otlpmetrichttp.WithHeaders(headers),
+		otlpmetrichttp.WithCompression(otlpmetrichttp.GzipCompression),
+	}
+	if insecure {
+		traceOpts = append(traceOpts, otlptracehttp.WithInsecure())
+		metricOpts = append(metricOpts, otlpmetrichttp.WithInsecure())
+	}
+
+	// Trace exporter
+	traceExp, err := otlptracehttp.New(ctx, traceOpts...)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Metric exporter
+	metricExp, err := otlpmetrichttp.New(ctx, metricOpts...)
+	if err != nil {
+		return nil, nil, err
+	}
+	return traceExp, metricExp, nil
+}
+
+// ExporterOTLP returns an initialized OTLP exporter instance utilizing gRPC.
+// The default endpoint for the collector is "localhost:4317".
+func ExporterOTLP(endpoint string, insecure bool, headers map[string]string) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) { // nolint:lll
+	if endpoint == "" {
+		endpoint = "localhost:4317"
+	}
 	ctx := context.Background()
 	traceOpts := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(endpoint),
@@ -108,7 +161,7 @@ func ExporterOTLP(endpoint string, insecure bool, headers map[string]string) (*o
 	}
 
 	// Trace exporter
-	traceExp, err := otlptrace.New(ctx, otlptracegrpc.NewClient(traceOpts...))
+	traceExp, err := otlptracegrpc.New(ctx, traceOpts...)
 	if err != nil {
 		return nil, nil, err
 	}

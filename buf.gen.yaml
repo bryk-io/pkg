@@ -32,7 +32,7 @@ plugins:
     out: .
     opt:
       - logtostderr=true
-  - plugin: buf.build/grpc-ecosystem/gateway:v2.19.1
+  - plugin: buf.build/grpc-ecosystem/gateway:v2.22.0
     out: .
     opt:
       - paths=source_relative
