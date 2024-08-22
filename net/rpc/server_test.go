@@ -1254,7 +1254,7 @@ func availableExporters() (sdkTrace.SpanExporter, sdkMetric.Exporter) {
 		_ = res.Body.Close()
 	}
 	if err == nil && res.StatusCode == http.StatusOK {
-		traceExp, metricExp, _ := otelSdk.ExporterOTLP("localhost:4317", true, nil)
+		traceExp, metricExp, _ := otelSdk.ExporterOTLP("localhost:4317", true, nil, "grpc")
 		return traceExp, metricExp
 	}
 	traceExp, metricExp, _ := otelSdk.ExporterStdout(true)

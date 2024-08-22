@@ -56,18 +56,8 @@ func WithExporterStdout(pretty bool) []Option {
 // exporter instance.
 // https://opentelemetry.io/docs/collector/
 func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string, protocol string) []Option {
-	var (
-		opts []Option
-		se   sdkTrace.SpanExporter
-		me   sdkMetric.Exporter
-		err  error
-	)
-	if protocol == "grpc" {
-		se, me, err = ExporterOTLP(endpoint, insecure, headers)
-	}
-	if protocol == "http" {
-		se, me, err = ExporterOTLPByHTTP(endpoint, insecure, headers)
-	}
+	var opts []Option
+	se, me, err := ExporterOTLP(endpoint, insecure, headers, protocol)
 	if err == nil {
 		opts = append(opts, WithExporter(se))
 		opts = append(opts, WithMetricReader(sdkMetric.NewPeriodicReader(me)))
@@ -97,10 +87,19 @@ func ExporterStdout(pretty bool) (sdkTrace.SpanExporter, sdkMetric.Exporter, err
 	return traceExp, metricExp, nil
 }
 
-// ExporterOTLPByHTTP returns an initialized OTLP exporter instance utilizing
+// ExporterOTLP returns an initialized OTLP exporter instance utilizing
+// the requested protocol.
+func ExporterOTLP(endpoint string, insecure bool, headers map[string]string, protocol string) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) { // nolint:lll
+	if protocol == "http" {
+		return otlpHTTP(endpoint, insecure, headers)
+	}
+	return otlpGRPC(endpoint, insecure, headers)
+}
+
+// Returns an initialized OTLP exporter instance utilizing
 // HTTP with protobuf payloads. The default endpoint for the collector
 // is "localhost:4318".
-func ExporterOTLPByHTTP(endpoint string, insecure bool, headers map[string]string) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) { // nolint:lll
+func otlpHTTP(endpoint string, insecure bool, headers map[string]string) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) { // nolint:lll
 	if endpoint == "" {
 		endpoint = "localhost:4318"
 	}
@@ -134,9 +133,9 @@ func ExporterOTLPByHTTP(endpoint string, insecure bool, headers map[string]strin
 	return traceExp, metricExp, nil
 }
 
-// ExporterOTLP returns an initialized OTLP exporter instance utilizing gRPC.
+// Returns an initialized OTLP exporter instance utilizing gRPC.
 // The default endpoint for the collector is "localhost:4317".
-func ExporterOTLP(endpoint string, insecure bool, headers map[string]string) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) { // nolint:lll
+func otlpGRPC(endpoint string, insecure bool, headers map[string]string) (sdkTrace.SpanExporter, sdkMetric.Exporter, error) { // nolint:lll
 	if endpoint == "" {
 		endpoint = "localhost:4317"
 	}

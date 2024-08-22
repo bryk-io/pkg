@@ -278,7 +278,7 @@ func availableExporters() (sdkTrace.SpanExporter, sdkMetric.Exporter) {
 		_ = res.Body.Close()
 	}
 	if err == nil && res.StatusCode == http.StatusOK {
-		traceExp, metricExp, _ := sdk.ExporterOTLP("localhost:4317", true, nil)
+		traceExp, metricExp, _ := sdk.ExporterOTLP("localhost:4317", true, nil, "grpc")
 		return traceExp, metricExp
 	}
 	traceExp, metricExp, _ := sdk.ExporterStdout(true)

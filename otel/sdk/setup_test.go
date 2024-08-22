@@ -23,7 +23,7 @@ func TestSetup(t *testing.T) {
 		err       error
 	)
 	if isCollectorAvailable() {
-		traceExp, metricExp, err = ExporterOTLP("localhost:4317", true, nil)
+		traceExp, metricExp, err = ExporterOTLP("localhost:4317", true, nil, "grpc")
 	} else {
 		traceExp, metricExp, err = ExporterStdout(true)
 	}
