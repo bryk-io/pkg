@@ -81,7 +81,20 @@ type Exchange struct {
 	Name string `json:"name"`
 
 	// Exchange type, must be supported by the server.
-	// Usual values are: "direct", "fanout", "topic" and "headers"
+	// Usual values are:
+	// - direct: delivers messages to queues based on the message routing key.
+	//   A direct exchange is ideal for the unicast routing of messages.
+	//   https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-direct
+	// - fanout: routes messages to all of the queues that are bound to it and the
+	//   routing key is ignored.
+	//   https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-fanout
+	// - topic: route messages to one or many queues based on matching between a
+	//   message routing key and the pattern that was used to bind a queue to an
+	//   exchange.
+	//   https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-topic
+	// - headers: designed for routing on multiple attributes that are more easily
+	//   expressed as message headers than a routing key.
+	//   https://www.rabbitmq.com/tutorials/amqp-concepts#exchange-headers
 	Kind string `json:"kind"`
 
 	// Durable and Non-Auto-Deleted exchanges will survive server restarts and

@@ -157,9 +157,7 @@ jobs:
       - name: Static analysis
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.58
-          # skip-pkg-cache: true
-          # skip-build-cache: true
+          version: v1.59
 
       # Run unit tests
       - name: Test

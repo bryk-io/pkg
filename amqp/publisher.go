@@ -12,6 +12,14 @@ import (
 	xlog "go.bryk.io/pkg/log"
 )
 
+// Message sent to the server.
+type Message = driver.Publishing
+
+// Return captures a flattened struct of fields returned by the server when a
+// publish operation is unable to be delivered either due to the "mandatory"
+// flag set and no route found, or "immediate" flag set and no free consumer.
+type Return = driver.Return
+
 // MessageOptions allow a publisher to adjust the expected behavior when
 // dispatching a message to a broker instance.
 type MessageOptions struct {
@@ -66,9 +74,6 @@ type MessageOptions struct {
 	// The value must be between 0 (default) and 9.
 	Priority uint8
 }
-
-// Message sent to the server.
-type Message = driver.Publishing
 
 // Publisher instances are responsible for sending messages to a broker
 // for asynchronous consumption.
@@ -170,7 +175,7 @@ func (p *Publisher) MessageReturns() <-chan Return {
 	return p.session.messageReturns()
 }
 
-// UnsafePush will publish the message without checking for confirmation. It
+// UnsafePush will publish the message without waiting for confirmation. It
 // returns an error if it fails to connect to the broker. No guarantees are
 // provided for whether the server will receive the message.
 func (p *Publisher) UnsafePush(msg Message, opts MessageOptions) error {
@@ -287,7 +292,7 @@ func (p *Publisher) GetDispatcher(ctx context.Context, safe bool, opts MessageOp
 
 // SubmitRPC will publish a message to the selected exchange as an RPC request
 // and return a handler to synchronously wait for the response. The provided
-// context can be used to cancel the request handler, for example with timeout.
+// context can be used to cancel the request handler, for example with a timeout.
 // Is important to keep in mind that canceling the request handler will not
 // interrupt the message processing.
 func (p *Publisher) SubmitRPC(ctx context.Context, exchange string, msg Message) (<-chan Message, error) {

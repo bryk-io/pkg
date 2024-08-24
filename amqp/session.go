@@ -12,11 +12,6 @@ import (
 	xlog "go.bryk.io/pkg/log"
 )
 
-// Return captures a flattened struct of fields returned by the server when a
-// publish operation is unable to be delivered either due to the "mandatory"
-// flag set and no route found, or "immediate" flag set and no free consumer.
-type Return = driver.Return
-
 const (
 	// When reconnecting to the server after connection failure.
 	reconnectDelay = 3 * time.Second
@@ -67,7 +62,6 @@ type session struct {
 
 // Open a new session instance.
 func open(addr string, options ...Option) (*session, error) {
-	// Base session instance
 	ctx, halt := context.WithCancel(context.Background())
 	s := &session{
 		addr:          addr,
@@ -287,25 +281,24 @@ func (s *session) addQueue(q Queue, ch *driver.Channel) (string, error) {
 
 // Register a binding declaration with the provided channel.
 func (s *session) addBinding(b Binding, ch *driver.Channel) error {
-	if len(b.RoutingKey) > 0 {
-		for _, rk := range b.RoutingKey {
-			err := ch.QueueBind(
-				b.Queue,
-				rk,
-				b.Exchange,
-				false,
-				b.Arguments)
-			if err != nil {
-				return err
-			}
-		}
-	} else {
+	if len(b.RoutingKey) == 0 {
 		return ch.QueueBind(
 			b.Queue,
 			"",
 			b.Exchange,
 			false,
 			b.Arguments)
+	}
+	for _, rk := range b.RoutingKey {
+		err := ch.QueueBind(
+			b.Queue,
+			rk,
+			b.Exchange,
+			false,
+			b.Arguments)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
