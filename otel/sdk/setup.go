@@ -23,15 +23,15 @@ type Instrumentation struct {
 	resource          *sdkResource.Resource           // OTEL resource definition
 	spanProcessors    []sdkTrace.SpanProcessor        // span processing chain
 	traceExporter     sdkTrace.SpanExporter           // trace sink components
-	metricExporter    sdkMetric.Reader                // metric sink components
+	metricExporter    sdkMetric.Exporter              // metric sink components
 	traceProvider     *sdkTrace.TracerProvider        // main traces provider
 	meterProvider     *sdkMetric.MeterProvider        // main metrics provider
 	propagator        propagation.TextMapPropagator   // default composite propagator
+	propagators       []propagation.TextMapPropagator // list of individual text map propagators
 	hostMetrics       bool                            // capture standard host metrics
 	runtimeMetrics    bool                            // capture standard runtime metrics
 	runtimeMetricsInt time.Duration                   // runtime memory capture interval
 	spanLimits        sdkTrace.SpanLimits             // default span limits
-	props             []propagation.TextMapPropagator // list of individual text map propagators
 	sampler           sdkTrace.Sampler                // trace sampler strategy used
 	exemplars         bool                            // enable exemplar support
 }
@@ -40,14 +40,14 @@ type Instrumentation struct {
 func Setup(options ...Option) (*Instrumentation, error) {
 	// Create app instance and apply options.
 	app := &Instrumentation{
-		log:               log.Discard(),           // discard logs
-		attrs:             otel.Attributes{},       // no custom attributes
-		traceExporter:     new(noOpExporter),       // discard traces and metrics
-		sampler:           sdkTrace.AlwaysSample(), // track all traces by default
-		spanLimits:        sdkTrace.NewSpanLimits(),
+		log:               log.Discard(),            // discard logs
+		attrs:             otel.Attributes{},        // no custom attributes
+		traceExporter:     new(noOpExporter),        // discard traces and metrics
+		sampler:           sdkTrace.AlwaysSample(),  // track all traces by default
+		spanLimits:        sdkTrace.NewSpanLimits(), // apply default span limits
 		runtimeMetricsInt: time.Duration(10) * time.Second,
 		spanProcessors:    []sdkTrace.SpanProcessor{},
-		props: []propagation.TextMapPropagator{
+		propagators: []propagation.TextMapPropagator{
 			propagation.Baggage{},      // headers: baggage
 			propagation.TraceContext{}, // headers: traceparent, tracestate
 		},
@@ -72,7 +72,7 @@ func Setup(options ...Option) (*Instrumentation, error) {
 	// means that the trace context will not be shared between multiple services. To
 	// avoid that, we set up a composite propagator that consist of a baggage propagator
 	// and trace context propagator.
-	app.propagator = propagation.NewCompositeTextMapPropagator(app.props...)
+	app.propagator = propagation.NewCompositeTextMapPropagator(app.propagators...)
 
 	// Prepare traces and metrics providers.
 	app.setupProviders()
@@ -110,14 +110,15 @@ func (app *Instrumentation) Flush(ctx context.Context) {
 
 // Create the metrics and traces providers.
 func (app *Instrumentation) setupProviders() {
-	// Custom span processor to generate logs.
+	// Custom span processor chain to generate logs.
 	spc := logSpans{
 		log:  app.log,                                           // custom `SpanProcessor` to generate logs
 		Next: sdkTrace.NewBatchSpanProcessor(app.traceExporter), // submit completed spans to the exporter
 	}
 
 	// Trace provider options.
-	tpOpts := []sdkTrace.TracerProviderOption{sdkTrace.WithResource(app.resource), // adjust monitored resource
+	tpOpts := []sdkTrace.TracerProviderOption{
+		sdkTrace.WithResource(app.resource),        // adjust monitored resource
 		sdkTrace.WithSampler(app.sampler),          // set sampling strategy
 		sdkTrace.WithRawSpanLimits(app.spanLimits), // use default span limits
 		sdkTrace.WithSpanProcessor(spc),            // set the span processing chain
@@ -140,17 +141,17 @@ func (app *Instrumentation) setupProviders() {
 	// https://github.com/open-telemetry/opentelemetry-go/blob/main/sdk/metric/internal/x/README.md#exemplars
 	if app.exemplars {
 		if err := os.Setenv("OTEL_GO_X_EXEMPLAR", "true"); err != nil {
-			app.log.WithField("error.message", err.Error()).Warning("failed to enable exemplar support")
+			app.log.WithField(lblErrorMsg, err.Error()).Warning("failed to enable exemplar support")
 		}
 		if err := os.Setenv("OTEL_METRICS_EXEMPLAR_FILTER", "always_on"); err != nil {
-			app.log.WithField("error.message", err.Error()).Warning("failed to enable exemplar support")
+			app.log.WithField(lblErrorMsg, err.Error()).Warning("failed to enable exemplar support")
 		}
 	}
 
 	// Create meter provider instance using the provided "reader".
 	metricProviderOpts := []sdkMetric.Option{
-		sdkMetric.WithReader(app.metricExporter),
 		sdkMetric.WithResource(app.resource),
+		sdkMetric.WithReader(sdkMetric.NewPeriodicReader(app.metricExporter)),
 	}
 	app.meterProvider = sdkMetric.NewMeterProvider(metricProviderOpts...)
 }
@@ -168,7 +169,7 @@ func (app *Instrumentation) captureStandardMetrics() {
 			host.WithMeterProvider(app.meterProvider),
 		}
 		if err := host.Start(opts...); err != nil {
-			app.log.WithField("error.message", err.Error()).Warning("failed to start host metrics agent")
+			app.log.WithField(lblErrorMsg, err.Error()).Warning("failed to start host metrics agent")
 		}
 	}
 
@@ -179,7 +180,7 @@ func (app *Instrumentation) captureStandardMetrics() {
 			runtime.WithMinimumReadMemStatsInterval(app.runtimeMetricsInt),
 		}
 		if err := runtime.Start(opts...); err != nil {
-			app.log.WithField("error.message", err.Error()).Warning("failed to start runtime metrics agent")
+			app.log.WithField(lblErrorMsg, err.Error()).Warning("failed to start runtime metrics agent")
 		}
 	}
 }
@@ -192,6 +193,6 @@ type errorHandler struct {
 // Handle any error deemed irremediable by the OpenTelemetry operator.
 func (eh errorHandler) Handle(err error) {
 	if err != nil {
-		eh.ll.WithField("error.message", err.Error()).Warning("opentelemetry operator error")
+		eh.ll.WithField(lblErrorMsg, err.Error()).Warning("opentelemetry operator error")
 	}
 }

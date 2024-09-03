@@ -45,7 +45,7 @@ func WithSpanLimits(sl sdkTrace.SpanLimits) Option {
 //   - W3C Baggage (https://www.w3.org/TR/baggage/)
 func WithPropagator(mp propagation.TextMapPropagator) Option {
 	return func(op *Instrumentation) {
-		op.props = append(op.props, mp)
+		op.propagators = append(op.propagators, mp)
 	}
 }
 
@@ -76,9 +76,9 @@ func WithBaseLogger(ll log.Logger) Option {
 	}
 }
 
-// WithExporter enables a trace (i.e. span) exporter as data sink for the
+// WithSpanExporter enables a trace (i.e. span) exporter as data sink for the
 // application. If no exporter is set, all traces are discarded by default.
-func WithExporter(exp sdkTrace.SpanExporter) Option {
+func WithSpanExporter(exp sdkTrace.SpanExporter) Option {
 	return func(op *Instrumentation) {
 		op.traceExporter = exp
 	}
@@ -94,12 +94,9 @@ func WithSampler(ss sdkTrace.Sampler) Option {
 	}
 }
 
-// WithMetricReader configures the application's meter provider to export
-// the measured data. Readers take two forms: ones that push to an endpoint
-// (NewPeriodicReader), and ones that an endpoint pulls from. See the
-// `go.opentelemetry.io/otel/exporters` package for exporters that can be
-// used as or with these Readers.
-func WithMetricReader(exp sdkMetric.Reader) Option {
+// WithMetricExporter configures the application's meter provider to export
+// the caputered metrics data using a "push" mechanism.
+func WithMetricExporter(exp sdkMetric.Exporter) Option {
 	return func(op *Instrumentation) {
 		op.metricExporter = exp
 	}

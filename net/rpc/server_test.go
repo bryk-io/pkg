@@ -72,8 +72,8 @@ func TestServer(t *testing.T) {
 		otelSdk.WithServiceVersion("0.1.0"),
 		otelSdk.WithBaseLogger(ll),
 		otelSdk.WithHostMetrics(),
-		otelSdk.WithExporter(traceExp),
-		otelSdk.WithMetricReader(sdkMetric.NewPeriodicReader(metricExp)),
+		otelSdk.WithSpanExporter(traceExp),
+		otelSdk.WithMetricExporter(metricExp),
 	}
 	monitoring, err := otelSdk.Setup(otelOpts...)
 	assert.Nil(err, "initialize operator")
@@ -990,8 +990,8 @@ func TestEchoServer(t *testing.T) {
 		otelSdk.WithServiceVersion("0.1.0"),
 		otelSdk.WithBaseLogger(ll),
 		otelSdk.WithHostMetrics(),
-		otelSdk.WithExporter(traceExp),
-		otelSdk.WithMetricReader(sdkMetric.NewPeriodicReader(metricExp)),
+		otelSdk.WithSpanExporter(traceExp),
+		otelSdk.WithMetricExporter(metricExp),
 	}
 	monitoring, err := otelSdk.Setup(otelOpts...)
 	assert.Nil(err, "initialize operator")

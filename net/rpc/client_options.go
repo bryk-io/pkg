@@ -14,10 +14,9 @@ import (
 type ClientOption func(*Client) error
 
 // WithInsecureSkipVerify controls whether a client verifies the server's
-// certificate chain and host name. If InsecureSkipVerify is true, TLS accepts
-// any certificate presented by the server and any host name in that certificate.
-// In this mode, TLS is susceptible to MITM attacks. This should be used only
-// for testing.
+// certificate chain and host name. If set to `true`, TLS accepts any certificate
+// presented by the server and any host name in that certificate. In this mode,
+// connections are susceptible to MITM attacks. This should be used only for testing.
 func WithInsecureSkipVerify() ClientOption {
 	return func(c *Client) error {
 		c.mu.Lock()
@@ -107,6 +106,16 @@ func WithCompression() ClientOption {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.callOpts = append(c.callOpts, grpc.UseCompressor(gzip.Name))
+		return nil
+	}
+}
+
+// WithDialOptions will set additional gRPC dial options to be used by the client instance.
+func WithDialOptions(opts ...grpc.DialOption) ClientOption {
+	return func(c *Client) (err error) {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		c.dialOpts = append(c.dialOpts, opts...)
 		return nil
 	}
 }

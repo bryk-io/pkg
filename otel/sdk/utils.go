@@ -36,6 +36,7 @@ const (
 	lblChildCount       = "telemetry.span.child_count"
 	lblDuration         = "duration"
 	lblDurationMS       = "duration_ms"
+	lblErrorMsg         = "error.message"
 )
 
 // WithExporterStdout is a utility method to automatically setup and attach
@@ -45,8 +46,8 @@ func WithExporterStdout(pretty bool) []Option {
 	var opts []Option
 	se, me, err := ExporterStdout(pretty)
 	if err == nil {
-		opts = append(opts, WithExporter(se))
-		opts = append(opts, WithMetricReader(sdkMetric.NewPeriodicReader(me)))
+		opts = append(opts, WithSpanExporter(se))
+		opts = append(opts, WithMetricExporter(me))
 	}
 	return opts
 }
@@ -59,8 +60,8 @@ func WithExporterOTLP(endpoint string, insecure bool, headers map[string]string,
 	var opts []Option
 	se, me, err := ExporterOTLP(endpoint, insecure, headers, protocol)
 	if err == nil {
-		opts = append(opts, WithExporter(se))
-		opts = append(opts, WithMetricReader(sdkMetric.NewPeriodicReader(me)))
+		opts = append(opts, WithSpanExporter(se))
+		opts = append(opts, WithMetricExporter(me))
 	}
 	return opts
 }
@@ -179,6 +180,7 @@ func setupResource(attrs otel.Attributes) (*sdkResource.Resource, error) {
 		sdkResource.WithOS(),
 		sdkResource.WithHost(),
 		sdkResource.WithContainer(),
+		sdkResource.WithFromEnv(),
 		sdkResource.WithTelemetrySDK(),
 		sdkResource.WithProcessRuntimeName(),
 		sdkResource.WithProcessRuntimeVersion(),

@@ -61,11 +61,11 @@ require (
 	golang.org/x/term v0.23.0
 	golang.org/x/time v0.6.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240822170219-fc7c04adadcd
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.66.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.25.11
-	gorm.io/plugin/opentelemetry v0.1.4
+	gorm.io/plugin/opentelemetry v0.1.6
 	storj.io/drpc v0.0.34
 )
 

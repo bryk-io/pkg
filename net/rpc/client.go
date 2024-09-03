@@ -28,9 +28,9 @@ type Client struct {
 	cert             *tls.Certificate
 	timeout          time.Duration
 	tlsConf          *tls.Config
-	mu               sync.Mutex
 	useBalancer      bool
 	skipVerify       bool
+	mu               sync.Mutex
 }
 
 // NewClient set up a new client instance.
