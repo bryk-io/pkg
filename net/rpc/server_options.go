@@ -185,10 +185,7 @@ func WithAuthByToken(tv TokenValidator) ServerOption {
 				return nil, err
 			}
 			if code, msg := tv(token); code != codes.OK {
-				if msg == "" {
-					msg = "invalid auth token"
-				}
-				return nil, status.Errorf(code, msg)
+				return nil, status.Errorf(code, "invalid auth token: %s", msg)
 			}
 			return ctx, nil
 		}

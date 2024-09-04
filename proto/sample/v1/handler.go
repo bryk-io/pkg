@@ -99,15 +99,15 @@ func (s *Handler) Slow(_ context.Context, _ *empty.Empty) (*DummyResponse, error
 	return &DummyResponse{Ok: true}, nil
 }
 
-func ri(min, max int) int {
-	m := big.NewInt(int64(max))
+func ri(minV, maxV int) int {
+	m := big.NewInt(int64(maxV))
 	r, err := rand.Int(rand.Reader, m)
 	if err != nil {
-		return 0 + min
+		return 0 + minV
 	}
-	res := int(r.Int64()) + min
-	if res > max {
-		res = max
+	res := int(r.Int64()) + minV
+	if res > maxV {
+		res = maxV
 	}
 	return res
 }

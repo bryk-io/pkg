@@ -117,7 +117,7 @@ func GetAuthToken(ctx context.Context, scheme string) (string, error) {
 		return "", status.Errorf(codes.Unauthenticated, "bad authorization token")
 	}
 	if !strings.EqualFold(splits[0], scheme) {
-		return "", status.Errorf(codes.Unauthenticated, "request unauthenticated with "+scheme)
+		return "", status.Errorf(codes.Unauthenticated, "bad token scheme")
 	}
 	return splits[1], nil
 }

@@ -9,16 +9,16 @@ import (
 	"storj.io/drpc"
 )
 
-// Retry failed requests up to the `max` number of attempts specified. Retried
+// Retry failed requests up to the `limit` number of attempts specified. Retried
 // errors will be logged as warnings along with details about the specific
 // attempt. Multiple tries introduce an increasingly longer backoff delay to
 // account for transient failures on the remote. The specific delay for each
 // attempt is calculated (in ms) as: `delay * (factor * attempt_number)`.
-func Retry(max uint, ll xlog.Logger) Middleware {
+func Retry(limit uint, ll xlog.Logger) Middleware {
 	return func(next Interceptor) Interceptor {
 		return retry{
 			tries:  0,
-			limit:  max,
+			limit:  limit,
 			delay:  300,
 			factor: 0.85,
 			log:    ll,
