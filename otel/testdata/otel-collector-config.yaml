@@ -30,8 +30,10 @@ processors:
         action: upsert
 # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 10
   # Jaeger now supports OTLP directly.
   # https://opentelemetry.io/blog/2023/jaeger-exporter-collector-migration/
   otlp/jaeger:
@@ -48,12 +50,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]
-      exporters: [logging, otlp/jaeger, zipkin]
+      exporters: [debug, otlp/jaeger, zipkin]
     metrics:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]
-      exporters: [logging]
+      exporters: [debug]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch, resource]
-      exporters: [logging]
+      exporters: [debug]
