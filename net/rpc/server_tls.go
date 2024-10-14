@@ -7,6 +7,10 @@ import (
 	"go.bryk.io/pkg/errors"
 )
 
+// HTTP/2 over TLS uses the "h2" protocol identifier.
+// https://datatracker.ietf.org/doc/html/rfc7540#section-3.3
+const alpnProtocolIdentifier = "h2"
+
 // RecommendedCiphers provides a default list of secure/modern ciphers.
 var RecommendedCiphers = []uint16{
 	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
@@ -89,6 +93,7 @@ func serverTLSConf(opts ServerTLSConfig) (*tls.Config, error) {
 		CurvePreferences: opts.PreferredCurves,
 		RootCAs:          cp,
 		MinVersion:       tls.VersionTLS12,
+		NextProtos:       []string{alpnProtocolIdentifier},
 	}
 	return conf, nil
 }

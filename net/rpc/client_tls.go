@@ -21,6 +21,7 @@ type ClientTLSConfig struct {
 func clientTLSConf(opts ClientTLSConfig) (*tls.Config, error) {
 	conf := &tls.Config{
 		MinVersion: tls.VersionTLS12,
+		NextProtos: []string{alpnProtocolIdentifier},
 	}
 
 	// Prepare cert pool
