@@ -112,7 +112,7 @@ jobs:
         with:
           version: 1.35.0
           lint: true
-          breaking: true
+          breaking: ${{ !contains(env.commit_msg, '[skip buf-breaking]') }}
           push: false
           github_token: ${{ secrets.ACCESS_TOKEN }} # github.token
 

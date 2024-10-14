@@ -5,7 +5,7 @@ go 1.22
 toolchain go1.23.1
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240920164238-5a7b106cbb87.2
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.35.1-20240920164238-5a7b106cbb87.1
 	dario.cat/mergo v1.0.1
 	github.com/awnumar/memguard v0.22.5
 	github.com/briandowns/spinner v1.23.1
@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/log v0.4.0
 	github.com/chzyer/readline v1.5.1
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
-	github.com/getsentry/sentry-go v0.29.0
+	github.com/getsentry/sentry-go v0.29.1
 	github.com/google/sqlcommenter/go/core v0.1.2
 	github.com/google/sqlcommenter/go/database/sql v0.1.1
 	github.com/google/uuid v1.6.0
@@ -24,9 +24,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/muesli/termenv v0.15.2
-	github.com/nil-go/konf v1.2.2
-	github.com/nil-go/konf/provider/file v1.2.2
-	github.com/nil-go/konf/provider/pflag v1.2.2
+	github.com/nil-go/konf v1.3.1
+	github.com/nil-go/konf/provider/file v1.3.1
+	github.com/nil-go/konf/provider/pflag v1.3.1
 	github.com/piprate/json-gold v0.5.0
 	github.com/prometheus/client_golang v1.20.4
 	github.com/prometheus/client_model v0.6.1
