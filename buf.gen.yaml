@@ -19,16 +19,16 @@ managed:
 #   - out: path relative to the output directory
 #   - opt: options to provide to the plugin
 plugins:
-  - plugin: buf.build/protocolbuffers/go:v1.34.2
+  - plugin: buf.build/protocolbuffers/go:v1.35.1
     out: .
     opt:
       - paths=source_relative
-  - plugin: buf.build/grpc/go:v1.3.0
+  - plugin: buf.build/grpc/go:v1.5.1
     out: .
     opt:
       - paths=source_relative
       - require_unimplemented_servers=true
-  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.19.1
+  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.22.0
     out: .
     opt:
       - logtostderr=true

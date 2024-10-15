@@ -10,7 +10,7 @@ lint:
   service_suffix: API
   rpc_allow_google_protobuf_empty_requests: true
   use:
-    - DEFAULT
+    - STANDARD
   except:
     - RPC_REQUEST_RESPONSE_UNIQUE
     - RPC_RESPONSE_STANDARD_NAME
