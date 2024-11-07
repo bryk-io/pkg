@@ -28,11 +28,11 @@ plugins:
     opt:
       - paths=source_relative
       - require_unimplemented_servers=true
-  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.22.0
+  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.23.0
     out: .
     opt:
       - logtostderr=true
-  - plugin: buf.build/grpc-ecosystem/gateway:v2.22.0
+  - plugin: buf.build/grpc-ecosystem/gateway:v2.23.0
     out: .
     opt:
       - paths=source_relative
