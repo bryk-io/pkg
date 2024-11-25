@@ -19,29 +19,30 @@ func New(alg jwa.Alg) (Key, error) {
 	if alg == jwa.NONE {
 		return nil, errors.New("no key is required for alg 'NONE'")
 	}
+	// nolint: forcetypeassert, errcheck
 	switch alg[0:2] {
 	case "HS":
 		k, err := newHMAC(64)
 		if err == nil {
-			k.(*hmacKey).alg = alg // nolint: forcetypeassert
+			k.(*hmacKey).alg = alg
 		}
 		return k, err
 	case "RS":
 		k, err := newRSA(2048, false)
 		if err == nil {
-			k.(*rsaKey).alg = alg // nolint: forcetypeassert
+			k.(*rsaKey).alg = alg
 		}
 		return k, err
 	case "PS":
 		k, err := newRSA(2048, true)
 		if err == nil {
-			k.(*rsaKey).alg = alg // nolint: forcetypeassert
+			k.(*rsaKey).alg = alg
 		}
 		return k, err
 	case "ES":
 		k, err := newEC(alg)
 		if err == nil {
-			k.(*ecKey).alg = alg // nolint: forcetypeassert
+			k.(*ecKey).alg = alg
 		}
 		return k, err
 	default:
