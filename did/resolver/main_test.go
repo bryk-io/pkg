@@ -83,7 +83,7 @@ func TestResolve(t *testing.T) {
 	activeID := prov.registerNew()
 
 	rr, err := New(WithProvider("dev", prov))
-	assert.Nil(err, "failed to create new resolver instance")
+	assert.Nil(err)
 
 	t.Run(ErrInvalidDID, func(t *testing.T) {
 		_, err := rr.Resolve("this-is-not-a-did", nil)
@@ -121,7 +121,7 @@ func TestResolveRepresentation(t *testing.T) {
 	activeID := prov.registerNew()
 
 	rr, err := New(WithProvider("dev", prov))
-	assert.Nil(err, "failed to create new resolver instance")
+	assert.Nil(err)
 
 	t.Run(ErrInvalidDID, func(t *testing.T) {
 		_, err := rr.ResolveRepresentation("this-is-not-a-did", nil)
@@ -158,7 +158,7 @@ func TestResolutionHandler(t *testing.T) {
 	activeID := prov.registerNew()
 
 	rr, err := New(WithProvider("dev", prov))
-	assert.Nil(err, "failed to create new resolver instance")
+	assert.Nil(err)
 
 	// Resolver server
 	mux := http.NewServeMux()
@@ -166,6 +166,7 @@ func TestResolutionHandler(t *testing.T) {
 	go func() {
 		_ = http.ListenAndServe(":3000", mux)
 	}()
+	time.Sleep(200 * time.Millisecond) // wait for server to be ready
 
 	// must return a resolution result
 	t.Run("no-accept-header", func(t *testing.T) {
