@@ -1,0 +1,4 @@
+*.md
+**/testdata/*
+**/doc.go
+**/*_test.go

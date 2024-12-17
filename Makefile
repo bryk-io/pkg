@@ -49,6 +49,11 @@ lint:
 	# Go code
 	golangci-lint run -v ./$(pkg)
 
+## protos: Compile all protobuf definitions and RPC services
+protos:
+	# Generate package images and code
+	make proto-build pkg=sample/v1
+
 ## scan-deps: Look for known vulnerabilities in the project dependencies
 # https://github.com/sonatype-nexus-community/nancy
 scan-deps:
@@ -61,6 +66,13 @@ scan-secrets:
 	-v "$PWD:/repo" \
 	trufflesecurity/trufflehog:latest \
 	filesystem --directory /repo --only-verified
+
+# https://appsec.guide/docs/static-analysis/semgrep/
+# https://go.googlesource.com/vuln
+## scan-vuln: Scan code and dependencies for known vulnerabilities
+scan-vuln:
+	govulncheck ./...
+	semgrep --config "p/trailofbits"
 
 ## test: Run all unitary tests
 test:
@@ -75,11 +87,6 @@ test:
 # https://github.com/golang/go/wiki/Modules#how-to-upgrade-and-downgrade-dependencies
 updates:
 	@GOWORK=off go list -u -f '{{if (and (not (or .Main .Indirect)) .Update)}}{{.Path}}: [{{.Version}} -> {{.Update.Version}}]{{end}}' -mod=mod -m all 2> /dev/null
-
-## protos: Compile all protobuf definitions and RPC services
-protos:
-	# Generate package images and code
-	make proto-build pkg=sample/v1
 
 proto-test:
 	# Verify style and consistency
