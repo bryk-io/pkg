@@ -5,6 +5,7 @@ package samplev1
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 
@@ -20,109 +21,110 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = metadata.Join
+var (
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = errors.New
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = metadata.Join
+)
 
 func request_EchoAPI_Ping_0(ctx context.Context, marshaler runtime.Marshaler, client EchoAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := client.Ping(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_EchoAPI_Ping_0(ctx context.Context, marshaler runtime.Marshaler, server EchoAPIServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.Ping(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_EchoAPI_Health_0(ctx context.Context, marshaler runtime.Marshaler, client EchoAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := client.Health(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_EchoAPI_Health_0(ctx context.Context, marshaler runtime.Marshaler, server EchoAPIServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.Health(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_EchoAPI_Echo_0(ctx context.Context, marshaler runtime.Marshaler, client EchoAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EchoRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq EchoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := client.Echo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_EchoAPI_Echo_0(ctx context.Context, marshaler runtime.Marshaler, server EchoAPIServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq EchoRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	var (
+		protoReq EchoRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-
 	msg, err := server.Echo(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_EchoAPI_Faulty_0(ctx context.Context, marshaler runtime.Marshaler, client EchoAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := client.Faulty(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_EchoAPI_Faulty_0(ctx context.Context, marshaler runtime.Marshaler, server EchoAPIServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.Faulty(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_EchoAPI_Slow_0(ctx context.Context, marshaler runtime.Marshaler, client EchoAPIClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := client.Slow(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_EchoAPI_Slow_0(ctx context.Context, marshaler runtime.Marshaler, server EchoAPIServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq emptypb.Empty
-	var metadata runtime.ServerMetadata
-
+	var (
+		protoReq emptypb.Empty
+		metadata runtime.ServerMetadata
+	)
 	msg, err := server.Slow(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterEchoAPIHandlerServer registers the http handlers for service EchoAPI to "mux".
@@ -131,16 +133,13 @@ func local_request_EchoAPI_Slow_0(ctx context.Context, marshaler runtime.Marshal
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterEchoAPIHandlerFromEndpoint instead.
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, server EchoAPIServer) error {
-
-	mux.Handle("POST", pattern_EchoAPI_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Ping", runtime.WithHTTPPathPattern("/echo/ping"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Ping", runtime.WithHTTPPathPattern("/echo/ping"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -152,20 +151,15 @@ func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Ping_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Health_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Health_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Health", runtime.WithHTTPPathPattern("/echo/health"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Health", runtime.WithHTTPPathPattern("/echo/health"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -177,20 +171,15 @@ func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Health_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Echo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Echo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Echo", runtime.WithHTTPPathPattern("/echo/request"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Echo", runtime.WithHTTPPathPattern("/echo/request"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -202,20 +191,15 @@ func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Echo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Faulty_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Faulty_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Faulty", runtime.WithHTTPPathPattern("/echo/faulty"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Faulty", runtime.WithHTTPPathPattern("/echo/faulty"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -227,20 +211,15 @@ func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Faulty_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Slow_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Slow_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Slow", runtime.WithHTTPPathPattern("/echo/slow"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/sample.v1.EchoAPI/Slow", runtime.WithHTTPPathPattern("/echo/slow"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -252,9 +231,7 @@ func RegisterEchoAPIHandlerServer(ctx context.Context, mux *runtime.ServeMux, se
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Slow_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -281,7 +258,6 @@ func RegisterEchoAPIHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeM
 			}
 		}()
 	}()
-
 	return RegisterEchoAPIHandler(ctx, mux, conn)
 }
 
@@ -297,14 +273,11 @@ func RegisterEchoAPIHandler(ctx context.Context, mux *runtime.ServeMux, conn *gr
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "EchoAPIClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterEchoAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, client EchoAPIClient) error {
-
-	mux.Handle("POST", pattern_EchoAPI_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Ping", runtime.WithHTTPPathPattern("/echo/ping"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Ping", runtime.WithHTTPPathPattern("/echo/ping"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -315,18 +288,13 @@ func RegisterEchoAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Ping_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Health_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Health_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Health", runtime.WithHTTPPathPattern("/echo/health"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Health", runtime.WithHTTPPathPattern("/echo/health"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -337,18 +305,13 @@ func RegisterEchoAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Health_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Echo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Echo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Echo", runtime.WithHTTPPathPattern("/echo/request"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Echo", runtime.WithHTTPPathPattern("/echo/request"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -359,18 +322,13 @@ func RegisterEchoAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Echo_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Faulty_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Faulty_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Faulty", runtime.WithHTTPPathPattern("/echo/faulty"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Faulty", runtime.WithHTTPPathPattern("/echo/faulty"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -381,18 +339,13 @@ func RegisterEchoAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Faulty_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
-	mux.Handle("POST", pattern_EchoAPI_Slow_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_EchoAPI_Slow_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		var err error
-		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Slow", runtime.WithHTTPPathPattern("/echo/slow"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/sample.v1.EchoAPI/Slow", runtime.WithHTTPPathPattern("/echo/slow"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -403,34 +356,23 @@ func RegisterEchoAPIHandlerClient(ctx context.Context, mux *runtime.ServeMux, cl
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-
 		forward_EchoAPI_Slow_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
-
 	return nil
 }
 
 var (
-	pattern_EchoAPI_Ping_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "ping"}, ""))
-
+	pattern_EchoAPI_Ping_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "ping"}, ""))
 	pattern_EchoAPI_Health_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "health"}, ""))
-
-	pattern_EchoAPI_Echo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "request"}, ""))
-
+	pattern_EchoAPI_Echo_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "request"}, ""))
 	pattern_EchoAPI_Faulty_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "faulty"}, ""))
-
-	pattern_EchoAPI_Slow_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "slow"}, ""))
+	pattern_EchoAPI_Slow_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"echo", "slow"}, ""))
 )
 
 var (
-	forward_EchoAPI_Ping_0 = runtime.ForwardResponseMessage
-
+	forward_EchoAPI_Ping_0   = runtime.ForwardResponseMessage
 	forward_EchoAPI_Health_0 = runtime.ForwardResponseMessage
-
-	forward_EchoAPI_Echo_0 = runtime.ForwardResponseMessage
-
+	forward_EchoAPI_Echo_0   = runtime.ForwardResponseMessage
 	forward_EchoAPI_Faulty_0 = runtime.ForwardResponseMessage
-
-	forward_EchoAPI_Slow_0 = runtime.ForwardResponseMessage
+	forward_EchoAPI_Slow_0   = runtime.ForwardResponseMessage
 )
