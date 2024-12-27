@@ -6,25 +6,9 @@ import (
 	"fmt"
 	"io"
 
-	"go.bryk.io/miracl/core"
 	"go.bryk.io/pkg/errors"
 	"golang.org/x/crypto/hkdf"
 )
-
-// RNG returns a pre-seeded random number generator instance.
-func RNG(seedSize int, base []byte) (*core.RAND, error) {
-	if base == nil {
-		base = make([]byte, seedSize)
-		_, err := rand.Read(base)
-		if err != nil {
-			return nil, errors.Errorf("failed to read random data: %w", err)
-		}
-	}
-	rng := core.NewRAND()
-	rng.Clean()
-	rng.Seed(seedSize, base)
-	return rng, nil
-}
 
 // Expand the provided `secret` material to the requested `size` in bytes;
 // optionally using context `info` (if not nil).
