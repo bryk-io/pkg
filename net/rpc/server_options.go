@@ -4,7 +4,6 @@ import (
 	"context"
 	"syscall"
 
-	"github.com/bufbuild/protovalidate-go"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
 	otelProm "go.bryk.io/pkg/otel/prometheus"
@@ -130,10 +129,7 @@ func WithInputValidation() ServerOption {
 func WithProtoValidate() ServerOption {
 	return func(srv *Server) (err error) {
 		srv.mu.Lock()
-		srv.protoValidator, err = protovalidate.New()
-		if err != nil {
-			return err
-		}
+		srv.enableValidator = true
 		srv.mu.Unlock()
 		return nil
 	}

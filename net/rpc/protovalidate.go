@@ -10,30 +10,28 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func pvUnaryServerInterceptor(pv *protovalidate.Validator) grpc.UnaryServerInterceptor {
+func pvUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	// nolint: lll
 	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		msg, ok := req.(protoreflect.ProtoMessage)
 		if !ok {
 			return nil, status.Error(codes.InvalidArgument, "invalid message type")
 		}
-		if err := pv.Validate(msg); err != nil {
+		if err := protovalidate.Validate(msg); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return handler(ctx, req)
 	}
 }
 
-func pvStreamServerInterceptor(pv *protovalidate.Validator) grpc.StreamServerInterceptor {
+func pvStreamServerInterceptor() grpc.StreamServerInterceptor {
 	// nolint: lll
 	return func(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		wrapper := &recvWrapper{pv: pv, ServerStream: stream}
-		return handler(srv, wrapper)
+		return handler(srv, &recvWrapper{ServerStream: stream})
 	}
 }
 
 type recvWrapper struct {
-	pv *protovalidate.Validator
 	grpc.ServerStream
 }
 
@@ -42,7 +40,7 @@ func (s *recvWrapper) RecvMsg(m interface{}) error {
 		return err
 	}
 	if msg, ok := m.(protoreflect.ProtoMessage); ok {
-		if err := s.pv.Validate(msg); err != nil {
+		if err := protovalidate.Validate(msg); err != nil {
 			return err
 		}
 	}
