@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	charm "github.com/charmbracelet/log"
-	"github.com/muesli/termenv"
 	"go.bryk.io/pkg/metadata"
 )
 
@@ -23,6 +22,9 @@ type CharmOptions struct {
 	// Prefix defines a string to be added at the beginning of each
 	// log entry.
 	Prefix string
+
+	// Prefer colored output, when supported
+	WithColor bool
 
 	// AsJSON enables the use of JSON as the log entry format.
 	AsJSON bool
@@ -49,8 +51,11 @@ func WithCharm(opt CharmOptions) Logger {
 	if opt.AsJSON {
 		cl.SetFormatter(charm.JSONFormatter)
 	}
-	// force color profile
-	cl.SetColorProfile(termenv.ANSI256)
+	// adjust color profile
+	cl.SetColorProfile(3) // ascii, uncolored profile by default
+	if opt.WithColor {
+		cl.SetColorProfile(0) // true color, 24bit
+	}
 	return &charmHandler{
 		cl:     cl,
 		fields: metadata.New(),

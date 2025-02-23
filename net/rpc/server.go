@@ -150,6 +150,12 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 		}
 	}
 
+	// Enable health checks protocol
+	if srv.healthCheck != nil {
+		hsp := &healthSvc{srv: srv}
+		srv.services = append(srv.services, hsp)
+	}
+
 	// Validate RPC services are provided
 	if len(srv.services) == 0 {
 		defer cancel()
@@ -173,12 +179,6 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 	// Enable reflection protocol
 	if srv.reflection {
 		reflection.Register(srv.grpc)
-	}
-
-	// Enable health checks protocol
-	if srv.healthCheck != nil {
-		hsp := &healthSvc{srv: srv}
-		srv.services = append(srv.services, hsp)
 	}
 
 	// Initialize server metrics
