@@ -110,7 +110,7 @@ jobs:
         id: buf-setup
         uses: bufbuild/buf-action@v1
         with:
-          version: 1.45.0
+          version: 1.50.0
           lint: true
           breaking: ${{ !contains(env.commit_msg, '[skip buf-breaking]') }}
           push: false
