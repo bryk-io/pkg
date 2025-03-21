@@ -13,10 +13,10 @@ import (
 
 // Attributes provide an easy-to-use mechanism to handle span
 // and message metadata.
-type Attributes map[string]interface{}
+type Attributes map[string]any
 
 // Set a specific attribute, overrides any previously set value.
-func (attrs Attributes) Set(key string, value interface{}) {
+func (attrs Attributes) Set(key string, value any) {
 	if v, ok := value.(string); ok {
 		value = strings.TrimSpace(v)
 	}
@@ -26,7 +26,7 @@ func (attrs Attributes) Set(key string, value interface{}) {
 }
 
 // Get a previously set attribute value or nil.
-func (attrs Attributes) Get(key string) interface{} {
+func (attrs Attributes) Get(key string) any {
 	v, ok := attrs[key]
 	if !ok {
 		return nil
@@ -41,7 +41,7 @@ func (attrs Attributes) Context() context.Context {
 	return baggage.ContextWithBaggage(context.Background(), bag)
 }
 
-// Join will add any number of attribute sets into current instance.
+// Join will add any number of attribute sets into the current instance.
 func (attrs Attributes) Join(list ...Attributes) {
 	for _, md := range list {
 		for k, v := range md {
@@ -89,7 +89,7 @@ func expand(attrs Attributes) []attribute.KeyValue {
 
 // Any creates a new key-value pair instance with a passed name and
 // automatic type inference. This is slower, and not type-safe.
-func kvAny(k string, value interface{}) attribute.KeyValue {
+func kvAny(k string, value any) attribute.KeyValue {
 	if value == nil {
 		return attribute.String(k, "<nil>")
 	}

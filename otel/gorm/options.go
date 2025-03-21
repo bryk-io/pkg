@@ -2,7 +2,7 @@ package gorm
 
 import (
 	"go.bryk.io/pkg/otel"
-	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
 
 // Option defines a function that configures the plugin behavior.
@@ -17,10 +17,10 @@ func WithAttributes(attrs map[string]interface{}) Option {
 	}
 }
 
-// WithDBName configures a db.name attribute.
+// WithDBName configures a db.namespace attribute.
 func WithDBName(name string) Option {
 	return func(p *plugin) {
-		p.attrs = append(p.attrs, semConv.DBNameKey.String(name))
+		p.attrs = append(p.attrs, semConv.DBNamespaceKey.String(name))
 	}
 }
 

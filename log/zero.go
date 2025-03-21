@@ -104,14 +104,14 @@ func (h *zeroHandler) WithFields(fields Fields) Logger {
 	return h
 }
 
-func (h *zeroHandler) WithField(key string, value interface{}) Logger {
+func (h *zeroHandler) WithField(key string, value any) Logger {
 	h.mu.Lock()
 	h.fields.Set(key, value)
 	h.mu.Unlock()
 	return h
 }
 
-func (h *zeroHandler) Debug(args ...interface{}) {
+func (h *zeroHandler) Debug(args ...any) {
 	if h.lvl > Debug {
 		return
 	}
@@ -119,7 +119,7 @@ func (h *zeroHandler) Debug(args ...interface{}) {
 	h.setFields(h.log.Debug()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (h *zeroHandler) Debugf(format string, args ...interface{}) {
+func (h *zeroHandler) Debugf(format string, args ...any) {
 	if h.lvl > Debug {
 		return
 	}
@@ -127,7 +127,7 @@ func (h *zeroHandler) Debugf(format string, args ...interface{}) {
 	h.setFields(h.log.Debug()).Msgf(format, cleanArgs...)
 }
 
-func (h *zeroHandler) Info(args ...interface{}) {
+func (h *zeroHandler) Info(args ...any) {
 	if h.lvl > Info {
 		return
 	}
@@ -135,7 +135,7 @@ func (h *zeroHandler) Info(args ...interface{}) {
 	h.setFields(h.log.Info()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (h *zeroHandler) Infof(format string, args ...interface{}) {
+func (h *zeroHandler) Infof(format string, args ...any) {
 	if h.lvl > Info {
 		return
 	}
@@ -143,7 +143,7 @@ func (h *zeroHandler) Infof(format string, args ...interface{}) {
 	h.setFields(h.log.Info()).Msgf(format, cleanArgs...)
 }
 
-func (h *zeroHandler) Warning(args ...interface{}) {
+func (h *zeroHandler) Warning(args ...any) {
 	if h.lvl > Warning {
 		return
 	}
@@ -151,7 +151,7 @@ func (h *zeroHandler) Warning(args ...interface{}) {
 	h.setFields(h.log.Warn()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (h *zeroHandler) Warningf(format string, args ...interface{}) {
+func (h *zeroHandler) Warningf(format string, args ...any) {
 	if h.lvl > Warning {
 		return
 	}
@@ -159,7 +159,7 @@ func (h *zeroHandler) Warningf(format string, args ...interface{}) {
 	h.setFields(h.log.Warn()).Msgf(format, cleanArgs...)
 }
 
-func (h *zeroHandler) Error(args ...interface{}) {
+func (h *zeroHandler) Error(args ...any) {
 	if h.lvl > Error {
 		return
 	}
@@ -167,7 +167,7 @@ func (h *zeroHandler) Error(args ...interface{}) {
 	h.setFields(h.log.Error()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (h *zeroHandler) Errorf(format string, args ...interface{}) {
+func (h *zeroHandler) Errorf(format string, args ...any) {
 	if h.lvl > Error {
 		return
 	}
@@ -175,7 +175,7 @@ func (h *zeroHandler) Errorf(format string, args ...interface{}) {
 	h.setFields(h.log.Error()).Msgf(format, cleanArgs...)
 }
 
-func (h *zeroHandler) Panic(args ...interface{}) {
+func (h *zeroHandler) Panic(args ...any) {
 	if h.lvl > Panic {
 		return
 	}
@@ -183,7 +183,7 @@ func (h *zeroHandler) Panic(args ...interface{}) {
 	h.setFields(h.log.Panic()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (h *zeroHandler) Panicf(format string, args ...interface{}) {
+func (h *zeroHandler) Panicf(format string, args ...any) {
 	if h.lvl > Panic {
 		return
 	}
@@ -191,7 +191,7 @@ func (h *zeroHandler) Panicf(format string, args ...interface{}) {
 	h.setFields(h.log.Panic()).Msgf(format, cleanArgs...)
 }
 
-func (h *zeroHandler) Fatal(args ...interface{}) {
+func (h *zeroHandler) Fatal(args ...any) {
 	if h.lvl > Fatal {
 		return
 	}
@@ -199,7 +199,7 @@ func (h *zeroHandler) Fatal(args ...interface{}) {
 	h.setFields(h.log.Fatal()).Msg(fmt.Sprint(cleanArgs...))
 }
 
-func (h *zeroHandler) Fatalf(format string, args ...interface{}) {
+func (h *zeroHandler) Fatalf(format string, args ...any) {
 	if h.lvl > Fatal {
 		return
 	}
@@ -207,11 +207,11 @@ func (h *zeroHandler) Fatalf(format string, args ...interface{}) {
 	h.setFields(h.log.Fatal()).Msgf(format, cleanArgs...)
 }
 
-func (h *zeroHandler) Print(level Level, args ...interface{}) {
+func (h *zeroHandler) Print(level Level, args ...any) {
 	lPrint(h, level, sanitize(args...)...)
 }
 
-func (h *zeroHandler) Printf(level Level, format string, args ...interface{}) {
+func (h *zeroHandler) Printf(level Level, format string, args ...any) {
 	lPrintf(h, level, format, sanitize(args...)...)
 }
 
@@ -225,7 +225,7 @@ func (h *zeroHandler) setFields(ev *zerolog.Event) *zerolog.Event {
 
 // Returns the string s wrapped in ANSI code c.
 // Taken from the original console writer for zerolog.
-func colorize(s interface{}, c int) string {
+func colorize(s any, c int) string {
 	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
 }
 
@@ -233,13 +233,13 @@ func zeroCW(sink io.Writer) zerolog.ConsoleWriter {
 	return zerolog.ConsoleWriter{
 		Out:        sink,
 		TimeFormat: time.RFC3339,
-		FormatFieldName: func(i interface{}) string {
+		FormatFieldName: func(i any) string {
 			return colorize(fmt.Sprintf("%s=", i), colorDarkGray)
 		},
-		FormatErrFieldName: func(i interface{}) string {
+		FormatErrFieldName: func(i any) string {
 			return colorize(fmt.Sprintf("%s=", i), colorRed)
 		},
-		FormatLevel: func(i interface{}) string {
+		FormatLevel: func(i any) string {
 			var l string
 			ll, ok := i.(string)
 			if !ok {

@@ -3,6 +3,7 @@ package sdk
 import (
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.bryk.io/pkg/log"
 	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -28,12 +29,38 @@ func WithServiceVersion(version string) Option {
 	}
 }
 
+// WithResourceAttributes allows extending (or overriding) the core
+// attributes used globally by the application. The core attributes must
+// provide information at the resource level. These attributes are used
+// to configure the application's tracer and logger instances.
+func WithResourceAttributes(fields otel.Attributes) Option {
+	return func(op *Instrumentation) {
+		op.attrs = join(op.attrs, fields)
+	}
+}
+
 // WithSpanLimits allows to adjust the limits bound any Span created by
 // the tracer.
 // https://pkg.go.dev/go.opentelemetry.io/otel/sdk/trace#SpanLimits
 func WithSpanLimits(sl sdkTrace.SpanLimits) Option {
 	return func(op *Instrumentation) {
 		op.spanLimits = sl
+	}
+}
+
+// WithSpanProcessor registers a new span processor in the trace provider
+// processing chain.
+func WithSpanProcessor(sp sdkTrace.SpanProcessor) Option {
+	return func(op *Instrumentation) {
+		op.spanProcessors = append(op.spanProcessors, sp)
+	}
+}
+
+// WithSpanExporter enables a trace (i.e. span) exporter as data sink for the
+// application. If no exporter is set, all traces are discarded by default.
+func WithSpanExporter(exp sdkTrace.SpanExporter) Option {
+	return func(op *Instrumentation) {
+		op.traceExporter = exp
 	}
 }
 
@@ -49,38 +76,12 @@ func WithPropagator(mp propagation.TextMapPropagator) Option {
 	}
 }
 
-// WithSpanProcessor registers a new span processor in the trace provider
-// processing chain.
-func WithSpanProcessor(sp sdkTrace.SpanProcessor) Option {
-	return func(op *Instrumentation) {
-		op.spanProcessors = append(op.spanProcessors, sp)
-	}
-}
-
-// WithResourceAttributes allows extending (or overriding) the core
-// attributes used globally by the application. The core attributes must
-// provide information at the resource level. These attributes are used
-// to configure the application's tracer and logger instances.
-func WithResourceAttributes(fields otel.Attributes) Option {
-	return func(op *Instrumentation) {
-		op.attrs = join(op.attrs, fields)
-	}
-}
-
 // WithBaseLogger set the output handler. If not provided, all output is
 // discarded by default. The application will create an extended logger
 // using all the attributes discovered/provided during the setup process.
 func WithBaseLogger(ll log.Logger) Option {
 	return func(op *Instrumentation) {
 		op.log = ll
-	}
-}
-
-// WithSpanExporter enables a trace (i.e. span) exporter as data sink for the
-// application. If no exporter is set, all traces are discarded by default.
-func WithSpanExporter(exp sdkTrace.SpanExporter) Option {
-	return func(op *Instrumentation) {
-		op.traceExporter = exp
 	}
 }
 
@@ -99,6 +100,15 @@ func WithSampler(ss sdkTrace.Sampler) Option {
 func WithMetricExporter(exp sdkMetric.Exporter) Option {
 	return func(op *Instrumentation) {
 		op.metricExporter = exp
+	}
+}
+
+// WithPrometheusRegisterer setup a metrics exporter that converts OTLP metrics
+// into the Prometheus exposition format and implements `prometheus.Collector`
+// to provide a handler for these metrics.
+func WithPrometheusRegisterer(reg prometheus.Registerer) Option {
+	return func(op *Instrumentation) {
+		op.reg = reg
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	sdk "github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 )
 
 // Maps some HTTP codes to Sentry's span statuses.
@@ -48,7 +48,7 @@ func getStatus(s trace.ReadOnlySpan) sdk.SpanStatus {
 	statusCode := s.Status().Code
 
 	for _, attribute := range s.Attributes() {
-		if attribute.Key == semConv.HTTPStatusCodeKey {
+		if attribute.Key == semConv.HTTPResponseStatusCodeKey {
 			if status, ok := canonicalCodesHTTPMap[attribute.Value.AsString()]; ok {
 				return status
 			}

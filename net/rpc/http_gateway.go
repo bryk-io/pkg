@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 
@@ -111,10 +112,5 @@ func preserveHeaders() func(v string) (string, bool) {
 }
 
 func isHeaderValid(header string) bool {
-	for _, h := range invalidHeaders {
-		if h == header {
-			return false
-		}
-	}
-	return true
+	return !slices.Contains(invalidHeaders, header)
 }

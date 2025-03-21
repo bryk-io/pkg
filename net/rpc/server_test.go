@@ -21,9 +21,8 @@ import (
 	"go.bryk.io/pkg/net/rpc/ws"
 	otelApi "go.bryk.io/pkg/otel/api"
 	otelHttp "go.bryk.io/pkg/otel/http"
-	otelProm "go.bryk.io/pkg/otel/prometheus"
-
 	otelSdk "go.bryk.io/pkg/otel/sdk"
+	otelProm "go.bryk.io/pkg/prometheus"
 	sampleV1 "go.bryk.io/pkg/proto/sample/v1"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
@@ -49,6 +48,7 @@ func TestServer(t *testing.T) {
 		TimeFormat:   time.RFC3339,
 		ReportCaller: true,
 		Prefix:       "rpc-server",
+		WithColor:    true,
 	})
 
 	// Custom server metric
@@ -62,7 +62,8 @@ func TestServer(t *testing.T) {
 	}
 
 	// Prometheus integration
-	prom, err := otelProm.NewOperator(prometheus.NewRegistry(), sampleCounter)
+	promReg := prometheus.NewRegistry()
+	prom, err := otelProm.NewOperator(promReg, sampleCounter)
 	assert.Nil(err, "failed to enable prometheus, support")
 
 	// enable OTEL monitoring
@@ -74,6 +75,7 @@ func TestServer(t *testing.T) {
 		otelSdk.WithHostMetrics(),
 		otelSdk.WithSpanExporter(traceExp),
 		otelSdk.WithMetricExporter(metricExp),
+		otelSdk.WithPrometheusRegisterer(promReg), // export OTEL metrics to prometheus
 	}
 	monitoring, err := otelSdk.Setup(otelOpts...)
 	assert.Nil(err, "initialize operator")
@@ -92,6 +94,8 @@ func TestServer(t *testing.T) {
 	}
 	httpMonitor := otelHttp.NewMonitor(
 		otelHttp.WithSpanNameFormatter(spanNameFormatter),
+		otelHttp.WithTraceInHeader("x-request-id"),
+		otelHttp.WithNetworkEvents(),
 	)
 
 	// Base server configuration options
@@ -342,7 +346,7 @@ func TestServer(t *testing.T) {
 			WithHandlerName("http-gateway"),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
-			WithGatewayMiddleware(mwGzip.Handler(7)),
+			WithGatewayMiddleware(mwGzip.Handler(7), httpMonitor.ServerMiddleware()),
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
 			WithSpanFormatter(func(r *http.Request) string {
@@ -596,6 +600,7 @@ func TestServer(t *testing.T) {
 		// Setup HTTP gateway
 		gwOptions := []GatewayOption{
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
+			WithGatewayMiddleware(httpMonitor.ServerMiddleware()),
 			WithClientOptions(
 				WithClientTLS(ClientTLSConfig{
 					CustomCAs: [][]byte{ca},
@@ -772,6 +777,7 @@ func TestServer(t *testing.T) {
 		// Setup HTTP gateway
 		gwOptions := []GatewayOption{
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
+			WithGatewayMiddleware(httpMonitor.ServerMiddleware()),
 			WithClientOptions(
 				WithInsecureSkipVerify(),
 				WithAuthCertificate(cert, key),
@@ -981,6 +987,7 @@ func TestEchoServer(t *testing.T) {
 		TimeFormat:   time.RFC3339,
 		ReportCaller: true,
 		Prefix:       "echo-server",
+		WithColor:    true,
 	})
 
 	// enable OTEL monitoring
@@ -1035,11 +1042,19 @@ func TestEchoServer(t *testing.T) {
 		WithKeepalive(10),
 	}
 
+	// HTTP OTEL monitor; will be used to instrument the gateway HTTP server
+	// and the HTTP client used
+	httpMonitor := otelHttp.NewMonitor(
+		otelHttp.WithTraceInHeader("x-request-id"),
+		otelHttp.WithNetworkEvents(),
+	)
+
 	// Setup HTTP gateway
 	gwOptions := []GatewayOption{
 		WithHandlerName("http-gateway"),
 		WithUnaryErrorHandler(eh),
 		WithClientOptions(clientOpts...),
+		WithGatewayMiddleware(httpMonitor.ServerMiddleware()),
 	}
 	gw, err := NewGateway(gwOptions...)
 	if err != nil {
@@ -1051,11 +1066,11 @@ func TestEchoServer(t *testing.T) {
 	serverOpts := []ServerOption{
 		WithServiceProvider(&echoProvider{}),
 		WithPort(7878),
-		WithPanicRecovery(),
-		WithReflection(),
-		WithInputValidation(),
-		WithProtoValidate(),
 		WithHTTPGateway(gw),
+		WithReflection(),
+		WithProtoValidate(),
+		WithPanicRecovery(),
+		WithInputValidation(),
 		WithResourceLimits(ResourceLimits{
 			Connections: 100,
 			Requests:    100,
@@ -1126,7 +1141,7 @@ func TestEchoServer(t *testing.T) {
 
 	t.Run("HTTP", func(t *testing.T) {
 		// Instrumented HTTP client
-		hcl := otelHttp.NewMonitor().Client(nil)
+		hcl := httpMonitor.Client(nil)
 
 		// Submit requests until one fails
 		for {
@@ -1162,7 +1177,7 @@ func TestEchoServer(t *testing.T) {
 
 	// Stop client and server
 	assert.Nil(conn.Close(), "close client error")
-	assert.Nil(srv.Stop(false), "stop server error")
+	assert.Nil(srv.Stop(true), "stop server error")
 }
 
 // Start a sample server instance.

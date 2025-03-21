@@ -25,85 +25,85 @@ func (c *composite) SetLevel(lvl Level) {
 	}
 }
 
-func (c *composite) Debug(args ...interface{}) {
+func (c *composite) Debug(args ...any) {
 	for _, el := range c.list {
 		el.Debug(args...)
 	}
 }
 
-func (c *composite) Debugf(format string, args ...interface{}) {
+func (c *composite) Debugf(format string, args ...any) {
 	for _, el := range c.list {
 		el.Debugf(format, args...)
 	}
 }
 
-func (c *composite) Info(args ...interface{}) {
+func (c *composite) Info(args ...any) {
 	for _, el := range c.list {
 		el.Info(args...)
 	}
 }
 
-func (c *composite) Infof(format string, args ...interface{}) {
+func (c *composite) Infof(format string, args ...any) {
 	for _, el := range c.list {
 		el.Infof(format, args...)
 	}
 }
 
-func (c *composite) Warning(args ...interface{}) {
+func (c *composite) Warning(args ...any) {
 	for _, el := range c.list {
 		el.Warning(args...)
 	}
 }
 
-func (c *composite) Warningf(format string, args ...interface{}) {
+func (c *composite) Warningf(format string, args ...any) {
 	for _, el := range c.list {
 		el.Warningf(format, args...)
 	}
 }
 
-func (c *composite) Error(args ...interface{}) {
+func (c *composite) Error(args ...any) {
 	for _, el := range c.list {
 		el.Error(args...)
 	}
 }
 
-func (c *composite) Errorf(format string, args ...interface{}) {
+func (c *composite) Errorf(format string, args ...any) {
 	for _, el := range c.list {
 		el.Errorf(format, args...)
 	}
 }
 
-func (c *composite) Panic(args ...interface{}) {
+func (c *composite) Panic(args ...any) {
 	for _, el := range c.list {
 		el.Panic(args...)
 	}
 }
 
-func (c *composite) Panicf(format string, args ...interface{}) {
+func (c *composite) Panicf(format string, args ...any) {
 	for _, el := range c.list {
 		el.Panicf(format, args...)
 	}
 }
 
-func (c *composite) Fatal(args ...interface{}) {
+func (c *composite) Fatal(args ...any) {
 	for _, el := range c.list {
 		el.Fatal(args...)
 	}
 }
 
-func (c *composite) Fatalf(format string, args ...interface{}) {
+func (c *composite) Fatalf(format string, args ...any) {
 	for _, el := range c.list {
 		el.Fatalf(format, args...)
 	}
 }
 
-func (c *composite) Print(level Level, args ...interface{}) {
+func (c *composite) Print(level Level, args ...any) {
 	for _, el := range c.list {
 		el.Print(level, args...)
 	}
 }
 
-func (c *composite) Printf(level Level, format string, args ...interface{}) {
+func (c *composite) Printf(level Level, format string, args ...any) {
 	for _, el := range c.list {
 		el.Printf(level, format, args...)
 	}
@@ -118,7 +118,7 @@ func (c *composite) WithFields(fields Fields) Logger {
 	return c
 }
 
-func (c *composite) WithField(key string, value interface{}) Logger {
+func (c *composite) WithField(key string, value any) Logger {
 	c.mu.Lock()
 	for i, el := range c.list {
 		c.list[i] = el.WithField(key, value)

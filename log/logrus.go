@@ -43,14 +43,14 @@ func (lh *logrusHandler) WithFields(fields Fields) Logger {
 	return lh
 }
 
-func (lh *logrusHandler) WithField(key string, value interface{}) Logger {
+func (lh *logrusHandler) WithField(key string, value any) Logger {
 	lh.mu.Lock()
 	lh.fields.Set(key, value)
 	lh.mu.Unlock()
 	return lh
 }
 
-func (lh *logrusHandler) Debug(args ...interface{}) {
+func (lh *logrusHandler) Debug(args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Debug {
@@ -60,7 +60,7 @@ func (lh *logrusHandler) Debug(args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Debugf(format string, args ...interface{}) {
+func (lh *logrusHandler) Debugf(format string, args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Debug {
@@ -70,7 +70,7 @@ func (lh *logrusHandler) Debugf(format string, args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Info(args ...interface{}) {
+func (lh *logrusHandler) Info(args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Info {
@@ -80,7 +80,7 @@ func (lh *logrusHandler) Info(args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Infof(format string, args ...interface{}) {
+func (lh *logrusHandler) Infof(format string, args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Info {
@@ -90,7 +90,7 @@ func (lh *logrusHandler) Infof(format string, args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Warning(args ...interface{}) {
+func (lh *logrusHandler) Warning(args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Warning {
@@ -100,7 +100,7 @@ func (lh *logrusHandler) Warning(args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Warningf(format string, args ...interface{}) {
+func (lh *logrusHandler) Warningf(format string, args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Warning {
@@ -110,7 +110,7 @@ func (lh *logrusHandler) Warningf(format string, args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Error(args ...interface{}) {
+func (lh *logrusHandler) Error(args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Error {
@@ -120,7 +120,7 @@ func (lh *logrusHandler) Error(args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Errorf(format string, args ...interface{}) {
+func (lh *logrusHandler) Errorf(format string, args ...any) {
 	lh.mu.Lock()
 	defer lh.mu.Unlock()
 	if lh.lvl > Error {
@@ -130,7 +130,7 @@ func (lh *logrusHandler) Errorf(format string, args ...interface{}) {
 	lh.fields.Clear()
 }
 
-func (lh *logrusHandler) Panic(args ...interface{}) {
+func (lh *logrusHandler) Panic(args ...any) {
 	if lh.lvl > Panic {
 		return
 	}
@@ -138,7 +138,7 @@ func (lh *logrusHandler) Panic(args ...interface{}) {
 	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panic(sanitize(args...)...)
 }
 
-func (lh *logrusHandler) Panicf(format string, args ...interface{}) {
+func (lh *logrusHandler) Panicf(format string, args ...any) {
 	if lh.lvl > Panic {
 		return
 	}
@@ -146,7 +146,7 @@ func (lh *logrusHandler) Panicf(format string, args ...interface{}) {
 	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Panicf(format, sanitize(args...)...)
 }
 
-func (lh *logrusHandler) Fatal(args ...interface{}) {
+func (lh *logrusHandler) Fatal(args ...any) {
 	if lh.lvl > Fatal {
 		return
 	}
@@ -154,7 +154,7 @@ func (lh *logrusHandler) Fatal(args ...interface{}) {
 	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatal(sanitize(args...)...)
 }
 
-func (lh *logrusHandler) Fatalf(format string, args ...interface{}) {
+func (lh *logrusHandler) Fatalf(format string, args ...any) {
 	if lh.lvl > Fatal {
 		return
 	}
@@ -162,10 +162,10 @@ func (lh *logrusHandler) Fatalf(format string, args ...interface{}) {
 	lh.log.WithFields(logrus.Fields(lh.fields.Values())).Fatalf(format, sanitize(args...)...)
 }
 
-func (lh *logrusHandler) Print(level Level, args ...interface{}) {
+func (lh *logrusHandler) Print(level Level, args ...any) {
 	lPrint(lh, level, sanitize(args...)...)
 }
 
-func (lh *logrusHandler) Printf(level Level, format string, args ...interface{}) {
+func (lh *logrusHandler) Printf(level Level, format string, args ...any) {
 	lPrintf(lh, level, format, sanitize(args...)...)
 }

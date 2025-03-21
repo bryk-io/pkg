@@ -7,7 +7,7 @@ import (
 	sdk "github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/otel/attribute"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -44,9 +44,9 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 		case operationKey: // explicitly set operation name
 			result.Op = asString(attr.Value)
 			result.Source = sdk.SourceTask
-		case semConv.HTTPMethodKey:
+		case semConv.HTTPRequestMethodKey:
 			result = descriptionForHTTPMethod(s)
-		case semConv.DBSystemKey:
+		case semConv.DBSystemNameKey:
 			result = descriptionForDBSystem(s)
 		case semConv.RPCSystemKey:
 			result.Op = "rpc"
@@ -67,7 +67,7 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 func descriptionForDBSystem(s sdkTrace.ReadOnlySpan) spanAttributes {
 	description := s.Name()
 	for _, attr := range s.Attributes() {
-		if attr.Key == semConv.DBStatementKey {
+		if attr.Key == semConv.DBQueryTextKey {
 			description = attr.Value.AsString()
 			break
 		}
@@ -79,6 +79,7 @@ func descriptionForDBSystem(s sdkTrace.ReadOnlySpan) spanAttributes {
 	}
 }
 
+// https://opentelemetry.io/docs/specs/semconv/attributes-registry/http
 func descriptionForHTTPMethod(s sdkTrace.ReadOnlySpan) spanAttributes {
 	var (
 		httpTarget string
@@ -101,13 +102,13 @@ func descriptionForHTTPMethod(s sdkTrace.ReadOnlySpan) spanAttributes {
 	// load common attributes
 	for _, attr := range s.Attributes() {
 		switch attr.Key {
-		case semConv.HTTPTargetKey:
+		case semConv.URLPathKey:
 			httpTarget = attr.Value.AsString()
 		case semConv.HTTPRouteKey:
 			httpRoute = attr.Value.AsString()
-		case semConv.HTTPMethodKey:
+		case semConv.HTTPRequestMethodKey:
 			httpMethod = attr.Value.AsString()
-		case semConv.HTTPURLKey:
+		case semConv.URLFullKey:
 			httpURL = attr.Value.AsString()
 		}
 	}
@@ -167,7 +168,7 @@ func extractUser(attr []attribute.KeyValue) *sdk.User {
 		case userIDKey:
 			user.ID = k.Value.AsString()
 			report = true
-		case userIPKey, semConv.HTTPClientIPKey:
+		case userIPKey, semConv.ClientAddressKey:
 			user.IPAddress = k.Value.AsString()
 			report = true
 		case userEmailKey:

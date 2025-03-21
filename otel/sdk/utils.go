@@ -19,10 +19,13 @@ import (
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkResource "go.opentelemetry.io/otel/sdk/resource"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 )
+
+// Trace conventions
+// https://opentelemetry.io/docs/concepts/signals/traces
 
 const (
 	lblSvcName          = string(semConv.ServiceNameKey)
@@ -236,7 +239,7 @@ func join(list ...otel.Attributes) otel.Attributes {
 
 // Any creates a new key-value pair instance with a passed name and
 // automatic type inference. This is slower, and not type-safe.
-func kvAny(k string, value interface{}) attribute.KeyValue {
+func kvAny(k string, value any) attribute.KeyValue {
 	if value == nil {
 		return attribute.String(k, "<nil>")
 	}

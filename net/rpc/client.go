@@ -52,6 +52,9 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		c.dialOpts = append(c.dialOpts, grpc.WithDefaultCallOptions(c.callOpts...))
 	}
 
+	// Setup instrumentation
+	c.dialOpts = append(c.dialOpts, otelGrpc.ClientInstrumentation())
+
 	// Add middleware
 	unary, stream := c.getMiddleware()
 	c.dialOpts = append(c.dialOpts, grpc.WithUnaryInterceptor(mw.ChainUnaryClient(unary...)))
@@ -108,11 +111,6 @@ func (c *Client) setup(options ...ClientOption) error {
 
 // Return properly setup client middleware.
 func (c *Client) getMiddleware() (unary []grpc.UnaryClientInterceptor, stream []grpc.StreamClientInterceptor) {
-	// Setup observability before anything else
-	ui, si := otelGrpc.NewMonitor().Client()
-	unary = append(unary, ui)
-	stream = append(stream, si)
-
 	// Add registered middleware
 	unary = append(unary, c.middlewareUnary...)
 	stream = append(stream, c.middlewareStream...)

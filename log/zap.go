@@ -48,14 +48,14 @@ func (zh *zapHandler) WithFields(fields Fields) Logger {
 	return zh
 }
 
-func (zh *zapHandler) WithField(key string, value interface{}) Logger {
+func (zh *zapHandler) WithField(key string, value any) Logger {
 	zh.mu.Lock()
 	zh.fields.Set(key, value)
 	zh.mu.Unlock()
 	return zh
 }
 
-func (zh *zapHandler) Debug(args ...interface{}) {
+func (zh *zapHandler) Debug(args ...any) {
 	if zh.lvl > Debug {
 		return
 	}
@@ -65,7 +65,7 @@ func (zh *zapHandler) Debug(args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Debugf(format string, args ...interface{}) {
+func (zh *zapHandler) Debugf(format string, args ...any) {
 	if zh.lvl > Debug {
 		return
 	}
@@ -75,7 +75,7 @@ func (zh *zapHandler) Debugf(format string, args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Info(args ...interface{}) {
+func (zh *zapHandler) Info(args ...any) {
 	if zh.lvl > Info {
 		return
 	}
@@ -85,7 +85,7 @@ func (zh *zapHandler) Info(args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Infof(format string, args ...interface{}) {
+func (zh *zapHandler) Infof(format string, args ...any) {
 	if zh.lvl > Info {
 		return
 	}
@@ -95,7 +95,7 @@ func (zh *zapHandler) Infof(format string, args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Warning(args ...interface{}) {
+func (zh *zapHandler) Warning(args ...any) {
 	if zh.lvl > Warning {
 		return
 	}
@@ -105,7 +105,7 @@ func (zh *zapHandler) Warning(args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Warningf(format string, args ...interface{}) {
+func (zh *zapHandler) Warningf(format string, args ...any) {
 	if zh.lvl > Warning {
 		return
 	}
@@ -115,7 +115,7 @@ func (zh *zapHandler) Warningf(format string, args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Error(args ...interface{}) {
+func (zh *zapHandler) Error(args ...any) {
 	if zh.lvl > Error {
 		return
 	}
@@ -125,7 +125,7 @@ func (zh *zapHandler) Error(args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Errorf(format string, args ...interface{}) {
+func (zh *zapHandler) Errorf(format string, args ...any) {
 	if zh.lvl > Error {
 		return
 	}
@@ -135,7 +135,7 @@ func (zh *zapHandler) Errorf(format string, args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Panic(args ...interface{}) {
+func (zh *zapHandler) Panic(args ...any) {
 	if zh.lvl > Panic {
 		return
 	}
@@ -145,7 +145,7 @@ func (zh *zapHandler) Panic(args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Panicf(format string, args ...interface{}) {
+func (zh *zapHandler) Panicf(format string, args ...any) {
 	if zh.lvl > Panic {
 		return
 	}
@@ -155,7 +155,7 @@ func (zh *zapHandler) Panicf(format string, args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Fatal(args ...interface{}) {
+func (zh *zapHandler) Fatal(args ...any) {
 	if zh.lvl > Fatal {
 		return
 	}
@@ -165,7 +165,7 @@ func (zh *zapHandler) Fatal(args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Fatalf(format string, args ...interface{}) {
+func (zh *zapHandler) Fatalf(format string, args ...any) {
 	if zh.lvl > Fatal {
 		return
 	}
@@ -175,10 +175,10 @@ func (zh *zapHandler) Fatalf(format string, args ...interface{}) {
 	zh.mu.Unlock()
 }
 
-func (zh *zapHandler) Print(level Level, args ...interface{}) {
+func (zh *zapHandler) Print(level Level, args ...any) {
 	lPrint(zh, level, sanitize(args...)...)
 }
 
-func (zh *zapHandler) Printf(level Level, format string, args ...interface{}) {
+func (zh *zapHandler) Printf(level Level, format string, args ...any) {
 	lPrintf(zh, level, format, sanitize(args...)...)
 }

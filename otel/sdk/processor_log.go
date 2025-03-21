@@ -22,8 +22,7 @@ var noLogFields = []string{
 	"exception.stack",
 	"exception.stacktrace",
 	"exception.report",
-	// commonly used to hold original error value to report
-	// on Sentry
+	// commonly used to hold original error value to report on Sentry
 	"sentry.error",
 }
 
@@ -35,9 +34,18 @@ type logSpans struct {
 	Next sdkTrace.SpanProcessor
 }
 
-// OnEnd is used to log a message once each span has ended.
+// OnStart is used to log a message when a new span is created.
+func (f logSpans) OnStart(parent context.Context, s sdkTrace.ReadWriteSpan) {
+	// log "start" operation message
+	if rs, ok := s.(sdkTrace.ReadOnlySpan); ok {
+		f.log.WithFields(f.fields(rs, false)).Info(s.Name())
+	}
+	f.Next.OnStart(parent, s)
+}
+
+// OnEnd is used to log a message when a span has ended.
 func (f logSpans) OnEnd(s sdkTrace.ReadOnlySpan) {
-	// Log "intermediary" operation events
+	// log "intermediary" operation events
 	for _, event := range s.Events() {
 		eventLvl, eventAttrs := f.event(event, f.fields(s, false))
 		f.log.WithFields(eventAttrs).Print(eventLvl, event.Name)
@@ -50,15 +58,6 @@ func (f logSpans) OnEnd(s sdkTrace.ReadOnlySpan) {
 	}
 	f.log.WithFields(f.fields(s, true)).Printf(level, "%s completed", s.Name())
 	f.Next.OnEnd(s)
-}
-
-// OnStart is used to log a message when a new span is created.
-func (f logSpans) OnStart(parent context.Context, s sdkTrace.ReadWriteSpan) {
-	// Log "start" operation message
-	if rs, ok := s.(sdkTrace.ReadOnlySpan); ok {
-		f.log.WithFields(f.fields(rs, false)).Info(s.Name())
-	}
-	f.Next.OnStart(parent, s)
 }
 
 func (f logSpans) Shutdown(ctx context.Context) error {

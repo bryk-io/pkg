@@ -75,21 +75,21 @@ func (h *charmHandler) WithFields(fields Fields) Logger {
 	return h
 }
 
-func (h *charmHandler) WithField(key string, value interface{}) Logger {
+func (h *charmHandler) WithField(key string, value any) Logger {
 	h.mu.Lock()
 	h.fields.Set(key, value)
 	h.mu.Unlock()
 	return h
 }
 
-func (h *charmHandler) Sub(tags map[string]interface{}) Logger {
+func (h *charmHandler) Sub(tags map[string]any) Logger {
 	return &charmHandler{
 		cl:     h.cl.With(expand(tags)...),
 		fields: metadata.New(),
 	}
 }
 
-func (h *charmHandler) Print(level Level, args ...interface{}) {
+func (h *charmHandler) Print(level Level, args ...any) {
 	h.cl.Helper()
 	switch level {
 	case Debug:
@@ -107,7 +107,7 @@ func (h *charmHandler) Print(level Level, args ...interface{}) {
 	}
 }
 
-func (h *charmHandler) Printf(level Level, format string, args ...interface{}) {
+func (h *charmHandler) Printf(level Level, format string, args ...any) {
 	h.cl.Helper()
 	switch level {
 	case Debug:
@@ -125,18 +125,18 @@ func (h *charmHandler) Printf(level Level, format string, args ...interface{}) {
 	}
 }
 
-func (h *charmHandler) Debug(args ...interface{}) {
+func (h *charmHandler) Debug(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []interface{}{}
+	fields := []any{}
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Debug(args[0], fields...)
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Debugf(format string, args ...interface{}) {
+func (h *charmHandler) Debugf(format string, args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
@@ -145,18 +145,18 @@ func (h *charmHandler) Debugf(format string, args ...interface{}) {
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Info(args ...interface{}) {
+func (h *charmHandler) Info(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []interface{}{}
+	fields := []any{}
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Info(args[0], fields...)
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Infof(format string, args ...interface{}) {
+func (h *charmHandler) Infof(format string, args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
@@ -165,18 +165,18 @@ func (h *charmHandler) Infof(format string, args ...interface{}) {
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Warning(args ...interface{}) {
+func (h *charmHandler) Warning(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []interface{}{}
+	fields := []any{}
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Warn(args[0], fields...)
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Warningf(format string, args ...interface{}) {
+func (h *charmHandler) Warningf(format string, args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
@@ -185,18 +185,18 @@ func (h *charmHandler) Warningf(format string, args ...interface{}) {
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Error(args ...interface{}) {
+func (h *charmHandler) Error(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []interface{}{}
+	fields := []any{}
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Error(args[0], fields...)
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Errorf(format string, args ...interface{}) {
+func (h *charmHandler) Errorf(format string, args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
@@ -205,11 +205,11 @@ func (h *charmHandler) Errorf(format string, args ...interface{}) {
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Panic(args ...interface{}) {
+func (h *charmHandler) Panic(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []interface{}{}
+	fields := []any{}
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Error(args[0], fields...)
@@ -217,7 +217,7 @@ func (h *charmHandler) Panic(args ...interface{}) {
 	panic(args[0])
 }
 
-func (h *charmHandler) Panicf(format string, args ...interface{}) {
+func (h *charmHandler) Panicf(format string, args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
@@ -227,18 +227,18 @@ func (h *charmHandler) Panicf(format string, args ...interface{}) {
 	panic(fmt.Sprintf(format, args...))
 }
 
-func (h *charmHandler) Fatal(args ...interface{}) {
+func (h *charmHandler) Fatal(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []interface{}{}
+	fields := []any{}
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Fatal(args[0], fields...)
 	h.fields.Clear()
 }
 
-func (h *charmHandler) Fatalf(format string, args ...interface{}) {
+func (h *charmHandler) Fatalf(format string, args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
@@ -264,8 +264,8 @@ func mapCharmLevel(lvl Level) charm.Level {
 	}
 }
 
-func expand(m map[string]interface{}) []interface{} {
-	args := []interface{}{}
+func expand(m map[string]any) []any {
+	args := []any{}
 	ctr := 0
 	for k, v := range m {
 		args = append(args, k, v)

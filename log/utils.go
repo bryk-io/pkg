@@ -6,7 +6,7 @@ import (
 	"go.bryk.io/pkg/metadata"
 )
 
-func lPrint(ll SimpleLogger, lv Level, args ...interface{}) {
+func lPrint(ll SimpleLogger, lv Level, args ...any) {
 	switch lv {
 	case Debug:
 		ll.Debug(args...)
@@ -23,7 +23,7 @@ func lPrint(ll SimpleLogger, lv Level, args ...interface{}) {
 	}
 }
 
-func lPrintf(ll SimpleLogger, lv Level, format string, args ...interface{}) {
+func lPrintf(ll SimpleLogger, lv Level, format string, args ...any) {
 	switch lv {
 	case Debug:
 		ll.Debugf(format, args...)
@@ -40,11 +40,11 @@ func lPrintf(ll SimpleLogger, lv Level, format string, args ...interface{}) {
 	}
 }
 
-func sanitize(args ...interface{}) []interface{} {
+func sanitize(args ...any) []any {
 	var (
 		vs string
 		ok bool
-		sv = make([]interface{}, len(args))
+		sv = make([]any, len(args))
 	)
 	for i, v := range args {
 		// remove all newlines and carriage returns
@@ -56,7 +56,7 @@ func sanitize(args ...interface{}) []interface{} {
 	return sv
 }
 
-func fields(md ...metadata.MD) []interface{} {
+func fields(md ...metadata.MD) []any {
 	// get all fields from the metadata
 	fields := metadata.New()
 	fields.Join(md...)
@@ -70,7 +70,7 @@ func fields(md ...metadata.MD) []interface{} {
 
 	// build the list of fields
 	i := 0
-	list := make([]interface{}, size)
+	list := make([]any, size)
 	for k, v := range values {
 		list[i] = k
 		list[i+1] = v

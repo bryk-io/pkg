@@ -17,8 +17,8 @@ import (
 	"github.com/soheilhy/cmux"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
-	otelGrpc "go.bryk.io/pkg/otel/grpc"
-	otelProm "go.bryk.io/pkg/otel/prometheus"
+	otelgrpc "go.bryk.io/pkg/otel/grpc"
+	"go.bryk.io/pkg/prometheus"
 	"golang.org/x/net/netutil"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -66,7 +66,7 @@ type Server struct {
 	inputValidation  bool                           // Enable automatic input validation
 	reflection       bool                           // Enable server reflection protocol
 	healthCheck      HealthCheck                    // Enable health checks
-	prometheus       otelProm.Operator              // Prometheus support
+	prometheus       prometheus.Operator            // Prometheus support
 	mu               sync.Mutex
 }
 
@@ -76,6 +76,9 @@ func NewServer(options ...ServerOption) (*Server, error) {
 	if err := srv.setup(options...); err != nil {
 		return nil, errors.Wrap(err, "setup error")
 	}
+
+	// enable server instrumentation
+	srv.opts = append(srv.opts, otelgrpc.ServerInstrumentation())
 	return srv, nil
 }
 
@@ -337,8 +340,7 @@ func (srv *Server) setupNetworkInterface(network, address string) (net.Listener,
 
 // Configure the server's HTTP gateway network interface and multiplexer.
 // nolint: gocyclo
-func (srv *Server) setupGateway() error {
-	var err error
+func (srv *Server) setupGateway() (err error) {
 	switch {
 	// no gateway or options, nothing to do
 	case srv.gateway == nil && len(srv.gatewayOpts) == 0:
@@ -357,12 +359,12 @@ func (srv *Server) setupGateway() error {
 	}
 
 	// Setup gateway network interface
-	if err := srv.setupGatewayInterface(); err != nil {
+	if err = srv.setupGatewayInterface(); err != nil {
 		return err
 	}
 
 	// Establish gateway <-> server connection
-	if err := srv.gateway.connect(srv.Endpoint()); err != nil {
+	if err = srv.gateway.connect(srv.Endpoint()); err != nil {
 		return err
 	}
 
@@ -443,11 +445,6 @@ func (srv *Server) setupGatewayInterface() error {
 
 // Return properly setup server middleware.
 func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream []grpc.StreamServerInterceptor) {
-	// Setup observability before anything else
-	ui, si := otelGrpc.NewMonitor().Server()
-	unary = append(unary, ui)
-	stream = append(stream, si)
-
 	// Setup prometheus metrics before any functional middleware
 	if srv.prometheus != nil {
 		ui, si := srv.prometheus.Server()

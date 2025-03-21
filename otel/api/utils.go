@@ -6,18 +6,24 @@ import (
 	"go.bryk.io/pkg/otel"
 )
 
+const (
+	eventKindKey  = "event.kind"
+	eventLevelKey = "event.level"
+	eventDataKey  = "event.data"
+)
+
 // AsWarning returns a set of attributes to mark an event as a warning.
 func AsWarning() otel.Attributes {
 	return otel.Attributes{
-		"event.kind":  "error",
-		"event.level": "warning",
+		eventKindKey:  "error",
+		eventLevelKey: "warning",
 	}
 }
 
 // AsQuery returns a set of attributes to mark an event as a query.
 func AsQuery() otel.Attributes {
 	return otel.Attributes{
-		"event.kind": "query",
+		eventKindKey: "query",
 	}
 }
 
@@ -25,8 +31,8 @@ func AsQuery() otel.Attributes {
 // additional information.
 func AsInfo() otel.Attributes {
 	return otel.Attributes{
-		"event.kind":  "info",
-		"event.level": "info",
+		eventKindKey:  "info",
+		eventLevelKey: "info",
 	}
 }
 
@@ -34,7 +40,7 @@ func AsInfo() otel.Attributes {
 // describing a tracing event.
 func AsTransaction() otel.Attributes {
 	return otel.Attributes{
-		"event.kind": "transaction",
+		eventKindKey: "transaction",
 	}
 }
 
@@ -50,10 +56,11 @@ func AsOperation(name string) otel.Attributes {
 // an HTTP request started by the application.
 func AsHTTP(r *http.Request) otel.Attributes {
 	return otel.Attributes{
-		"event.kind": "http",
-		"event.data": map[string]interface{}{
-			"method":       r.Method,
+		eventKindKey: "http",
+		eventDataKey: map[string]any{
 			"url":          r.URL.String(),
+			"method":       r.Method,
+			"fragment":     r.URL.Fragment,
 			"query_string": r.URL.Query().Encode(),
 		},
 	}
@@ -63,8 +70,8 @@ func AsHTTP(r *http.Request) otel.Attributes {
 // a navigation event.
 func AsNavigation(to, from string) otel.Attributes {
 	return otel.Attributes{
-		"event.kind": "navigation",
-		"event.data": map[string]interface{}{
+		eventKindKey: "navigation",
+		eventDataKey: map[string]any{
 			"to":   to,
 			"from": from,
 		},
@@ -72,13 +79,11 @@ func AsNavigation(to, from string) otel.Attributes {
 }
 
 // AsEventData sets the `event.data` attribute to the provided value.
-func AsEventData(data interface{}) otel.Attributes {
-	return otel.Attributes{
-		"event.data": data,
-	}
+func AsEventData(data any) otel.Attributes {
+	return otel.Attributes{eventDataKey: data}
 }
 
 // AsTags returns a set of attributes from the provided key-value pairs.
-func AsTags(kv map[string]interface{}) otel.Attributes {
+func AsTags(kv map[string]any) otel.Attributes {
 	return otel.Attributes(kv)
 }

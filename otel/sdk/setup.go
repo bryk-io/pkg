@@ -5,11 +5,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.bryk.io/pkg/log"
 	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/contrib/instrumentation/host"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	apiOtel "go.opentelemetry.io/otel"
+	expPrometheus "go.opentelemetry.io/otel/exporters/prometheus"
 	"go.opentelemetry.io/otel/propagation"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkResource "go.opentelemetry.io/otel/sdk/resource"
@@ -34,19 +36,20 @@ type Instrumentation struct {
 	spanLimits        sdkTrace.SpanLimits             // default span limits
 	sampler           sdkTrace.Sampler                // trace sampler strategy used
 	exemplars         bool                            // enable exemplar support
+	reg               prometheus.Registerer           // prometheus integration
 }
 
 // Setup a new OpenTelemetry instrumented application.
 func Setup(options ...Option) (*Instrumentation, error) {
 	// Create app instance and apply options.
 	app := &Instrumentation{
-		log:               log.Discard(),            // discard logs
-		attrs:             otel.Attributes{},        // no custom attributes
-		traceExporter:     new(noOpExporter),        // discard traces and metrics
-		sampler:           sdkTrace.AlwaysSample(),  // track all traces by default
-		spanLimits:        sdkTrace.NewSpanLimits(), // apply default span limits
-		runtimeMetricsInt: time.Duration(10) * time.Second,
-		spanProcessors:    []sdkTrace.SpanProcessor{},
+		log:               log.Discard(),                   // discard logs
+		attrs:             otel.Attributes{},               // no custom attributes
+		traceExporter:     new(noOpExporter),               // discard traces and metrics
+		sampler:           sdkTrace.AlwaysSample(),         // track all traces by default
+		spanLimits:        sdkTrace.NewSpanLimits(),        // apply default span limits
+		runtimeMetricsInt: time.Duration(10) * time.Second, // interval for metrics collecting
+		spanProcessors:    []sdkTrace.SpanProcessor{},      // empty span processing pipeline
 		propagators: []propagation.TextMapPropagator{
 			propagation.Baggage{},      // headers: baggage
 			propagation.TraceContext{}, // headers: traceparent, tracestate
@@ -63,6 +66,8 @@ func Setup(options ...Option) (*Instrumentation, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Prepare base app logger
 	attrs := otel.Attributes{}
 	attrs.Load(app.resource.Attributes())
 	app.log = app.log.Sub(attrs)
@@ -78,12 +83,12 @@ func Setup(options ...Option) (*Instrumentation, error) {
 	app.setupProviders()
 
 	// Set OTEL globals.
-	apiOtel.SetErrorHandler(errorHandler{ll: app.log}) // error handler
-	apiOtel.SetTextMapPropagator(app.propagator)       // propagator(s)
-	apiOtel.SetTracerProvider(app.traceProvider)       // trace provider
+	apiOtel.SetErrorHandler(errorHandler{ll: app.log})
+	apiOtel.SetTextMapPropagator(app.propagator)
+	apiOtel.SetTracerProvider(app.traceProvider)
 	if app.meterProvider != nil {
-		apiOtel.SetMeterProvider(app.meterProvider) // metric provider
-		app.captureStandardMetrics()                // start collecting common metrics
+		apiOtel.SetMeterProvider(app.meterProvider)
+		app.captureStandardMetrics() // start collecting common metrics
 	}
 	return app, nil
 }
@@ -94,8 +99,8 @@ func (app *Instrumentation) Logger() log.Logger {
 }
 
 // Flush immediately exports all spans that have not yet been exported for all
-// the registered span processors and shut down them down. No further data will
-// be captured or processed after this call.
+// registered span processors and shut down them down. No further data will be
+// captured or processed after this call.
 func (app *Instrumentation) Flush(ctx context.Context) {
 	// Stop trace provider and exporter
 	_ = app.traceProvider.ForceFlush(ctx)
@@ -110,10 +115,11 @@ func (app *Instrumentation) Flush(ctx context.Context) {
 
 // Create the metrics and traces providers.
 func (app *Instrumentation) setupProviders() {
-	// Custom span processor chain to generate logs.
+	// Default span processor chain to generate logs. Completed spans are submitted
+	// to the trace exporter.
 	spc := logSpans{
-		log:  app.log,                                           // custom `SpanProcessor` to generate logs
-		Next: sdkTrace.NewBatchSpanProcessor(app.traceExporter), // submit completed spans to the exporter
+		log:  app.log,
+		Next: sdkTrace.NewBatchSpanProcessor(app.traceExporter),
 	}
 
 	// Trace provider options.
@@ -152,6 +158,13 @@ func (app *Instrumentation) setupProviders() {
 	metricProviderOpts := []sdkMetric.Option{
 		sdkMetric.WithResource(app.resource),
 		sdkMetric.WithReader(sdkMetric.NewPeriodicReader(app.metricExporter)),
+	}
+	// ...enable prometheus integration if a "Registerer" was provided
+	if app.reg != nil {
+		expProm, err := expPrometheus.New(expPrometheus.WithRegisterer(app.reg))
+		if err == nil {
+			metricProviderOpts = append(metricProviderOpts, sdkMetric.WithReader(expProm))
+		}
 	}
 	app.meterProvider = sdkMetric.NewMeterProvider(metricProviderOpts...)
 }

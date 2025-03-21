@@ -42,9 +42,8 @@ OpenTelemetry you need to follow some conventions.
   emit telemetry when it is part of an app that uses the OpenTelemetry SDK.
 
 - If you’re instrumenting an app, you need to use the OpenTelemetry SDK for your
-  language. You’ll then use the SDK to initialize OpenTelemetry and the API to
-  instrument your code. This will emit telemetry from your app, and any library
-  you installed that also comes with instrumentation.
+  language. This will emit telemetry from your app, and any library you installed
+  that also comes with instrumentation.
 
 ## 1. Instrumenting Your Application
 

@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"gorm.io/plugin/opentelemetry/metrics"
@@ -111,6 +111,8 @@ func (p *plugin) before(spanName string) gormHookFunc {
 	}
 }
 
+// semconv values reference
+// https://opentelemetry.io/docs/specs/semconv/non-normative/db-migration/
 func (p *plugin) after() gormHookFunc {
 	return func(tx *gorm.DB) {
 		// start span
@@ -135,9 +137,9 @@ func (p *plugin) after() gormHookFunc {
 			query = tx.Dialector.Explain(tx.Statement.SQL.String(), vars...)
 		}
 
-		attrs = append(attrs, semConv.DBStatementKey.String(p.formatQuery(query)))
+		attrs = append(attrs, semConv.DBQueryTextKey.String(p.formatQuery(query)))
 		if tx.Statement.Table != "" {
-			attrs = append(attrs, semConv.DBSQLTableKey.String(tx.Statement.Table))
+			attrs = append(attrs, semConv.DBCollectionNameKey.String(tx.Statement.Table))
 		}
 		if tx.Statement.RowsAffected != -1 {
 			attrs = append(attrs, dbRowsAffected.Int64(tx.Statement.RowsAffected))
@@ -179,18 +181,18 @@ func (p *plugin) formatQuery(query string) string {
 func dbSystem(tx *gorm.DB) attribute.KeyValue {
 	switch tx.Dialector.Name() {
 	case "mysql":
-		return semConv.DBSystemMySQL
+		return semConv.DBSystemNameMySQL
 	case "mssql":
-		return semConv.DBSystemMSSQL
+		return semConv.DBSystemNameMicrosoftSQLServer
 	case "postgres", "postgresql":
-		return semConv.DBSystemPostgreSQL
+		return semConv.DBSystemNamePostgreSQL
 	case "sqlite":
-		return semConv.DBSystemSqlite
+		return semConv.DBSystemNameSqlite
 	case "sqlserver":
-		return semConv.DBSystemKey.String("sqlserver")
+		return semConv.DBSystemNameMicrosoftSQLServer
 	case "clickhouse":
-		return semConv.DBSystemKey.String("clickhouse")
+		return semConv.DBSystemNameClickhouse
 	default:
-		return semConv.DBSystemOtherSQL
+		return semConv.DBSystemNameOtherSQL
 	}
 }

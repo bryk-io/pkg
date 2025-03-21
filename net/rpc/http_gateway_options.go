@@ -57,11 +57,11 @@ func WithGatewayPort(port int) GatewayOption {
 
 // WithGatewayMiddleware allows extending and adjusting the behavior of the
 // HTTP gateway with standard middleware providers.
-func WithGatewayMiddleware(md func(http.Handler) http.Handler) GatewayOption {
+func WithGatewayMiddleware(md ...func(http.Handler) http.Handler) GatewayOption {
 	return func(gw *Gateway) error {
 		gw.mu.Lock()
 		defer gw.mu.Unlock()
-		gw.middleware = append(gw.middleware, md)
+		gw.middleware = append(gw.middleware, md...)
 		return nil
 	}
 }

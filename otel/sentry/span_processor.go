@@ -15,7 +15,7 @@ import (
 	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/otel/attribute"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -238,7 +238,7 @@ func linkTraceContextToErrorEvent(event *sdk.Event, hint *sdk.EventHint) *sdk.Ev
 func isSentryRequestSpan(ctx context.Context, s sdkTrace.ReadOnlySpan) bool {
 	// Look for the `http.url` attribute
 	for _, attribute := range s.Attributes() {
-		if attribute.Key == semConv.HTTPURLKey {
+		if attribute.Key == semConv.URLFullKey {
 			return isSentryRequestURL(ctx, attribute.Value.AsString())
 		}
 	}

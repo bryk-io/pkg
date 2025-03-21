@@ -52,13 +52,13 @@ type SpanManaged interface {
 	IsSampled() bool
 
 	// Event produces a log marker during the execution of the span.
-	Event(msg string, attributes ...map[string]interface{})
+	Event(msg string, attributes ...map[string]any)
 
 	// SetAttribute adjust `key` to report `value` as attribute of the Span.
 	// If a `key` already exists for an attribute of the Span it will be
 	// overwritten with `value`.
-	SetAttribute(key string, value interface{})
+	SetAttribute(key string, value any)
 
 	// SetAttributes adjust multiple attributes of the Span.
-	SetAttributes(attributes map[string]interface{})
+	SetAttributes(attributes map[string]any)
 }

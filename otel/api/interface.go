@@ -24,7 +24,7 @@ var errCodec errors.Codec
 const tracerName = "go.bryk.io/pkg/otel"
 
 // default value for `otel.library.version`.
-const tracerVersion = "0.2.0"
+const tracerVersion = "0.3.0"
 
 func init() {
 	// setup global tracer instance

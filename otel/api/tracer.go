@@ -8,7 +8,7 @@ import (
 	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semConv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -75,18 +75,19 @@ func (s span) End(err error) {
 	opts := []apiTrace.EventOption{}
 	var se errors.HasStack
 	if errors.As(err, &se) {
-		// preserve original error value to be reported when
-		// using the Sentry integration
+		// add the `exception.report` if we are able to extract one
+		// from the error instance
 		if errPayload, encErr := errCodec.Marshal(err); encErr == nil {
 			attrs.Set(string(ExceptionReportKey), string(errPayload))
 		}
 
-		// preserve original trace in `exception.stacktrace`
+		// add the `exception.stacktrace` and prevent the framework from
+		// duplicating/replacing the value
 		attrs.Set(string(semConv.ExceptionStacktraceKey), fmt.Sprintf("%+v", err))
 		opts = append(opts, apiTrace.WithStackTrace(false))
 	} else {
 		// if there's no stacktrace in the error already, let the
-		// framework capture one
+		// framework try to capture one
 		opts = append(opts, apiTrace.WithStackTrace(true))
 	}
 	opts = append(opts, apiTrace.WithAttributes(attrs.Expand()...))
@@ -117,7 +118,7 @@ func (s span) IsSampled() bool {
 }
 
 // Event produces a log marker during the execution of the span.
-func (s span) Event(msg string, attrs ...map[string]interface{}) {
+func (s span) Event(msg string, attrs ...map[string]any) {
 	fields := otel.Attributes{}
 	for _, attr := range attrs {
 		fields.Join(attr)
@@ -128,12 +129,12 @@ func (s span) Event(msg string, attrs ...map[string]interface{}) {
 // SetAttribute adjust `key` to report `value` as attribute of the Span.
 // If a `key` already exists for an attribute of the Span it will be
 // overwritten with `value`.
-func (s span) SetAttribute(key string, value interface{}) {
+func (s span) SetAttribute(key string, value any) {
 	s.sp.SetAttributes(otel.Attributes{key: value}.Expand()...)
 }
 
 // SetAttributes adjust multiple attributes of the Span.
-func (s span) SetAttributes(attributes map[string]interface{}) {
+func (s span) SetAttributes(attributes map[string]any) {
 	attrs := otel.Attributes(attributes)
 	s.sp.SetAttributes(attrs.Expand()...)
 }

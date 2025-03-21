@@ -6,7 +6,7 @@ import (
 
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
-	otelProm "go.bryk.io/pkg/otel/prometheus"
+	"go.bryk.io/pkg/prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -249,7 +249,7 @@ func WithWebSocketProxy(opts ...ws.ProxyOption) ServerOption {
 
 // WithPrometheus allows generating and consuming metrics from the server
 // instance using the Prometheus standards and tooling.
-func WithPrometheus(prometheus otelProm.Operator) ServerOption {
+func WithPrometheus(prometheus prometheus.Operator) ServerOption {
 	return func(srv *Server) error {
 		srv.mu.Lock()
 		defer srv.mu.Unlock()
