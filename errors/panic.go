@@ -113,7 +113,7 @@ func parsePanicFrame(name string, line string, createdBy bool) (*StackFrame, err
 		name = name[period+1:]
 	}
 
-	name = strings.Replace(name, "·", ".", -1)
+	name = strings.ReplaceAll(name, "·", ".")
 
 	if !strings.HasPrefix(line, "\t") {
 		return nil, Errorf("panicParser: Invalid line (no tab): %s", line)

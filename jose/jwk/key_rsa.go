@@ -122,8 +122,8 @@ func (k *rsaKey) Export(safe bool) Record {
 		Use:     "sig",
 		Alg:     string(k.alg),
 		KeyOps:  []string{"verify"},
-		N:       b64.EncodeToString(k.key.PublicKey.N.Bytes()),
-		E:       b64.EncodeToString(big.NewInt(int64(k.key.PublicKey.E)).Bytes()),
+		N:       b64.EncodeToString(k.key.N.Bytes()),
+		E:       b64.EncodeToString(big.NewInt(int64(k.key.E)).Bytes()),
 	}
 	if !safe {
 		rec.KeyOps = append(rec.KeyOps, "sign")

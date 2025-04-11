@@ -432,14 +432,7 @@ func (p *parser) parseQuery() parserStep {
 	var next parserStep
 	var percentEncoded bool
 
-	for {
-		if currentIndex == inputLength {
-			// we've reached the end of input
-			// it's ok for query to be empty, so we don't need a check for that
-			// did-query     = *( pchar / "/" / "?" )
-			break
-		}
-
+	for currentIndex != inputLength {
 		char := input[currentIndex]
 
 		if char == '#' {
@@ -498,14 +491,7 @@ func (p *parser) parseFragment() parserStep {
 	var indexIncrement int
 	var percentEncoded bool
 
-	for {
-		if currentIndex == inputLength {
-			// we've reached the end of input
-			// it's ok for reference to be empty, so we don't need a check for that
-			// did-fragment = *( pchar / "/" / "?" )
-			break
-		}
-
+	for currentIndex != inputLength {
 		char := input[currentIndex]
 
 		if char == '%' {

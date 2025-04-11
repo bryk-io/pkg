@@ -134,7 +134,7 @@ func (p *plugin) after() gormHookFunc {
 		if p.excludeQueryVars {
 			query = tx.Statement.SQL.String()
 		} else {
-			query = tx.Dialector.Explain(tx.Statement.SQL.String(), vars...)
+			query = tx.Explain(tx.Statement.SQL.String(), vars...)
 		}
 
 		attrs = append(attrs, semConv.DBQueryTextKey.String(p.formatQuery(query)))
@@ -179,7 +179,7 @@ func (p *plugin) formatQuery(query string) string {
 }
 
 func dbSystem(tx *gorm.DB) attribute.KeyValue {
-	switch tx.Dialector.Name() {
+	switch tx.Name() {
 	case "mysql":
 		return semConv.DBSystemNameMySQL
 	case "mssql":

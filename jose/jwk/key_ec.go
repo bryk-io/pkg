@@ -153,8 +153,8 @@ func (k *ecKey) Export(safe bool) Record {
 		Alg:     string(k.alg),
 		KeyOps:  []string{"verify"},
 		Crv:     k.sk.Curve.Params().Name,
-		X:       b64.EncodeToString(k.sk.PublicKey.X.Bytes()),
-		Y:       b64.EncodeToString(k.sk.PublicKey.Y.Bytes()),
+		X:       b64.EncodeToString(k.sk.X.Bytes()),
+		Y:       b64.EncodeToString(k.sk.Y.Bytes()),
 	}
 	if !safe {
 		rec.KeyOps = append(rec.KeyOps, "sign")

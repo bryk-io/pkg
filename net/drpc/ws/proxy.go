@@ -122,7 +122,7 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) *proxyErr {
 }
 
 func sanitize(src string) string {
-	res := strings.Replace(strings.Replace(src, "\n", "", -1), "\r", "", -1)
+	res := strings.ReplaceAll(strings.ReplaceAll(src, "\n", ""), "\r", "")
 	res = html.EscapeString(res)
 	return res
 }

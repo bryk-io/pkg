@@ -1,133 +1,123 @@
+version: "2"
 run:
-  timeout: 10m
+  modules-download-mode: readonly
   issues-exit-code: 1
   tests: true
-  build-tags: []
-  modules-download-mode: readonly
-output:
-  print-issued-lines: true
-  print-linter-name: true
 linters:
   enable:
-    - errcheck
-    - gosimple
-    - govet
-    - revive
-    - gofmt
-    - ineffassign
-    - staticcheck
-    - typecheck
-    - gocyclo
-    - goconst
-    - misspell
-    - lll
-    - nakedret
-    - prealloc
-    - gosec
-    - bodyclose
-    - stylecheck
-    - unparam
-    - durationcheck
-    - unconvert
     - asciicheck
+    - bodyclose
+    - copyloopvar
+    - durationcheck
     - errorlint
     - exhaustive
     - forcetypeassert
-    - godot
-    - noctx
-    - predeclared
-    - copyloopvar
-    - whitespace
-    - nestif
     - funlen
-    # Deprecated linters
-    # - wrapcheck
-    # - ifshort
-    # - varcheck
-    # - deadcode
-    # - structcheck
+    - goconst
+    - gocyclo
+    - godot
+    - gosec
+    - lll
+    - misspell
+    - nakedret
+    - nestif
+    - noctx
+    - prealloc
+    - predeclared
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - whitespace
   disable:
-    - unused
-    - dupl
     - depguard
+    - dupl
+    - unused
     - wastedassign
-issues:
-  exclude-use-default: false
-  exclude-dirs:
-    # using some deprecated low level "elliptic" functions
-    - crypto/vrf/*
-  exclude-rules:
-    - path: (.+)_test.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - lll
-        - nakedret
-        - revive
-        - funlen
-        - nestif
-        - noctx
-# https://golangci-lint.run/usage/linters/#linters-configuration
-linters-settings:
-  errcheck:
-    check-blank: false
-    check-type-assertions: true
-    disable-default-exclusions: false
-    # https://github.com/kisielk/errcheck#excluding-functions
-    exclude-functions:
-      - (io.Closer).Close
-      - (net/http.ResponseWriter).Write
-      - (strings.Builder).WriteByte
-      - (strings.Builder).WriteString
-  govet:
-    enable:
-      - atomic
-      - atomicalign
-      - buildtag
-      - cgocall
-      - composites
-      - copylocks
-      - httpresponse
-      - loopclosure
-      - lostcancel
-      - nilfunc
-      - shift
-      - structtag
-      - unmarshal
-      - unreachable
-      - unusedresult
-      - tests
-      # - shadow
-      # - fieldalignment
-  gofmt:
-    simplify: true
-  gocyclo:
-    min-complexity: 18
-  goconst:
-    min-len: 3
-    min-occurrences: 5
-  gosec:
-    excludes:
-      # generating a lot of false positives (v1.60.3)
-      - G115
-  misspell:
-    locale: US
-    ignore-words: []
-  lll:
-    line-length: 120
-    tab-width: 2
-  nakedret:
-    max-func-lines: 40
-  prealloc:
-    simple: true
-    range-loops: true
-    for-loops: false
-  dupl:
-    threshold: 150
-  exhaustive:
-    default-signifies-exhaustive: true
-  funlen:
-    lines: 90
-    statements: 70
+  settings:
+    dupl:
+      threshold: 150
+    errcheck:
+      disable-default-exclusions: false
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - (io.Closer).Close
+        - (net/http.ResponseWriter).Write
+        - (strings.Builder).WriteByte
+        - (strings.Builder).WriteString
+    exhaustive:
+      default-signifies-exhaustive: true
+    funlen:
+      lines: 90
+      statements: 70
+    goconst:
+      min-len: 3
+      min-occurrences: 5
+    gocyclo:
+      min-complexity: 18
+    gosec:
+      excludes:
+        - G115
+    govet:
+      enable:
+        - atomic
+        - atomicalign
+        - buildtag
+        - cgocall
+        - composites
+        - copylocks
+        - httpresponse
+        - loopclosure
+        - lostcancel
+        - nilfunc
+        - shift
+        - structtag
+        - unmarshal
+        - unreachable
+        - unusedresult
+        - tests
+    lll:
+      line-length: 120
+      tab-width: 2
+    misspell:
+      locale: US
+    nakedret:
+      max-func-lines: 40
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: false
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - funlen
+          - gocyclo
+          - gosec
+          - lll
+          - nakedret
+          - nestif
+          - noctx
+          - revive
+        path: (.+)_test.go
+    paths:
+      - crypto/vrf/*
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    generated: lax
+    paths:
+      - crypto/vrf/*
+      - third_party$
+      - builtin$
+      - examples$

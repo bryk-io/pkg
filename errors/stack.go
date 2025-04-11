@@ -148,7 +148,7 @@ func packageAndName(fn string) (pkg string, name string) {
 		name = name[period+1:]
 	}
 
-	name = strings.Replace(name, "·", ".", -1)
+	name = strings.ReplaceAll(name, "·", ".")
 	return pkg, name
 }
 

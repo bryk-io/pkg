@@ -49,7 +49,7 @@ func sanitize(args ...any) []any {
 	for i, v := range args {
 		// remove all newlines and carriage returns
 		if vs, ok = v.(string); ok {
-			v = strings.Replace(strings.Replace(vs, "\n", "", -1), "\r", "", -1)
+			v = strings.ReplaceAll(strings.ReplaceAll(vs, "\n", ""), "\r", "")
 		}
 		sv[i] = v
 	}

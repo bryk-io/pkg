@@ -14,7 +14,7 @@ func Handler() func(handler http.Handler) http.Handler {
 			defer func() {
 				if v := recover(); v != nil {
 					w.WriteHeader(http.StatusInternalServerError)
-					_, _ = w.Write([]byte(fmt.Sprintf("%s", v)))
+					_, _ = fmt.Fprintf(w, "%s", v)
 				}
 			}()
 			next.ServeHTTP(w, r)

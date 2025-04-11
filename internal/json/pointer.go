@@ -48,14 +48,14 @@ func ParseJP(str string) (Pointer, error) {
 
 // Return the unescaped representation of the provided reference token.
 func unescapeRT(rt string) string {
-	rt = strings.Replace(rt, escapedSeparator, separator, -1)
-	return strings.Replace(rt, escapedTilde, tilde, -1)
+	rt = strings.ReplaceAll(rt, escapedSeparator, separator)
+	return strings.ReplaceAll(rt, escapedTilde, tilde)
 }
 
 // Return the escaped representation of the provided reference token.
 func escapeRT(rt string) string {
-	rt = strings.Replace(rt, tilde, escapedTilde, -1)
-	return strings.Replace(rt, separator, escapedSeparator, -1)
+	rt = strings.ReplaceAll(rt, tilde, escapedTilde)
+	return strings.ReplaceAll(rt, separator, escapedSeparator)
 }
 
 // Evaluation of each reference token begins by decoding any escaped

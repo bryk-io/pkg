@@ -40,11 +40,14 @@ func containsSeparator(data []byte) (int, int) {
 	// Find the earliest position of a double newline combination
 	minPos := minPosInt(crcr, minPosInt(lflf, minPosInt(crlflf, minPosInt(lfcrlf, crlfcrlf))))
 	// Determine the length of the sequence
-	nlen := 2
-	if minPos == crlfcrlf {
+	var nlen int
+	switch minPos {
+	case crlfcrlf:
 		nlen = 4
-	} else if minPos == crlflf || minPos == lfcrlf {
+	case crlflf, lfcrlf:
 		nlen = 3
+	default:
+		nlen = 2
 	}
 	return minPos, nlen
 }
