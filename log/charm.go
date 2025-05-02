@@ -19,6 +19,9 @@ type CharmOptions struct {
 	// where a log entry was generated.
 	ReportCaller bool
 
+	// CallerOffset applies the specified offset to the call stack. The default is 0.
+	CallerOffset int
+
 	// Prefix defines a string to be added at the beginning of each
 	// log entry.
 	Prefix string
@@ -45,6 +48,7 @@ func WithCharm(opt CharmOptions) Logger {
 		Level:           charm.DebugLevel,
 		TimeFormat:      opt.TimeFormat,
 		ReportCaller:    opt.ReportCaller,
+		CallerOffset:    opt.CallerOffset,
 		ReportTimestamp: true,
 	})
 	// adjust formatter if required

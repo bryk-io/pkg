@@ -106,8 +106,9 @@ func TestServer(t *testing.T) {
 
 	// Main logger
 	ll := xlog.WithCharm(xlog.CharmOptions{
-		ReportCaller: true,
 		Prefix:       "drpc-server",
+		WithColor:    true,
+		ReportCaller: true,
 	})
 
 	// Server middleware
@@ -792,7 +793,7 @@ func (fsp *fooServiceProvider) DRPCDescription() drpc.Description {
 // This custom implementation of the Faulty method will panic and
 // crash the server =(.
 func (fsp *fooServiceProvider) Faulty(_ context.Context, _ *emptypb.Empty) (*sampleV1.DummyResponse, error) {
-	panic("cool services MUST never panic!!!")
+	panic("cool services NEVER panic!!!")
 }
 
 func (fsp *fooServiceProvider) OpenServerStream(_ *emptypb.Empty, stream sampleV1.DRPCFooAPI_OpenServerStreamStream) error {
@@ -851,5 +852,5 @@ func getHTTPClient(creds *tls.Certificate) http.Client {
 func getRandomPort() (uint, string) {
 	var port uint = 8080
 	port += uint(rand.Intn(122))
-	return port, fmt.Sprintf(":%d", port)
+	return port, fmt.Sprintf("127.0.0.1:%d", port)
 }

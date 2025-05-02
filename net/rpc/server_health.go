@@ -18,6 +18,10 @@ type healthSvc struct {
 	srv *Server
 }
 
+func (hs *healthSvc) ServiceName() string {
+	return healthV1.Health_ServiceDesc.ServiceName
+}
+
 func (hs *healthSvc) ServerSetup(_ *grpc.Server) {
 	healthV1.RegisterHealthServer(hs.srv.grpc, hs)
 }
@@ -31,7 +35,21 @@ func (hs *healthSvc) Check(ctx context.Context, req *healthV1.HealthCheckRequest
 	return &healthV1.HealthCheckResponse{Status: status}, nil
 }
 
-func (hs *healthSvc) Watch(req *healthV1.HealthCheckRequest, stream healthV1.Health_WatchServer) error { // nolint: lll
+func (hs *healthSvc) List(ctx context.Context, _ *healthV1.HealthListRequest) (*healthV1.HealthListResponse, error) {
+	res := &healthV1.HealthListResponse{
+		Statuses: make(map[string]*healthV1.HealthCheckResponse),
+	}
+	for _, svc := range hs.srv.services {
+		name := svc.ServiceName()
+		res.Statuses[name] = &healthV1.HealthCheckResponse{Status: healthV1.HealthCheckResponse_SERVING}
+		if err := hs.srv.healthCheck(ctx, name); err != nil {
+			res.Statuses[name].Status = healthV1.HealthCheckResponse_NOT_SERVING
+		}
+	}
+	return res, nil
+}
+
+func (hs *healthSvc) Watch(req *healthV1.HealthCheckRequest, stream healthV1.Health_WatchServer) error {
 	// initial health check
 	res, err := hs.Check(stream.Context(), req)
 	if err != nil {
