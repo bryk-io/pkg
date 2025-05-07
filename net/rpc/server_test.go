@@ -1303,8 +1303,8 @@ func dummyHealthCheck(_ context.Context, _ string) error {
 // Foo service provider.
 type fooProvider struct{}
 
-func (fp *fooProvider) ServiceName() string {
-	return sampleV1.FooAPI_ServiceDesc.ServiceName
+func (fp *fooProvider) Services() []string {
+	return []string{sampleV1.FooAPI_ServiceDesc.ServiceName}
 }
 
 func (fp *fooProvider) ServerSetup(server *grpc.Server) {
@@ -1318,8 +1318,8 @@ func (fp *fooProvider) GatewaySetup() GatewayRegisterFunc {
 // Bar service provider.
 type barProvider struct{}
 
-func (bp *barProvider) ServiceName() string {
-	return sampleV1.BarAPI_ServiceDesc.ServiceName
+func (bp *barProvider) Services() []string {
+	return []string{sampleV1.BarAPI_ServiceDesc.ServiceName}
 }
 
 func (bp *barProvider) ServerSetup(server *grpc.Server) {
@@ -1333,8 +1333,8 @@ func (bp *barProvider) GatewaySetup() GatewayRegisterFunc {
 // Echo service provider.
 type echoProvider struct{}
 
-func (ep *echoProvider) ServiceName() string {
-	return sampleV1.EchoAPI_ServiceDesc.ServiceName
+func (ep *echoProvider) Services() []string {
+	return []string{sampleV1.EchoAPI_ServiceDesc.ServiceName}
 }
 
 func (ep *echoProvider) ServerSetup(server *grpc.Server) {

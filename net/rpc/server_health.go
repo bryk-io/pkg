@@ -18,8 +18,8 @@ type healthSvc struct {
 	srv *Server
 }
 
-func (hs *healthSvc) ServiceName() string {
-	return healthV1.Health_ServiceDesc.ServiceName
+func (hs *healthSvc) Services() []string {
+	return []string{healthV1.Health_ServiceDesc.ServiceName}
 }
 
 func (hs *healthSvc) ServerSetup(_ *grpc.Server) {
@@ -39,8 +39,11 @@ func (hs *healthSvc) List(ctx context.Context, _ *healthV1.HealthListRequest) (*
 	res := &healthV1.HealthListResponse{
 		Statuses: make(map[string]*healthV1.HealthCheckResponse),
 	}
+	var services []string
 	for _, svc := range hs.srv.services {
-		name := svc.ServiceName()
+		services = append(services, svc.Services()...)
+	}
+	for _, name := range services {
 		res.Statuses[name] = &healthV1.HealthCheckResponse{Status: healthV1.HealthCheckResponse_SERVING}
 		if err := hs.srv.healthCheck(ctx, name); err != nil {
 			res.Statuses[name].Status = healthV1.HealthCheckResponse_NOT_SERVING

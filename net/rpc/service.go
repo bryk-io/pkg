@@ -14,8 +14,9 @@ type GatewayRegisterFunc = func(context.Context, *runtime.ServeMux, *grpc.Client
 // ServiceProvider is an entity that provides functionality to be exposed
 // through an RPC server.
 type ServiceProvider interface {
-	// ServiceName returns the service identifier.
-	ServiceName() string
+	// Services should return the service identifier(s) supported by
+	// the provider.
+	Services() []string
 
 	// ServerSetup should perform any initialization requirements for the
 	// particular service and register it with the provided server instance.
