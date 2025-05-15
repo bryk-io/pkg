@@ -10,7 +10,6 @@ import (
 
 	mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	"go.bryk.io/pkg/errors"
-	otelGrpc "go.bryk.io/pkg/otel/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
@@ -53,7 +52,7 @@ func NewClient(options ...ClientOption) (*Client, error) {
 	}
 
 	// Setup instrumentation
-	c.dialOpts = append(c.dialOpts, otelGrpc.ClientInstrumentation())
+	// c.dialOpts = append(c.dialOpts, otelGrpc.ClientInstrumentation())
 
 	// Add middleware
 	unary, stream := c.getMiddleware()

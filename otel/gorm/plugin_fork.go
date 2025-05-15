@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -13,33 +15,37 @@ import (
 	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
-	"gorm.io/plugin/opentelemetry/metrics"
 )
 
 // Based on the original plugin:
 // https://github.com/go-gorm/opentelemetry
 
 var (
-	dbRowsAffected = attribute.Key("db.rows_affected")
+	firstWordRegex   = regexp.MustCompile(`^\w+`)
+	cCommentRegex    = regexp.MustCompile(`(?is)/\*.*?\*/`)
+	lineCommentRegex = regexp.MustCompile(`(?im)(?:--|#).*?$`)
+	sqlPrefixRegex   = regexp.MustCompile(`^[\s;]*`)
+	dbRowsAffected   = attribute.Key("db.rows_affected")
 )
 
 // list of common errors that can be ignored by default.
 var commonErrors = []error{
 	gorm.ErrRecordNotFound, // no data
-	sql.ErrNoRows,          // no data
 	driver.ErrSkip,         // skip operation
+	sql.ErrNoRows,          // no data
 	io.EOF,                 // end of rows iterator
 	// context.Canceled,       // canceled by the user
 }
 
 type plugin struct {
-	provider         trace.TracerProvider
-	tracer           trace.Tracer
-	attrs            []attribute.KeyValue
-	ignoredErrors    []error
-	excludeQueryVars bool
-	excludeMetrics   bool
-	queryFormatter   func(query string) string
+	provider               trace.TracerProvider
+	tracer                 trace.Tracer
+	attrs                  []attribute.KeyValue
+	ignoredErrors          []error
+	excludeQueryVars       bool
+	excludeMetrics         bool
+	recordStackTraceInSpan bool
+	queryFormatter         func(query string) string
 }
 
 type gormHookFunc func(tx *gorm.DB)
@@ -66,8 +72,8 @@ func (p plugin) Name() string {
 
 func (p plugin) Initialize(db *gorm.DB) error {
 	if !p.excludeMetrics {
-		if db, ok := db.ConnPool.(*sql.DB); ok {
-			metrics.ReportDBStatsMetrics(db)
+		if err := reportMetrics(db); err != nil {
+			return err
 		}
 	}
 
@@ -117,10 +123,10 @@ func (p *plugin) after() gormHookFunc {
 	return func(tx *gorm.DB) {
 		// start span
 		span := trace.SpanFromContext(tx.Statement.Context)
-		defer span.End()
 		if !span.IsRecording() {
 			return
 		}
+		defer span.End(trace.WithStackTrace(p.recordStackTraceInSpan))
 
 		// attach attributes
 		attrs := make([]attribute.KeyValue, 0, len(p.attrs)+4)
@@ -137,9 +143,21 @@ func (p *plugin) after() gormHookFunc {
 			query = tx.Explain(tx.Statement.SQL.String(), vars...)
 		}
 
-		attrs = append(attrs, semConv.DBQueryTextKey.String(p.formatQuery(query)))
+		formatQuery := p.formatQuery(query)
+		attrs = append(attrs, semConv.DBQueryText(formatQuery))
+		operation := dbOperation(formatQuery)
+		attrs = append(attrs, semConv.DBOperationName(operation))
 		if tx.Statement.Table != "" {
-			attrs = append(attrs, semConv.DBCollectionNameKey.String(tx.Statement.Table))
+			attrs = append(attrs, semConv.DBCollectionName(tx.Statement.Table))
+			// add attr `db.query.summary`
+			dbQuerySummary := operation + " " + tx.Statement.Table
+			attrs = append(attrs, semConv.DBQuerySummary(dbQuerySummary))
+
+			// according to semconv, we should update the span name here if `db.query.summary`
+			// is available. Use `db.query.summary` as span name directly here instead of keeping
+			// the original span name like `gorm.Query`,  as we cannot access the original span
+			// name here.
+			span.SetName(dbQuerySummary)
 		}
 		if tx.Statement.RowsAffected != -1 {
 			attrs = append(attrs, dbRowsAffected.Int64(tx.Statement.RowsAffected))
@@ -192,7 +210,16 @@ func dbSystem(tx *gorm.DB) attribute.KeyValue {
 		return semConv.DBSystemNameMicrosoftSQLServer
 	case "clickhouse":
 		return semConv.DBSystemNameClickhouse
+	case "spanner":
+		return semConv.DBSystemNameGCPSpanner
 	default:
 		return semConv.DBSystemNameOtherSQL
 	}
+}
+
+func dbOperation(query string) string {
+	s := cCommentRegex.ReplaceAllString(query, "")
+	s = lineCommentRegex.ReplaceAllString(s, "")
+	s = sqlPrefixRegex.ReplaceAllString(s, "")
+	return strings.ToLower(firstWordRegex.FindString(s))
 }
