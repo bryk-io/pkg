@@ -15,6 +15,12 @@ type Monitor interface {
 	// of requests.
 	Client(base http.RoundTripper) http.Client
 
+	// RoundTripper wraps the provided `http.RoundTripper` with one that starts a span,
+	// injects the span context into the outbound request headers, and enriches it
+	// with metrics. If the provided `base` http.RoundTripper is nil, `http.DefaultTransport`
+	// will be used by default.
+	RoundTripper(base http.RoundTripper) http.RoundTripper
+
 	// Handler adds instrumentation to the provided HTTP handler using the
 	// `operation` value provided as the span name.
 	Handler(operation string, handler http.Handler) http.Handler
@@ -77,6 +83,19 @@ func (e *httpMonitor) Client(base http.RoundTripper) http.Client {
 	return http.Client{
 		Transport: contrib.NewTransport(base, settings...),
 	}
+}
+
+// RoundTripper wraps the provided `http.RoundTripper` with one that starts a span,
+// injects the span context into the outbound request headers, and enriches it
+// with metrics. If the provided `base` http.RoundTripper is nil, `http.DefaultTransport`
+// will be used by default.
+func (e *httpMonitor) RoundTripper(base http.RoundTripper) http.RoundTripper {
+	settings := append(e.settings(),
+		contrib.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+			return e.nf(r)
+		}),
+	)
+	return contrib.NewTransport(base, settings...)
 }
 
 // Handler adds instrumentation to the provided HTTP handler using the

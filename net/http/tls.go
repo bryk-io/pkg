@@ -44,6 +44,7 @@ var recommendedCurves = []tls.CurveID{
 	tls.CurveP521,
 	tls.CurveP384,
 	tls.CurveP256,
+	tls.X25519,
 }
 
 // Expand returns a TLS configuration instance based on the provided

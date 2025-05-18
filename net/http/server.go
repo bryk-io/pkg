@@ -18,7 +18,7 @@ type Server struct {
 	port int
 }
 
-// NewServer returns a new read-to-use server instance adjusted with the
+// NewServer returns a new ready-to-use server instance adjusted with the
 // provided configuration options.
 func NewServer(options ...Option) (*Server, error) {
 	srv := &Server{

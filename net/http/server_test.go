@@ -19,9 +19,18 @@ import (
 	mwLogging "go.bryk.io/pkg/net/middleware/logging"
 	mwProxy "go.bryk.io/pkg/net/middleware/proxy"
 	mwRecover "go.bryk.io/pkg/net/middleware/recovery"
+	otelHttp "go.bryk.io/pkg/otel/http"
 )
 
 var mux *lib.ServeMux
+
+// sample client interceptor to add a custom header and dump the
+// HTTP request.
+func sampleClientInterceptor(req *lib.Request) {
+	req.Header.Set("x-custom-header", "test-client")
+	dump, _ := httputil.DumpRequest(req, false)
+	fmt.Printf("client interceptor:\n%s\n", dump)
+}
 
 func TestNewServer(t *testing.T) {
 	// Skip when running on CI.
@@ -32,6 +41,9 @@ func TestNewServer(t *testing.T) {
 	}
 
 	assert := tdd.New(t)
+
+	// OpenTelemetry monitor
+	httpMonitor := otelHttp.NewMonitor()
 
 	// handler
 	router := lib.NewServeMux()
@@ -52,6 +64,7 @@ func TestNewServer(t *testing.T) {
 		WithHandler(router),
 		WithMiddleware(
 			mwRecover.Handler(),
+			httpMonitor.ServerMiddleware(),
 			mwProxy.Handler(),
 			mwGzip.Handler(9),
 			mwLogging.Handler(xlog.WithCharm(xlog.CharmOptions{ReportCaller: true}), nil),
@@ -62,13 +75,14 @@ func TestNewServer(t *testing.T) {
 		),
 	}
 
-	// HTTP client
-	cl := lib.Client{}
-	cl.Transport = &lib.Transport{
+	// HTTP client (instrumented)
+	rt := httpMonitor.RoundTripper(&lib.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true, // To use self-signed certificates for testing
+			InsecureSkipVerify: true, // to enable TLS with self-signed certificates
 		},
-	}
+	})
+	cl, err := NewClient(WithRoundTripper(rt), WithInterceptors(sampleClientInterceptor))
+	assert.Nil(err)
 
 	t.Run("HTTP", func(t *testing.T) {
 		// Server instance

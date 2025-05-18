@@ -91,7 +91,7 @@ func thumbprint(k Key, segments []string) (string, error) {
 
 	// return b64-encoded SHA256 value of thumbprint
 	hash := sha256.Sum256(sb.Bytes())
-	return base64.URLEncoding.EncodeToString(hash[:]), nil
+	return b64.EncodeToString(hash[:]), nil
 }
 
 // Key represents a cryptographic key used to sign and verify JWT instances.
@@ -134,7 +134,7 @@ type Key interface {
 	// Import a key instance from a previously generated record.
 	Import(src Record) error
 
-	// MarshalBinary encodes the receiver into a binary form and returns the result
+	// MarshalBinary encodes the receiver into a binary form and returns the result.
 	MarshalBinary() ([]byte, error)
 
 	// UnmarshalBinary decodes the `data` produced by `MarshalBinary` into the
@@ -242,7 +242,7 @@ type Record struct {
 	CertificateURL string `json:"x5u,omitempty" yaml:"x5u,omitempty" mapstructure:"x5u,omitempty"`
 
 	// The "x5c" (X.509 certificate chain) parameter contains a chain of one
-	// or more PKIX certificates [RFC5280].  The certificate chain is
+	// or more PKIX certificates [RFC5280]. The certificate chain is
 	// represented as a JSON array of certificate value strings. Each string in
 	// the array is a base64-encoded PKIX certificate.
 	CertificateChain []string `json:"x5c,omitempty" yaml:"x5c,omitempty" mapstructure:"x5c,omitempty"`
