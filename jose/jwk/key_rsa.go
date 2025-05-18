@@ -47,6 +47,10 @@ func (k *rsaKey) Alg() jwa.Alg {
 	return k.alg
 }
 
+func (k *rsaKey) Thumbprint() (string, error) {
+	return thumbprint(k, []string{"e", "kty", "n"})
+}
+
 func (k *rsaKey) Sign(rr io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, error) {
 	// No private key
 	if k.key == nil || k.key.D == nil {

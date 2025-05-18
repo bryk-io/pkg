@@ -27,6 +27,11 @@ func TestNewKey(t *testing.T) {
 		_, err = k.MarshalBinary()
 		assert.Nil(err, "marshal")
 
+		// Print thumbprint
+		tp, err := k.Thumbprint()
+		assert.Nil(err)
+		t.Logf("thumbprint: %s", tp)
+
 		// Produce signature
 		hm, _ := jwa.Alg(alg).HashFunction()
 		msg := []byte("original message to sign")

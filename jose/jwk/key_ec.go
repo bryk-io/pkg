@@ -52,6 +52,10 @@ func (k *ecKey) Alg() jwa.Alg {
 	return k.alg
 }
 
+func (k *ecKey) Thumbprint() (string, error) {
+	return thumbprint(k, []string{"crv", "kty", "x", "y"})
+}
+
 func (k *ecKey) Sign(rr io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, error) {
 	// No private key
 	if k.sk == nil || k.sk.D == nil {

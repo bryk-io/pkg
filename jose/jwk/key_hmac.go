@@ -44,6 +44,10 @@ func (k *hmacKey) Alg() jwa.Alg {
 	return k.alg
 }
 
+func (k *hmacKey) Thumbprint() (string, error) {
+	return thumbprint(k, []string{"k", "kty"})
+}
+
 func (k *hmacKey) Sign(_ io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, error) {
 	// No private key
 	if k.key == nil {

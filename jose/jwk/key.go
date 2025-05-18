@@ -1,8 +1,12 @@
 package jwk
 
 import (
+	"bytes"
 	"crypto"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	"go.bryk.io/pkg/errors"
@@ -62,6 +66,34 @@ func Import(jwk Record) (Key, error) {
 	return k, nil
 }
 
+// Calculate a JWK thumbprint as defined by RFC7638.
+//
+// https://www.rfc-editor.org/rfc/rfc7638.html
+func thumbprint(k Key, segments []string) (string, error) {
+	// get map of key parameters
+	js, _ := json.Marshal(k.Export(true))
+	params := make(map[string]any)
+	if err := json.Unmarshal(js, &params); err != nil {
+		return "", err
+	}
+
+	// create deterministic output of required segments
+	j := len(segments)
+	sb := bytes.NewBuffer(nil)
+	sb.Write([]byte("{"))
+	for i := range j {
+		fmt.Fprintf(sb, "\"%s\":\"%s\"", segments[i], params[segments[i]])
+		if i < j-1 {
+			sb.Write([]byte(","))
+		}
+	}
+	sb.Write([]byte("}"))
+
+	// return b64-encoded SHA256 value of thumbprint
+	hash := sha256.Sum256(sb.Bytes())
+	return base64.URLEncoding.EncodeToString(hash[:]), nil
+}
+
 // Key represents a cryptographic key used to sign and verify JWT instances.
 // Different key types are required to support the different algorithms (i.e.
 // methods) included in the RFC-7519 specification.
@@ -76,6 +108,11 @@ type Key interface {
 
 	// Alg returns the JWA cryptographic algorithm identifier intended for the key.
 	Alg() jwa.Alg
+
+	// Thumbprint returns a unique key identifier as defined by RFC-7638.
+	//
+	// https://www.rfc-editor.org/rfc/rfc7638.html
+	Thumbprint() (string, error)
 
 	// Public returns the public key corresponding to the opaque,
 	// private key.
