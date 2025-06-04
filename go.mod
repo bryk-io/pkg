@@ -7,12 +7,11 @@ toolchain go1.24.2
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250425153114-8976f5be98c1.1
 	buf.build/go/protovalidate v0.12.0
-	dario.cat/mergo v1.0.1
+	dario.cat/mergo v1.0.2
 	github.com/awnumar/memguard v0.22.5
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/log v0.4.2
 	github.com/chzyer/readline v1.5.1
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/getsentry/sentry-go v0.30.0
 	github.com/google/sqlcommenter/go/core v0.1.2
 	github.com/google/sqlcommenter/go/database/sql v0.1.1
@@ -22,11 +21,9 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
-	github.com/mr-tron/base58 v1.2.0
 	github.com/nil-go/konf v1.4.0
 	github.com/nil-go/konf/provider/file v1.4.0
 	github.com/nil-go/konf/provider/pflag v1.4.0
-	github.com/piprate/json-gold v0.5.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/rabbitmq/amqp091-go v1.10.0
@@ -115,7 +112,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
