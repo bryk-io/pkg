@@ -67,19 +67,19 @@ func TestServer(t *testing.T) {
 	assert.Nil(err, "failed to enable prometheus, support")
 
 	// enable OTEL monitoring
-	// traceExp, metricExp := availableExporters()
-	// otelOpts := []otelSdk.Option{
-	// 	otelSdk.WithServiceName("rpc-test"),
-	// 	otelSdk.WithServiceVersion("0.1.0"),
-	// 	otelSdk.WithBaseLogger(ll),
-	// 	otelSdk.WithHostMetrics(),
-	// 	otelSdk.WithSpanExporter(traceExp),
-	// 	otelSdk.WithMetricExporter(metricExp),
-	// 	otelSdk.WithPrometheusRegisterer(promReg), // export OTEL metrics to prometheus
-	// }
-	// monitoring, err := otelSdk.Setup(otelOpts...)
-	// assert.Nil(err, "initialize operator")
-	// defer monitoring.Flush(context.Background())
+	traceExp, metricExp := availableExporters()
+	otelOpts := []otelSdk.Option{
+		otelSdk.WithServiceName("rpc-test"),
+		otelSdk.WithServiceVersion("0.1.0"),
+		otelSdk.WithBaseLogger(ll),
+		otelSdk.WithHostMetrics(),
+		otelSdk.WithSpanExporter(traceExp),
+		otelSdk.WithMetricExporter(metricExp),
+		otelSdk.WithPrometheusRegisterer(promReg), // export OTEL metrics to prometheus
+	}
+	monitoring, err := otelSdk.Setup(otelOpts...)
+	assert.Nil(err, "initialize operator")
+	defer monitoring.Flush(context.Background())
 
 	// HTTP monitor
 	spanNameFormatter := func(req *http.Request) string {
@@ -112,8 +112,12 @@ func TestServer(t *testing.T) {
 		}),
 	}
 
+	// Custom HTTP handlers
 	customHandler := func(res http.ResponseWriter, req *http.Request) {
 		_, _ = res.Write([]byte("world"))
+	}
+	metricsHandler := func(w http.ResponseWriter, r *http.Request) {
+		prom.MetricsHandler().ServeHTTP(w, r)
 	}
 
 	// Retry call configuration
@@ -346,9 +350,7 @@ func TestServer(t *testing.T) {
 			WithHandlerName("http-gateway"),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
-			WithCustomHandlerFunc(http.MethodGet, "/instrumentation", func(w http.ResponseWriter, r *http.Request) {
-				prom.MetricsHandler().ServeHTTP(w, r)
-			}),
+			WithCustomHandlerFunc(http.MethodGet, "/instrumentation", metricsHandler),
 			WithGatewayMiddleware(mwGzip.Handler(7), httpMonitor.ServerMiddleware()),
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
@@ -479,7 +481,7 @@ func TestServer(t *testing.T) {
 				defer task.End(nil)
 
 				// Open websocket connection
-				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/server_stream", otelApi.Headers(task))
+				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/server_stream?m=post&cc=true", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -510,7 +512,7 @@ func TestServer(t *testing.T) {
 
 				// Open websocket connection
 				pbM := protojson.MarshalOptions{EmitUnpopulated: true}
-				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/client_stream", otelApi.Headers(task))
+				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/client_stream?m=post", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -700,7 +702,7 @@ func TestServer(t *testing.T) {
 				task := otelApi.Start(context.Background(), "/foo/server_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
-				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/server_stream", otelApi.Headers(task))
+				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/server_stream?m=post&cc=true", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -738,7 +740,7 @@ func TestServer(t *testing.T) {
 				task := otelApi.Start(context.Background(), "/foo/client_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
-				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/client_stream", otelApi.Headers(task))
+				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/client_stream?m=post", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return

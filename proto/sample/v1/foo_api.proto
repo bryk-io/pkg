@@ -81,14 +81,15 @@ service FooAPI {
   // Sample server stream request.
   rpc OpenServerStream (google.protobuf.Empty) returns (stream GenericStreamChunk) {
     option (google.api.http) = {
-      get: "/foo/server_stream"
+      post: "/foo/server_stream"
       // body: "*";
     };
   }
   // Sample client stream request.
   rpc OpenClientStream (stream OpenClientStreamRequest) returns (StreamResult) {
     option (google.api.http) = {
-      get: "/foo/client_stream"
+      post: "/foo/client_stream"
+      body: "*";
     };
   }
 }

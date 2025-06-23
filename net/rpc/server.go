@@ -343,7 +343,6 @@ func (srv *Server) setupGateway() (err error) {
 
 	// prepare gateway mux
 	gwMux := gwRuntime.NewServeMux(srv.gateway.options()...)
-	var gwMuxH = http.Handler(gwMux) // cast gateway mux as regular HTTP handler
 
 	// register services that support HTTP
 	for _, s := range srv.services {
@@ -354,16 +353,19 @@ func (srv *Server) setupGateway() (err error) {
 		}
 	}
 
-	// apply gateway interceptors
-	if len(srv.gateway.interceptors) > 0 {
-		gwMuxH = srv.gateway.interceptorWrapper(gwMuxH, srv.gateway.interceptors)
-	}
-
 	// add custom path handlers
 	for _, ch := range srv.gateway.customPaths {
 		_ = gwMux.HandlePath(ch.method, ch.path, func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 			ch.hf(w, r)
 		})
+	}
+
+	// cast gateway mux as regular HTTP handler
+	var gwMuxH = http.Handler(gwMux)
+
+	// apply gateway interceptors
+	if len(srv.gateway.interceptors) > 0 {
+		gwMuxH = srv.gateway.interceptorWrapper(gwMuxH, srv.gateway.interceptors)
 	}
 
 	// apply gateway middleware

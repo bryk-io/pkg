@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -29,7 +30,8 @@ func removeResultWrapper(chunk []byte) []byte {
 	return chunk
 }
 
-// IE and Edge do not delimit Sec-WebSocket-Protocol strings with spaces.
+// IE and Edge do not delimit Sec-WebSocket-Protocol strings with spaces;
+// `Sec-Websocket-Protocol: Bearer, foo` is converted to `Authorization: Bearer foo`.
 func fixProtocolHeader(header string) string {
 	tokens := strings.SplitN(header, "Bearer,", 2)
 	if len(tokens) < 2 {
@@ -38,9 +40,14 @@ func fixProtocolHeader(header string) string {
 	return fmt.Sprintf("Bearer %v", strings.Trim(tokens[1], " "))
 }
 
+// nolint: unused
 func isClosedConnError(err error) bool {
 	if str := err.Error(); strings.Contains(str, "use of closed network connection") {
 		return true
 	}
 	return websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway)
+}
+
+func closeConnectionEarly(r *http.Request, param string) bool {
+	return r.URL.Query().Get(param) != ""
 }

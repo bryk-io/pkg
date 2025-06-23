@@ -12,12 +12,19 @@ import (
 
 var headerFragment = "Sec-WebSocket-Protocol"
 
-// New returns a new WebSocket proxy instance.
+// New returns a WebsocketProxy instance that expose the underlying handler as a
+// bidirectional websocket stream with newline-delimited JSON as the content encoding.
+// The HTTP `Authorization` header is either populated from the `Sec-Websocket-Protocol`
+// field or by a cookie.
 func New(opts ...ProxyOption) (*Proxy, error) {
 	p := &Proxy{
-		forwardHeaders:      []string{},
-		tokenCookieName:     "",
-		methodOverrideParam: "",
+		tokenCookieName:      "",
+		methodOverrideParam:  "m",
+		closeConnectionParam: "cc",
+		forwardHeaders: []string{
+			"origin",
+			"referer",
+		},
 		wsConf: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -31,14 +38,15 @@ func New(opts ...ProxyOption) (*Proxy, error) {
 	return p, nil
 }
 
-// Proxy - WebSocket proxy based on the original implementation by @tmc.
-// https://github.com/tmc/grpc-websocket-proxy
+// Proxy - gRPC Gateway WebSocket proxy.
+// Based on the original implementation: https://github.com/tmc/grpc-websocket-proxy
 type Proxy struct {
 	handler                http.Handler
 	wsConf                 websocket.Upgrader
 	maxRespBodyBufferBytes int
 	forwardHeaders         []string
 	methodOverrideParam    string
+	closeConnectionParam   string
 	tokenCookieName        string
 	requestMutator         requestMutatorFunc
 	removeResultWrapper    bool
@@ -64,9 +72,6 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Decide if a received header should be forwarded behind the proxy.
 func (p *Proxy) forwardHeader(header string) bool {
-	if len(p.forwardHeaders) == 0 {
-		return true
-	}
 	for _, h := range p.forwardHeaders {
 		if strings.ToLower(header) == h {
 			return true
@@ -77,28 +82,33 @@ func (p *Proxy) forwardHeader(header string) bool {
 
 // Prepare outgoing request.
 func (p *Proxy) prepareRequest(incoming http.Request, outgoing *http.Request) {
-	// Forward headers
+	// forward additional headers
 	for header := range incoming.Header {
 		if p.forwardHeader(header) {
 			outgoing.Header.Set(header, incoming.Header.Get(header))
 		}
 	}
 
-	// If token cookie is present, populate Authorization header from the cookie instead.
+	// ensure authorization header is properly set
+	if header := incoming.Header.Get(headerFragment); header != "" {
+		outgoing.Header.Set("Authorization", fixProtocolHeader(header))
+	}
+
+	// if token cookie is present, populate Authorization header using it
 	if p.tokenCookieName != "" {
 		if cookie, err := incoming.Cookie(p.tokenCookieName); err == nil {
 			outgoing.Header.Set("Authorization", "Bearer "+cookie.Value)
 		}
 	}
 
-	// Method override
+	// method override
 	if p.methodOverrideParam != "" {
 		if m := incoming.URL.Query().Get(p.methodOverrideParam); m != "" {
-			outgoing.Method = m
+			outgoing.Method = strings.ToUpper(m)
 		}
 	}
 
-	// Final request adjustments
+	// final request adjustments
 	if p.requestMutator != nil {
 		p.requestMutator(incoming, outgoing)
 	}
@@ -107,15 +117,16 @@ func (p *Proxy) prepareRequest(incoming http.Request, outgoing *http.Request) {
 // nolint: funlen
 func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 	var responseHeader http.Header
+	var newLine = []byte("\n")
 
-	// If Sec-WebSocket-Protocol starts with "Bearer", respond in kind.
+	// if `Sec-WebSocket-Protocol` header starts with "Bearer", respond in kind
 	if strings.HasPrefix(r.Header.Get(headerFragment), "Bearer") {
 		responseHeader = http.Header{
 			headerFragment: []string{"Bearer"},
 		}
 	}
 
-	// Upgrade request
+	// upgrade request and establish WebSocket connection
 	conn, err := p.wsConf.Upgrade(w, r, responseHeader)
 	if err != nil {
 		return
@@ -124,39 +135,41 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 		_ = conn.Close()
 	}()
 
-	// Pipe request
-	requestBodyR, requestBodyW := io.Pipe()
-	request, err := http.NewRequest(r.Method, r.URL.String(), requestBodyR)
+	ctx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
+
+	// pipe request
+	reqBodyR, reqBodyW := io.Pipe()
+	request, err := http.NewRequest(r.Method, r.URL.String(), reqBodyR)
 	if err != nil {
 		return
 	}
-	if header := r.Header.Get(headerFragment); header != "" {
-		request.Header.Set("Authorization", fixProtocolHeader(header))
-	}
 
-	// Prepare outgoing request
+	// prepare outgoing request; last chance to adjust it in any way
 	p.prepareRequest(*r, request)
 
-	// Pipe response
-	responseBodyR, responseBodyW := io.Pipe()
-	response := newResponseWriter(responseBodyW)
+	closeEarly := closeConnectionEarly(r, p.closeConnectionParam)
 
-	ctx, cancelFn := context.WithCancel(context.Background())
-	defer cancelFn()
+	// pipe response
+	resBodyR, resBodyW := io.Pipe()
+	response := newResponseWriter(resBodyW)
+
+	// close request and response writers when context is done
 	go func() {
 		<-ctx.Done()
-		_ = requestBodyW.CloseWithError(io.EOF)
-		_ = responseBodyW.CloseWithError(io.EOF)
+		_ = reqBodyW.CloseWithError(io.EOF)
+		_ = resBodyW.CloseWithError(io.EOF)
 		response.closed <- true
 	}()
 
+	// process request in the wrapped HTTP handler
 	go func() {
 		defer cancelFn()
 		p.handler.ServeHTTP(response, request)
 	}()
 
+	// read loop -> take messages from websocket and write to http request
 	go func() {
-		// read loop -> Take messages from websocket and write to http request
 		defer cancelFn()
 		for {
 			select {
@@ -164,24 +177,24 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 				return
 			default:
 			}
+
+			if closeEarly {
+				// close request body since server doesn't expect any more data
+				_ = reqBodyW.Close()
+			}
 			_, payload, err := conn.ReadMessage()
 			if err != nil {
-				if isClosedConnError(err) {
-					return
-				}
 				return
 			}
-			if _, err := requestBodyW.Write(payload); err != nil {
-				return
-			}
-			if _, err := requestBodyW.Write([]byte("\n")); err != nil {
+			// send payload and append new line delimiter
+			if _, err := reqBodyW.Write(append(payload, newLine...)); err != nil {
 				return
 			}
 		}
 	}()
 
-	// write loop -> Take messages from response and write to websocket
-	scanner := bufio.NewScanner(responseBodyR)
+	// write loop -> take messages from response and write to websocket
+	scanner := bufio.NewScanner(resBodyR)
 
 	// if maxRespBodyBufferSize has been specified, use custom buffer for scanner
 	var scannerBuf []byte

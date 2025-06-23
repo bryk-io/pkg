@@ -24,7 +24,7 @@ func EnableCompression() ProxyOption {
 // If no setting is provided a safe default is used: return false if the Origin
 // request header is present and the origin host is not equal to request Host
 // header. A CheckOrigin function should carefully validate the request origin
-// to prevent cross-site request forgery.
+// to prevent CSRF (cross-site request forgery) attacks.
 func CheckOrigin(f func(*http.Request) bool) ProxyOption {
 	return func(p *Proxy) error {
 		p.wsConf.CheckOrigin = f
@@ -35,8 +35,8 @@ func CheckOrigin(f func(*http.Request) bool) ProxyOption {
 // SubProtocols specifies the server's supported protocols in order of preference.
 // If no value is provided, the server negotiates a sub-protocol by selecting
 // the first match in this list with a protocol requested by the client. If there's
-// no match, then no protocol is negotiated (the Sec-Websocket-Protocol header
-// is not included in the handshake response).
+// no match, then no protocol is negotiated and the `Sec-Websocket-Protocol` header
+// is not included in the handshake response.
 func SubProtocols(list []string) ProxyOption {
 	return func(p *Proxy) error {
 		p.wsConf.Subprotocols = list
@@ -53,7 +53,8 @@ func HandshakeTimeout(timeout time.Duration) ProxyOption {
 }
 
 // MethodOverride allows to map an incoming URL parameter and use it to adjust the
-// HTTP method for requests behind the proxy.
+// HTTP method for requests behind the proxy. If not provided, the default value `m`
+// will be used.
 func MethodOverride(param string) ProxyOption {
 	return func(p *Proxy) error {
 		p.methodOverrideParam = param
@@ -61,8 +62,21 @@ func MethodOverride(param string) ProxyOption {
 	}
 }
 
+// ConnectionFlow allows to map an incoming URL parameter and use it to fine-tune the
+// connection management performed by the WebSocket proxy. If not adjusted the default
+// value `cc` will be used. This value is required for the proxy to close the incoming
+// client HTTP request at the right time and prevent hanging and leaked requests:
+//   - after first message for Unary/ServerStreaming
+//   - when client closes conn for ClientStreaming/DuplexStreaming
+func ConnectionFlow(param string) ProxyOption {
+	return func(p *Proxy) error {
+		p.methodOverrideParam = param
+		return nil
+	}
+}
+
 // AuthorizationCookie allows the proxy to load authorization credentials from a
-// cookie, when present, and forward the token on the "Authorization" header on
+// cookie, when present, and forward the token on the `Authorization` header on
 // requests behind the proxy.
 func AuthorizationCookie(name string) ProxyOption {
 	return func(p *Proxy) error {
@@ -72,15 +86,15 @@ func AuthorizationCookie(name string) ProxyOption {
 }
 
 // ForwardHeaders sets which HTTP headers (case-insensitive) should be forward in
-// requests behind the proxy. If no list is specified, ALL headers are forwarded
-// by default.
-func ForwardHeaders(list []string) ProxyOption {
+// requests behind the proxy. If no list is specified, only `Origin` and `Referer`
+// headers are forwarded by default.
+func ForwardHeaders(list ...string) ProxyOption {
 	return func(p *Proxy) error {
 		headers := make([]string, len(list))
 		for i, h := range list {
 			headers[i] = strings.ToLower(h)
 		}
-		p.forwardHeaders = headers
+		p.forwardHeaders = append(p.forwardHeaders, headers...)
 		return nil
 	}
 }

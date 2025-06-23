@@ -28,7 +28,7 @@
   ],
   "paths": {
     "/foo/client_stream": {
-      "get": {
+      "post": {
         "summary": "Sample client stream request.",
         "operationId": "FooAPI_OpenClientStream",
         "responses": {
@@ -47,19 +47,13 @@
         },
         "parameters": [
           {
-            "name": "sender",
-            "description": "Identifier for the endpoint generating the stream message.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "stamp",
-            "description": "Message generation UNIX timestamp.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "format": "int64"
+            "name": "body",
+            "description": "Generic stream messages send by the client. (streaming inputs)",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1OpenClientStreamRequest"
+            }
           }
         ],
         "tags": [
@@ -160,7 +154,7 @@
       }
     },
     "/foo/server_stream": {
-      "get": {
+      "post": {
         "summary": "Sample server stream request.",
         "operationId": "FooAPI_OpenServerStream",
         "responses": {
@@ -288,6 +282,21 @@
         }
       },
       "description": "Health test response."
+    },
+    "v1OpenClientStreamRequest": {
+      "type": "object",
+      "properties": {
+        "sender": {
+          "type": "string",
+          "description": "Identifier for the endpoint generating the stream message."
+        },
+        "stamp": {
+          "type": "string",
+          "format": "int64",
+          "description": "Message generation UNIX timestamp."
+        }
+      },
+      "description": "Generic stream messages send by the client."
     },
     "v1Pong": {
       "type": "object",
