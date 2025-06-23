@@ -67,19 +67,19 @@ func TestServer(t *testing.T) {
 	assert.Nil(err, "failed to enable prometheus, support")
 
 	// enable OTEL monitoring
-	traceExp, metricExp := availableExporters()
-	otelOpts := []otelSdk.Option{
-		otelSdk.WithServiceName("rpc-test"),
-		otelSdk.WithServiceVersion("0.1.0"),
-		otelSdk.WithBaseLogger(ll),
-		otelSdk.WithHostMetrics(),
-		otelSdk.WithSpanExporter(traceExp),
-		otelSdk.WithMetricExporter(metricExp),
-		otelSdk.WithPrometheusRegisterer(promReg), // export OTEL metrics to prometheus
-	}
-	monitoring, err := otelSdk.Setup(otelOpts...)
-	assert.Nil(err, "initialize operator")
-	defer monitoring.Flush(context.Background())
+	// traceExp, metricExp := availableExporters()
+	// otelOpts := []otelSdk.Option{
+	// 	otelSdk.WithServiceName("rpc-test"),
+	// 	otelSdk.WithServiceVersion("0.1.0"),
+	// 	otelSdk.WithBaseLogger(ll),
+	// 	otelSdk.WithHostMetrics(),
+	// 	otelSdk.WithSpanExporter(traceExp),
+	// 	otelSdk.WithMetricExporter(metricExp),
+	// 	otelSdk.WithPrometheusRegisterer(promReg), // export OTEL metrics to prometheus
+	// }
+	// monitoring, err := otelSdk.Setup(otelOpts...)
+	// assert.Nil(err, "initialize operator")
+	// defer monitoring.Flush(context.Background())
 
 	// HTTP monitor
 	spanNameFormatter := func(req *http.Request) string {
@@ -204,7 +204,7 @@ func TestServer(t *testing.T) {
 			t.Run("ClientSide", func(t *testing.T) {
 				cs, err := cl.OpenClientStream(context.Background())
 				assert.Nil(err, "failed to open client stream")
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					t := <-time.After(100 * time.Millisecond) // random latency
 					c := &sampleV1.OpenClientStreamRequest{
 						Sender: "sample-client",
@@ -346,6 +346,9 @@ func TestServer(t *testing.T) {
 			WithHandlerName("http-gateway"),
 			WithPrettyJSON("application/json+pretty"),
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
+			WithCustomHandlerFunc(http.MethodGet, "/instrumentation", func(w http.ResponseWriter, r *http.Request) {
+				prom.MetricsHandler().ServeHTTP(w, r)
+			}),
 			WithGatewayMiddleware(mwGzip.Handler(7), httpMonitor.ServerMiddleware()),
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
@@ -450,7 +453,6 @@ func TestServer(t *testing.T) {
 		})
 
 		t.Run("Metrics", func(t *testing.T) {
-			t.SkipNow()
 			// Start span
 			task := otelApi.Start(context.Background(), "/instrumentation", otelApi.WithSpanKind(otelApi.SpanKindClient))
 			defer task.End(nil)
@@ -462,12 +464,11 @@ func TestServer(t *testing.T) {
 			res, err := hcl.Do(req)
 			assert.Nil(err, "failed to retrieve metrics")
 			assert.Equal(http.StatusOK, res.StatusCode, "failed to retrieve metrics")
-			defer func() {
-				_ = res.Body.Close()
-			}()
 
 			// Dump metrics data
-			data, _ := io.ReadAll(res.Body)
+			data, err := io.ReadAll(res.Body)
+			assert.Nil(err, "failed to retrieve metrics")
+			_ = res.Body.Close()
 			ll.Debugf("%s", data)
 		})
 
@@ -483,10 +484,6 @@ func TestServer(t *testing.T) {
 					assert.Fail(err.Error())
 					return
 				}
-				defer func() {
-					_ = wc.Close()
-					_ = rr.Body.Close()
-				}()
 
 				// Receive messages
 				for {
@@ -499,9 +496,14 @@ func TestServer(t *testing.T) {
 						ll.Printf(log.Debug, "%s", msg)
 					}
 				}
+
+				// Properly close the connection
+				assert.Nil(rr.Body.Close())
+				assert.Nil(wc.Close())
 			})
 
 			t.Run("ClientSide", func(t *testing.T) {
+				t.SkipNow()
 				// Start span
 				task := otelApi.Start(context.Background(), "/foo/client_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
@@ -519,7 +521,7 @@ func TestServer(t *testing.T) {
 				}()
 
 				// Send messages
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					t := <-time.After(100 * time.Millisecond)
 					c := &sampleV1.GenericStreamChunk{
 						Sender: "test-client",

@@ -1,0 +1,19 @@
+version: v2
+lint:
+  service_suffix: API
+  rpc_allow_google_protobuf_empty_requests: true
+  use:
+    - STANDARD
+  except:
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - RPC_RESPONSE_STANDARD_NAME
+    #- PACKAGE_DIRECTORY_MATCH
+breaking:
+  use:
+    - FILE
+modules:
+  - path: proto
+deps:
+  - buf.build/googleapis/googleapis:61b203b9a9164be9a834f58c37be6f62
+  - buf.build/bufbuild/protovalidate:v0.13.0
+  - buf.build/grpc-ecosystem/grpc-gateway:v2.27.0

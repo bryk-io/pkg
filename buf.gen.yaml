@@ -1,46 +1,39 @@
-version: v1
-# https://docs.buf.build/generate/managed-mode
+version: v2
+inputs:
+  - directory: proto
 managed:
   enabled: true
-  optimize_for: SPEED
-  cc_enable_arenas: false
-  java_multiple_files: true
-  go_package_prefix:
-    # same value as `module` in go.mod
-    default: go.bryk.io/pkg
-    # don't build/rewrite import paths for external dependencies
-    except:
-      - buf.build/googleapis/googleapis
-      - buf.build/bufbuild/protovalidate
-      - buf.build/grpc-ecosystem/grpc-gateway
-# For each plugin:
-#   - plugin: buf will look for a remote plugin
-#   - name: buf generate will look for a binary named protoc-gen-NAME
-#   - out: path relative to the output directory
-#   - opt: options to provide to the plugin
+  override:
+    - file_option: go_package_prefix
+      value: go.bryk.io/pkg
+  disable:
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+    - file_option: go_package_prefix
+      module: buf.build/googleapis/googleapis
+    - file_option: go_package_prefix
+      module: buf.build/grpc-ecosystem/grpc-gateway
 plugins:
-  - plugin: buf.build/protocolbuffers/go:v1.36.2
+  # ! with >=v1.36.4 the pb.go files generated break when using the
+  # ! protoc_gen_openapiv2 annotations.
+  - remote: buf.build/protocolbuffers/go:v1.36.3
     out: .
     opt:
       - paths=source_relative
-  - plugin: buf.build/grpc/go:v1.5.1
+  - remote: buf.build/grpc/go:v1.5.1
     out: .
     opt:
       - paths=source_relative
       - require_unimplemented_servers=true
-  - plugin: buf.build/grpc-ecosystem/openapiv2:v2.25.1
+  - remote: buf.build/grpc-ecosystem/openapiv2:v2.27.0
     out: .
     opt:
       - logtostderr=true
-  - plugin: buf.build/grpc-ecosystem/gateway:v2.26.1
+  - remote: buf.build/grpc-ecosystem/gateway:v2.26.1
     out: .
     opt:
       - paths=source_relative
       - logtostderr=true
-  # - plugin: buf.build/bufbuild/validate-go:v1.0.4
-  #   out: .
-  #   opt:
-  #     - paths=source_relative
   # - name: go-drpc
   #   out: .
   #   opt:

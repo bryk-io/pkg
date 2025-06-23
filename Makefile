@@ -5,13 +5,6 @@
 # https://golang.org/cmd/link/
 LD_FLAGS += -s -w
 
-# "buf" is used to manage protocol buffer definitions, if not installed
-# locally we fallback to use a builder image.
-buf:=buf
-ifeq (, $(shell which buf))
-	buf=docker run --platform linux/amd64 --rm -it -v $(shell pwd):/workdir ghcr.io/bryk-io/buf-builder:1.48.0 buf
-endif
-
 # For commands that require a specific package path, default to all local
 # subdirectories if no value is provided.
 pkg?="..."
@@ -90,32 +83,28 @@ updates:
 
 proto-test:
 	# Verify style and consistency
-	$(buf) lint --path proto/$(pkg)
+	buf lint
 
 	# Verify breaking changes. This fails if no image is already present,
-	# use `buf build --o proto/$(pkg)/image.bin --path proto/$(pkg)` to generate it.
-	$(buf) breaking --against proto/$(pkg)/image.bin
+	# use `buf build -o proto/sample/v1/image.bin` to generate it.
+	buf breaking --against proto/sample/v1/image.bin
 
 proto-build:
 	# Verify PB definitions
-	make proto-test pkg=$(pkg)
+	make proto-test
 
 	# Build package image
-	$(buf) build --output proto/$(pkg)/image.bin --path proto/$(pkg)
+	buf build -o proto/sample/v1/image.bin
 
 	# Generate package code using buf.gen.yaml
-	$(buf) generate --output proto --path proto/$(pkg)
+	buf generate -o proto
 
 	# Add compiler version to generated files
-	@-sed -i.bak 's/(unknown)/buf-v$(shell $(buf) --version)/g' proto/$(pkg)/*.pb.go
+	@-sed -i.bak 's/(unknown)/buf-v$(shell buf --version)/g' proto/$(pkg)/*.pb.go
 
 	# Remove package comment added by the gateway generator to avoid polluting
 	# the package documentation.
 	@-sed -i.bak '/\/\*/,/*\//d' proto/$(pkg)/*.pb.gw.go
-
-	# "protoc-gen-validate" don't have runtime dependencies but the generated
-	# code includes the package by the default =/
-	@-sed -i.bak '/protoc-gen-validate/d' proto/$(pkg)/*.pb.go
 
 	# "protoc-gen-openapiv2" don't have runtime dependencies but the generated
 	# code includes the package by the default =/

@@ -19,18 +19,17 @@ import (
 	"go.bryk.io/pkg/net/rpc/ws"
 	otelgrpc "go.bryk.io/pkg/otel/grpc"
 	"go.bryk.io/pkg/prometheus"
-	"golang.org/x/net/netutil"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	// Import the gzip package to automatically register the compressor method
+	// import the gzip package to automatically register the compressor method
 	// when initializing a server instance.
 	_ "google.golang.org/grpc/encoding/gzip"
 )
 
-const netTCP = "tcp"
-const netUNIX = "unix"
+const netTCP string = "tcp"
+const netUNIX string = "unix"
 
 type authFunc func(ctx context.Context) (context.Context, error)
 
@@ -44,21 +43,21 @@ type Server struct {
 	customUnary      []grpc.UnaryServerInterceptor  // Unary middleware provided by the user
 	customStream     []grpc.StreamServerInterceptor // Stream middleware provided by the user
 	opts             []grpc.ServerOption            // gRPC server options
-	net              string                         // Network spaced used by the server (tcp or unix)
+	net              string                         // Network space used by the server (tcp or unix)
 	netInterface     string                         // Name of the main network interface
 	address          string                         // Main server address
-	cm               cmux.CMux                      // Main multiplexer to use when using 2 network interfaces
+	cm               cmux.CMux                      // Main multiplexer, used when using 2 network interfaces
 	nl               net.Listener                   // Base RPC network interface
 	ctx              context.Context                // Context shared by server's internal tasks
-	gwNl             net.Listener                   // HTTP gateway network interface, if required
+	halt             context.CancelFunc             // Stop all internal processing
 	gateway          *Gateway                       // HTTP gateway
 	gatewayOpts      []GatewayOption                // HTTP gateway options
+	gwNl             net.Listener                   // HTTP gateway network interface, if required
 	port             int                            // TCP port, if used
 	tlsConfig        *tls.Config                    // TLS configuration
 	tokenValidator   authFunc                       // Custom method to provide token-based authenticator
 	grpc             *grpc.Server                   // gRPC server instance
 	gw               *http.Server                   // Gateway HTTP server
-	halt             context.CancelFunc             // Stop all internal processing
 	wsProxy          *ws.Proxy                      // WebSocket proxy
 	resourceLimits   ResourceLimits                 // Settings to prevent resources abuse
 	enableValidator  bool                           // Enable protobuf validation
@@ -77,7 +76,7 @@ func NewServer(options ...ServerOption) (*Server, error) {
 		return nil, errors.Wrap(err, "setup error")
 	}
 
-	// enable server instrumentation
+	// enable server instrumentation by default
 	srv.opts = append(srv.opts, otelgrpc.ServerInstrumentation())
 	return srv, nil
 }
@@ -92,19 +91,22 @@ func (srv *Server) Endpoint() string {
 	return fmt.Sprintf("%s:%d", srv.address, srv.port)
 }
 
-// Stop will terminate the server processing. When graceful is true, the server
-// stops accepting new connections and requests and blocks until all the pending
-// RPCs are finished. Otherwise, it cancels all active RPCs on the server side and
-// the corresponding pending RPCs on the client side will get notified by connection
-// errors.
+// Stop the server processing. When graceful is true, the server  stops accepting new
+// connections or requests and blocks until all the pending RPCs are finished. Otherwise,
+// it cancels all active requests on the server side, the client side will get notified
+// by connection errors.
 func (srv *Server) Stop(graceful bool) error {
-	// Nothing to do
+	// nothing to do
 	if srv.halt == nil {
 		return nil
 	}
+
+	// dispatch halt signal
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
 	srv.halt()
 
-	// Close HTTP gateway
+	// close HTTP gateway
 	var e error
 	if srv.gw != nil {
 		if err := srv.gw.Shutdown(context.Background()); err != nil {
@@ -115,23 +117,21 @@ func (srv *Server) Stop(graceful bool) error {
 		}
 	}
 
-	// Stop RPC server
-	srv.mu.Lock()
-	defer srv.mu.Unlock()
+	// stop RPC server
 	if graceful {
 		srv.grpc.GracefulStop()
 	} else {
 		srv.grpc.Stop()
 	}
 
-	// Close gateway network interface
+	// close gateway network interface
 	if srv.gwNl != nil {
 		if err := srv.gwNl.Close(); err != nil {
 			e = errors.Wrap(e, err.Error())
 		}
 	}
 
-	// Close main network interface
+	// close main network interface
 	if err := srv.nl.Close(); err != nil {
 		var terr *net.OpError
 		if !errors.As(err, &terr) || terr.Op != "close" {
@@ -146,32 +146,31 @@ func (srv *Server) Stop(graceful bool) error {
 // a handler is provided but poorly managed, the start process will continue after
 // a timeout of 20 milliseconds to prevent blocking the process indefinitely.
 func (srv *Server) Start(ready chan<- bool) (err error) {
-	// In case of errors, close the provided notification channel as cleanup
+	// in case of errors, close the provided notification channel as cleanup
 	var cancel = func() {
 		if ready != nil {
 			close(ready)
 		}
 	}
 
-	// Enable health checks protocol
+	// enable health checks protocol
 	if srv.healthCheck != nil {
-		hsp := &healthSvc{srv: srv}
-		srv.services = append(srv.services, hsp)
+		srv.services = append(srv.services, &healthSvc{srv: srv})
 	}
 
-	// Validate RPC services are provided
+	// validate RPC services are provided
 	if len(srv.services) == 0 {
 		defer cancel()
 		srv.halt()
 		return errors.New("no services registered")
 	}
 
-	// Add middleware
+	// add middleware
 	unaryM, streamM := srv.getMiddleware()
 	srv.opts = append(srv.opts, grpc.ChainUnaryInterceptor(unaryM...))
 	srv.opts = append(srv.opts, grpc.ChainStreamInterceptor(streamM...))
 
-	// Create RPC instance and setup services
+	// create RPC instance and setup services
 	srv.mu.Lock()
 	srv.grpc = grpc.NewServer(srv.opts...)
 	for _, s := range srv.services {
@@ -179,24 +178,24 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 	}
 	srv.mu.Unlock()
 
-	// Enable reflection protocol
+	// enable reflection protocol
 	if srv.reflection {
 		reflection.Register(srv.grpc)
 	}
 
-	// Initialize server metrics
+	// initialize server metrics
 	if srv.prometheus != nil {
 		srv.prometheus.InitializeMetrics(srv.grpc)
 	}
 
-	// Setup main server network interface
+	// setup main server network interface
 	if srv.nl, err = srv.setupNetworkInterface(srv.net, srv.getAddress()); err != nil {
 		defer cancel()
 		srv.halt()
 		return errors.Wrap(err, "failed to setup main network interface")
 	}
 
-	// Setup HTTP gateway
+	// setup HTTP gateway
 	if err = srv.setupGateway(); err != nil {
 		defer cancel()
 		srv.halt()
@@ -204,10 +203,10 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 	}
 
 	// Start network handlers
-	return errors.Wrap(srv.start(ready, 20*time.Millisecond), "failed to start request processing")
+	return errors.Wrap(srv.start(ready, 50*time.Millisecond), "failed to start request processing")
 }
 
-// Reset will remove any previously configuration options returning the server
+// Reset will remove any previously set configuration options returning the server
 // to its default state.
 func (srv *Server) reset() {
 	if srv.halt != nil {
@@ -239,7 +238,7 @@ func (srv *Server) setup(options ...ServerOption) error {
 		}
 	}
 
-	// Additional TLS configuration
+	// additional TLS configuration
 	if srv.tlsConfig != nil && len(srv.clientCAs) > 0 {
 		cp := x509.NewCertPool()
 		for _, c := range srv.clientCAs {
@@ -253,57 +252,6 @@ func (srv *Server) setup(options ...ServerOption) error {
 	return nil
 }
 
-// Start server's network handlers.
-func (srv *Server) start(ready chan<- bool, timeout time.Duration) error {
-	// Setup main multiplexer and sub-tasks group
-	var tasks errgroup.Group
-	srv.cm = cmux.New(srv.nl)
-
-	// Start gRPC server
-	http2Matcher := cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc")
-	grpcL := srv.cm.MatchWithWriters(http2Matcher)
-	tasks.Go(func() error {
-		return errors.Wrap(srv.grpc.Serve(grpcL), "grpc server error")
-	})
-
-	// Start HTTP gateway using its own network listener
-	if srv.gwNl != nil {
-		tasks.Go(func() error {
-			return errors.Wrap(srv.gw.Serve(srv.gwNl), "HTTP gateway with custom network listener error")
-		})
-	}
-
-	// Start HTTP gateway using the main multiplexer
-	if srv.gwNl == nil && srv.gw != nil {
-		httpL := srv.cm.Match(cmux.HTTP1Fast())
-		tasks.Go(func() error {
-			return errors.Wrap(srv.gw.Serve(httpL), "HTTP gateway error")
-		})
-	}
-
-	// Start main multiplexer processing
-	tasks.Go(func() error {
-		return errors.Wrap(srv.cm.Serve(), "failed to start main multiplexer")
-	})
-
-	// Setup notification handler
-	if ready != nil {
-		go func() {
-			select {
-			case ready <- true:
-				// Continue after the notification has been received
-				return
-			case <-time.After(timeout):
-				// Continue after timeout to prevent blocking the server due to a poorly manage handler
-				return
-			}
-		}()
-	}
-
-	// Return any error from sub-tasks
-	return errors.WithStack(tasks.Wait())
-}
-
 // Return the server's main interface address.
 func (srv *Server) getAddress() string {
 	srv.mu.Lock()
@@ -314,28 +262,53 @@ func (srv *Server) getAddress() string {
 	return fmt.Sprintf("%s:%d", srv.address, srv.port)
 }
 
-// Configure the main server's network interface with proper resource limits and
-// TLS settings.
+// Configure the main server's network interface with proper resource limits and TLS settings.
 func (srv *Server) setupNetworkInterface(network, address string) (net.Listener, error) {
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 
-	// Get network interface
+	// get network interface
 	nl, err := net.Listen(network, address)
 	if err != nil {
-		return nil, errors.Errorf("failed to acquire network interface for %s on %s", network, address)
+		return nil, errors.Errorf("failed to acquire %s network interface on %s", network, address)
 	}
 
-	// Apply resource limits
+	// apply resource limits
 	if srv.resourceLimits.Connections > 0 {
-		nl = netutil.LimitListener(nl, int(srv.resourceLimits.Connections))
+		nl = createLimitListener(nl, int(srv.resourceLimits.Connections))
 	}
 
-	// Apply TLS configuration
+	// apply TLS configuration
 	if srv.tlsConfig != nil {
 		nl = tls.NewListener(nl, srv.tlsConfig)
 	}
 	return nl, nil
+}
+
+// Prepare the HTTP gateway network interface.
+func (srv *Server) setupGatewayInterface() error {
+	srv.mu.Lock()
+	defer srv.mu.Unlock()
+
+	// use the same main server port by default if no port is provided
+	if srv.net != netUNIX && srv.gateway.port == 0 {
+		srv.gateway.port = srv.port
+	}
+
+	// set up a new network interface if the gateway uses a different TCP port
+	// or if the main RPC server is using a UNIX socket as endpoint
+	if srv.net == netUNIX || srv.gateway.port != srv.port {
+		addr := ""
+		if srv.net != netUNIX {
+			addr = srv.address
+		}
+		var err error
+		srv.gwNl, err = srv.setupNetworkInterface(netTCP, fmt.Sprintf("%s:%d", addr, srv.gateway.port))
+		if err != nil {
+			return errors.Wrap(err, "failed to setup HTTP gateway network interface")
+		}
+	}
+	return nil
 }
 
 // Configure the server's HTTP gateway network interface and multiplexer.
@@ -358,43 +331,42 @@ func (srv *Server) setupGateway() (err error) {
 		}
 	}
 
-	// Setup gateway network interface
+	// setup gateway network interface
 	if err = srv.setupGatewayInterface(); err != nil {
 		return err
 	}
 
-	// Establish gateway <-> server connection
+	// establish gateway <-> server connection
 	if err = srv.gateway.connect(srv.Endpoint()); err != nil {
 		return err
 	}
 
-	// Gateway mux
+	// prepare gateway mux
 	gwMux := gwRuntime.NewServeMux(srv.gateway.options()...)
 	var gwMuxH = http.Handler(gwMux) // cast gateway mux as regular HTTP handler
+
+	// register services that support HTTP
 	for _, s := range srv.services {
-		hs, ok := s.(HTTPServiceProvider)
-		if !ok || hs.GatewaySetup() == nil {
-			// skip if the service doesn't provide a gateway setup function
-			continue
-		}
-		if err := hs.GatewaySetup()(srv.ctx, gwMux, srv.gateway.conn); err != nil {
-			return errors.Wrap(err, "HTTP gateway setup error")
+		if hs, ok := s.(HTTPServiceProvider); ok {
+			if err := hs.GatewaySetup()(srv.ctx, gwMux, srv.gateway.conn); err != nil {
+				return errors.Wrap(err, "HTTP gateway setup error")
+			}
 		}
 	}
 
-	// Apply gateway interceptors
+	// apply gateway interceptors
 	if len(srv.gateway.interceptors) > 0 {
 		gwMuxH = srv.gateway.interceptorWrapper(gwMuxH, srv.gateway.interceptors)
 	}
 
-	// Add custom paths
-	for _, chf := range srv.gateway.customPaths {
-		_ = gwMux.HandlePath(chf.method, chf.path, func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-			chf.hf(w, r)
+	// add custom path handlers
+	for _, ch := range srv.gateway.customPaths {
+		_ = gwMux.HandlePath(ch.method, ch.path, func(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+			ch.hf(w, r)
 		})
 	}
 
-	// Gateway middleware
+	// apply gateway middleware
 	for _, m := range srv.gateway.middleware {
 		gwMuxH = m(gwMuxH)
 	}
@@ -404,7 +376,7 @@ func (srv *Server) setupGateway() (err error) {
 		gwMuxH = srv.wsProxy.Wrap(gwMuxH)
 	}
 
-	// Setup gateway server
+	// setup gateway server with sane default settings
 	srv.mu.Lock()
 	srv.gw = &http.Server{
 		Handler:           gwMuxH,
@@ -416,30 +388,7 @@ func (srv *Server) setupGateway() (err error) {
 	}
 	srv.mu.Unlock()
 
-	// All good!
-	return nil
-}
-
-// Prepare the HTTP gateway network interface when required.
-func (srv *Server) setupGatewayInterface() error {
-	// Use the same main server port by default if no port is provided
-	if srv.net != netUNIX && srv.gateway.port == 0 {
-		srv.gateway.port = srv.port
-	}
-
-	// Set up a new network interface if the gateway uses a different TCP port
-	// or if the main RPC server is using a UNIX socket as endpoint
-	if srv.net == netUNIX || srv.gateway.port != srv.port {
-		addr := ""
-		if srv.net != netUNIX {
-			addr = srv.address
-		}
-		var err error
-		srv.gwNl, err = srv.setupNetworkInterface(netTCP, fmt.Sprintf("%s:%d", addr, srv.gateway.port))
-		if err != nil {
-			return errors.Wrap(err, "failed to setup HTTP gateway network interface")
-		}
-	}
+	// all good!
 	return nil
 }
 
@@ -484,4 +433,59 @@ func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream 
 		stream = append(stream, mwRecovery.StreamServerInterceptor())
 	}
 	return unary, stream
+}
+
+// Start server's network handlers.
+func (srv *Server) start(ready chan<- bool, timeout time.Duration) error {
+	// setup main multiplexer and sub-tasks group
+	var tasks errgroup.Group
+	srv.cm = cmux.New(srv.nl)
+
+	// start gRPC server
+	http2Matcher := cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc")
+	grpcL := srv.cm.MatchWithWriters(http2Matcher)
+	tasks.Go(func() error {
+		return errors.Wrap(srv.grpc.Serve(grpcL), "failed to start grpc server")
+	})
+
+	// start HTTP gateway using its own network listener.
+	// used if the gateway uses a different TCP port or if the main RPC server is using
+	// a UNIX socket as endpoint.
+	if srv.gwNl != nil {
+		tasks.Go(func() error {
+			return errors.Wrap(srv.gw.Serve(srv.gwNl), "failed to start HTTP gateway")
+		})
+	}
+
+	// start HTTP gateway using the main multiplexer.
+	// used when both the gRPC and HTTP server are listening for the requests in the
+	// same TCP port.
+	if srv.gwNl == nil && srv.gw != nil {
+		httpL := srv.cm.Match(cmux.HTTP1Fast())
+		tasks.Go(func() error {
+			return errors.Wrap(srv.gw.Serve(httpL), "failed to start HTTP gateway with multiplexer")
+		})
+	}
+
+	// start main multiplexer processing
+	tasks.Go(func() error {
+		return errors.Wrap(srv.cm.Serve(), "failed to start main multiplexer")
+	})
+
+	// setup notification handler
+	if ready != nil {
+		go func() {
+			select {
+			case ready <- true:
+				// continue after the notification has been received
+				return
+			case <-time.After(timeout):
+				// continue after timeout to prevent blocking the server due to a poorly manage handler
+				return
+			}
+		}()
+	}
+
+	// return any error from sub-tasks
+	return errors.WithStack(tasks.Wait())
 }

@@ -2,7 +2,10 @@ syntax = "proto3";
 
 package sample.v1;
 
+// imports are relative to the module root; in this case our module
+// root is set to the `proto` directory.
 import "sample/v1/model.proto";
+
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
@@ -79,6 +82,7 @@ service FooAPI {
   rpc OpenServerStream (google.protobuf.Empty) returns (stream GenericStreamChunk) {
     option (google.api.http) = {
       get: "/foo/server_stream"
+      // body: "*";
     };
   }
   // Sample client stream request.

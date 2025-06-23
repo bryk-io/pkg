@@ -22,7 +22,7 @@ var invalidHeaders = []string{
 	"upgrade",
 }
 
-// Gateway permits to consume an HTTP2 RPC-based service through a flexible HTTP1.1
+// Gateway permits to consume HTTP2 RPC-based services through a flexible HTTP1.1
 // REST interface.
 type Gateway struct {
 	port          int                               // TCP port
@@ -45,10 +45,10 @@ func NewGateway(options ...GatewayOption) (*Gateway, error) {
 		port:          0,
 		clientOptions: []ClientOption{},
 		customPaths:   []customHandler{},
-		encoders:      make(map[string]gwRuntime.Marshaler),
 		middleware:    []func(http.Handler) http.Handler{},
 		interceptors:  []GatewayInterceptor{},
 		handlerName:   "grpc-gateway",
+		encoders:      map[string]gwRuntime.Marshaler{},
 	}
 	if err := gw.setup(options...); err != nil {
 		return nil, errors.Wrap(err, "setup error")
@@ -71,22 +71,22 @@ func (gw *Gateway) connect(endpoint string) (err error) {
 }
 
 func (gw *Gateway) options() (opts []gwRuntime.ServeMuxOption) {
-	// Encoders
+	// encoders
 	for mime, enc := range gw.encoders {
 		opts = append(opts, gwRuntime.WithMarshalerOption(mime, enc))
 	}
 
-	// Preserve all (valid) incoming and outgoing HTTP headers as gRPC context
+	// preserve all (valid) incoming and outgoing HTTP headers as gRPC context
 	// metadata by default
 	opts = append(opts, gwRuntime.WithIncomingHeaderMatcher(preserveHeaders()))
 	opts = append(opts, gwRuntime.WithOutgoingHeaderMatcher(preserveHeaders()))
 
-	// Register response mutator
+	// if set, register response mutator
 	if gw.responseMut != nil {
 		opts = append(opts, gwRuntime.WithForwardResponseOption(gw.responseMut))
 	}
 
-	// Register error handler
+	// if set, register error handler
 	if gw.unaryErrorMut != nil {
 		opts = append(opts, gwRuntime.WithErrorHandler(gwRuntime.ErrorHandlerFunc(gw.unaryErrorMut)))
 	}
@@ -107,10 +107,6 @@ func (gw *Gateway) interceptorWrapper(h http.Handler, list []GatewayInterceptor)
 
 func preserveHeaders() func(v string) (string, bool) {
 	return func(v string) (string, bool) {
-		return strings.TrimRight(v, "\r\n"), isHeaderValid(strings.ToLower(v))
+		return strings.TrimRight(v, "\r\n"), !slices.Contains(invalidHeaders, strings.ToLower(v))
 	}
-}
-
-func isHeaderValid(header string) bool {
-	return !slices.Contains(invalidHeaders, header)
 }
