@@ -140,7 +140,7 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 
 	// pipe request
 	reqBodyR, reqBodyW := io.Pipe()
-	request, err := http.NewRequest(r.Method, r.URL.String(), reqBodyR)
+	request, err := http.NewRequestWithContext(ctx, r.Method, r.URL.String(), reqBodyR)
 	if err != nil {
 		return
 	}

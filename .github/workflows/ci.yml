@@ -110,7 +110,7 @@ jobs:
         id: buf-setup
         uses: bufbuild/buf-action@v1
         with:
-          version: 1.53.0
+          version: 1.55.0
           lint: true
           breaking: ${{ !contains(env.commit_msg, '[skip buf-breaking]') }}
           push: false
@@ -157,7 +157,7 @@ jobs:
       - name: Static analysis
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.1
+          version: v2.3
 
       # Run unit tests
       - name: Test

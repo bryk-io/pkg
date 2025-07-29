@@ -178,7 +178,7 @@ func (srv *Server) setup(opts ...Option) (err error) {
 
 // Setup server's main network interface.
 func (srv *Server) networkInterface() (err error) {
-	srv.net, err = net.Listen(srv.ntp, srv.addr)
+	srv.net, err = new(net.ListenConfig).Listen(context.Background(), srv.ntp, srv.addr)
 	if err != nil {
 		return
 	}

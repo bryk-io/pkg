@@ -268,7 +268,7 @@ func (srv *Server) setupNetworkInterface(network, address string) (net.Listener,
 	defer srv.mu.Unlock()
 
 	// get network interface
-	nl, err := net.Listen(network, address)
+	nl, err := new(net.ListenConfig).Listen(context.Background(), network, address)
 	if err != nil {
 		return nil, errors.Errorf("failed to acquire %s network interface on %s", network, address)
 	}

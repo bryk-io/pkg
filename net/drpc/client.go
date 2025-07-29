@@ -176,7 +176,7 @@ func (cl *Client) setup(options ...ClientOption) (err error) {
 
 // Setup client's main network connection.
 func (cl *Client) dial() (nc net.Conn, err error) {
-	nc, err = net.Dial(cl.ntp, cl.addr)
+	nc, err = new(net.Dialer).DialContext(context.Background(), cl.ntp, cl.addr)
 	if err != nil {
 		return
 	}
