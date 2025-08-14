@@ -55,7 +55,7 @@ func TestEncodeDecode(t *testing.T) {
 	k2, err := Unmarshal(b2)
 	assert.Nil(err, "unmarshal error")
 	assert.NotNil(k2, "unmarshal error")
-	assert.Equal(p1, k2.public, "invalid key restore")
+	assert.Equal(p1, k2.pub, "invalid key restore")
 	k2.Destroy()
 }
 
@@ -63,7 +63,7 @@ func TestDestroy(t *testing.T) {
 	assert := tdd.New(t)
 	ed, _ := New()
 	ed.Destroy()
-	assert.Nil(ed.lb, "failed to destroy locked memory buffer")
+	assert.Empty(ed.priv, "failed to destroy locked memory buffer")
 
 	// This time lb is no longer initialized but runs ok
 	ed.Destroy()

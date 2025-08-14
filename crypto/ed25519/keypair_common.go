@@ -1,7 +1,7 @@
 package ed25519
 
 import (
-	"crypto/rand"
+	e "crypto/ed25519"
 	"crypto/sha512"
 	"encoding/pem"
 	"fmt"
@@ -10,7 +10,6 @@ import (
 	"go.bryk.io/pkg/errors"
 	cryptoutils "go.bryk.io/pkg/internal/crypto"
 	c "golang.org/x/crypto/curve25519"
-	e "golang.org/x/crypto/ed25519"
 )
 
 // PEM header.
@@ -20,7 +19,7 @@ const keyType = "ED25519 PRIVATE KEY"
 // KP needs to be securely removed from memory by calling the "Destroy"
 // method.
 func New() (*KeyPair, error) {
-	_, priv, err := e.GenerateKey(rand.Reader)
+	_, priv, err := e.GenerateKey(nil)
 	if err != nil {
 		return nil, errors.New("failed to generate new random key")
 	}
@@ -135,7 +134,7 @@ func (k *KeyPair) MarshalBinary() ([]byte, error) {
 
 // PublicKey returns the public key bytes of the key pair instance.
 func (k *KeyPair) PublicKey() [32]byte {
-	return k.public
+	return k.pub
 }
 
 // Sign generates a digital signature for the provided content.
@@ -149,7 +148,7 @@ func (k *KeyPair) Verify(message, signature []byte) bool {
 	if len(signature) > e.SignatureSize {
 		return false
 	}
-	pub := e.PublicKey(k.public[:])
+	pub := e.PublicKey(k.pub[:])
 	return e.Verify(pub, message, signature)
 }
 

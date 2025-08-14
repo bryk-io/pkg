@@ -4,14 +4,13 @@
 package ed25519
 
 import (
-	"github.com/awnumar/memguard"
-	e "golang.org/x/crypto/ed25519"
+	e "crypto/ed25519"
 )
 
 // KeyPair represents a Ed25519 (Sign/Verify) public/private key.
 type KeyPair struct {
-	public [32]byte
-	lb     *memguard.LockedBuffer
+	pub  [32]byte
+	priv e.PrivateKey
 }
 
 // PrivateKey returns the private key bytes of the key pair instance. Using
@@ -19,19 +18,12 @@ type KeyPair struct {
 // memory segment managed by the instance. Don't use it unless you really know
 // what you are doing.
 func (k *KeyPair) PrivateKey() []byte {
-	if k.lb == nil {
-		return nil
-	}
-	return k.lb.Bytes()
+	return k.priv
 }
 
 // Destroy will safely release the allocated mlock/VirtualLock memory.
 func (k *KeyPair) Destroy() {
-	if k.lb != nil {
-		k.lb.Destroy()
-	}
-	memguard.WipeBytes(k.public[:])
-	k.lb = nil
+	k.priv = nil
 }
 
 // Setup a key pair instance from the provided private key.
@@ -40,7 +32,7 @@ func fromPrivateKey(priv e.PrivateKey) (*KeyPair, error) {
 	pub := [32]byte{}
 	copy(pub[:], priv[32:])
 	return &KeyPair{
-		public: pub,
-		lb:     memguard.NewBufferFromBytes(priv),
+		pub:  pub,
+		priv: priv,
 	}, nil
 }
