@@ -22,7 +22,7 @@ var (
 // Capture GOROOT and GOPATH once.
 func init() {
 	goPath = os.Getenv("GOPATH")
-	goRoot = runtime.GOROOT()
+	goRoot = os.Getenv("GOROOT")
 }
 
 // A StackFrame contains all necessary information about a specific line

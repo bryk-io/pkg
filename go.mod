@@ -1,6 +1,6 @@
 module go.bryk.io/pkg
 
-go 1.23.4
+go 1.24.0
 
 toolchain go1.24.2
 
@@ -69,6 +69,7 @@ require (
 
 require (
 	cel.dev/expr v0.24.0 // indirect
+	filippo.io/csrf v0.2.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/awnumar/memcall v0.2.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect

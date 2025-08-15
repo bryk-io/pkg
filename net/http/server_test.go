@@ -14,6 +14,8 @@ import (
 
 	tdd "github.com/stretchr/testify/assert"
 	xlog "go.bryk.io/pkg/log"
+	mwCors "go.bryk.io/pkg/net/middleware/cors"
+	mwCSRF "go.bryk.io/pkg/net/middleware/csrf"
 	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
 	mwHeaders "go.bryk.io/pkg/net/middleware/headers"
 	mwLogging "go.bryk.io/pkg/net/middleware/logging"
@@ -65,6 +67,8 @@ func TestNewServer(t *testing.T) {
 		WithMiddleware(
 			mwRecover.Handler(),
 			httpMonitor.ServerMiddleware(),
+			mwCSRF.Handler(nil),
+			mwCors.Handler(mwCors.Options{AllowCredentials: true}),
 			mwProxy.Handler(),
 			mwGzip.Handler(9),
 			mwLogging.Handler(xlog.WithCharm(xlog.CharmOptions{ReportCaller: true}), nil),
