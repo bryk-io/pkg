@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 
 	sdk "github.com/getsentry/sentry-go"
@@ -19,7 +18,7 @@ func newEventProcessor() *eventProcessor {
 		src:           newSourceReader(),
 		lines:         4,
 		goPath:        os.Getenv("GOPATH"),
-		goRoot:        runtime.GOROOT(),
+		goRoot:        os.Getenv("GOROOT"),
 		reverseFrames: false,
 		topMostST:     true,
 	}

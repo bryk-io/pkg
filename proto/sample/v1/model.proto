@@ -19,7 +19,10 @@ message HealthResponse {
 // Generic request response.
 message Response {
   // A key on the entity
-  string name = 1 [(buf.validate.field).string = {min_len: 2, max_len: 5}];
+  string name = 1 [(buf.validate.field).string = {
+    min_len: 2
+    max_len: 5
+  }];
 }
 
 // Sample response structure.

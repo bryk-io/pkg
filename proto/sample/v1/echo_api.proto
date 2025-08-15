@@ -2,33 +2,32 @@ syntax = "proto3";
 
 package sample.v1;
 
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 // imports are relative to the module root; in this case our module
 // root is set to the `proto` directory.
 import "sample/v1/model.proto";
 
-import "google/protobuf/empty.proto";
-import "google/api/annotations.proto";
-import "buf/validate/validate.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
-
 // OpenAPI settings.
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
-  swagger: "2.0";
-  schemes: HTTP;
-	schemes: HTTPS;
-	schemes: WSS;
-	consumes: "application/json";
-	consumes: "application/protobuf";
-	produces: "application/json";
-	produces: "application/protobuf";
+  swagger: "2.0"
+  schemes: HTTP
+  schemes: HTTPS
+  schemes: WSS
+  consumes: "application/json"
+  consumes: "application/protobuf"
+  produces: "application/json"
+  produces: "application/protobuf"
   info: {
-    title: "Echo API";
-    version: "0.1.0";
+    title: "Echo API"
+    version: "0.1.0"
     contact: {
-      name: "John Doe";
-      email: "john.dow@example.com";
-    };
-  };
+      name: "John Doe"
+      email: "john.dow@example.com"
+    }
+  }
   security_definitions: {
     security: {
       key: "bearer"
@@ -39,46 +38,36 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
         description: "Authentication token provided as: 'Bearer {token}'"
       }
     }
-  };
+  }
   security: {
-    security_requirement: {
-      key: "bearer"
-    }
-  };
+    security_requirement: {key: "bearer"}
+  }
 };
 
 // Echo service main interface.
 service EchoAPI {
   // Reachability test.
-  rpc Ping (google.protobuf.Empty) returns (Pong) {
-    option (google.api.http) = {
-      post: "/echo/ping"
-    };
+  rpc Ping(google.protobuf.Empty) returns (Pong) {
+    option (google.api.http) = {post: "/echo/ping"};
   }
   // Health test.
-  rpc Health (google.protobuf.Empty) returns (HealthResponse) {
-    option (google.api.http) = {
-      post: "/echo/health"
-    };
+  rpc Health(google.protobuf.Empty) returns (HealthResponse) {
+    option (google.api.http) = {post: "/echo/health"};
   }
   // Process an incoming echo request.
-  rpc Echo (EchoRequest) returns (EchoResponse) {
+  rpc Echo(EchoRequest) returns (EchoResponse) {
     option (google.api.http) = {
       post: "/echo/request"
       body: "*"
     };
   }
   // Returns an error roughly about 20% of the time.
-  rpc Faulty (google.protobuf.Empty) returns (DummyResponse) {
-    option (google.api.http) = {
-      post: "/echo/faulty"
-    };
+  rpc Faulty(google.protobuf.Empty) returns (DummyResponse) {
+    option (google.api.http) = {post: "/echo/faulty"};
   }
   // Exhibit a random latency between 10 and 200ms.
-  rpc Slow (google.protobuf.Empty) returns (DummyResponse) {
-    option (google.api.http) = {
-      post: "/echo/slow"
-    };
+  rpc Slow(google.protobuf.Empty) returns (DummyResponse) {
+    option (google.api.http) = {post: "/echo/slow"};
   }
 }
 

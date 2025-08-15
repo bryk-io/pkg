@@ -1,6 +1,6 @@
 module go.bryk.io/pkg
 
-go 1.23.4
+go 1.24.0
 
 toolchain go1.24.2
 
@@ -8,6 +8,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717165733-d22d418d82d8.1
 	buf.build/go/protovalidate v0.14.0
 	dario.cat/mergo v1.0.2
+	filippo.io/csrf v0.2.1
 	github.com/awnumar/memguard v0.22.5
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/log v0.4.2
