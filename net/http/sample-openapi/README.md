@@ -15,7 +15,7 @@ go install -v github.com/ogen-go/ogen/cmd/ogen@latest
 * Generate the client and server implementation from your schema file
 
 ```bash
-ogen -target petstore -clean petstore.yml 
+ogen -target petstore -clean petstore.yml
 ```
 
 * Write a service implementation that conforms to the generated interface

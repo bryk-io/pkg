@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+        name: Gitleaks
+  - repo: local
+    hooks:
+      - id: lint-and-test
+        name: Lint and test
+        entry: ./.pre-commit.sh
+        language: system
+        always_run: true
+        pass_filenames: false
+        verbose: true

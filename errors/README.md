@@ -230,7 +230,7 @@ hints, events and tags.
 ```go
 func myAwesomeFunction() {
   err := sampleA()
-  
+
   // First, cast the error as an "Error" instance provided
   // by this package.
   var te *Error
@@ -306,7 +306,7 @@ via HTTP to your monitoring system.
 ```go
 func myAwesomeFunction() {
   err := sampleA()
-  
+
   // First, cast the error as an "Error" instance provided
   // by this package.
   var te *Error

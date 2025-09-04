@@ -1,4 +1,5 @@
 name: OSSF Scorecard
+permissions: read-all
 on:
   # For Branch-Protection check. Only the default branch is supported. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
@@ -7,23 +8,13 @@ on:
     - cron: "0 7 * * 1" # at 7am every monday
   push:
     branches: ["main"]
-permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
     permissions:
-      # to upload the results to code-scanning dashboard
-      security-events: write
-      # to publish results and get a badge
-      id-token: write
-      # to detect SAST tools
-      checks: read
-      # to allow GraphQL `ListCommits` to work
-      issues: read
-      contents: read
-      actions: read
-      pull-requests: read
+      security-events: write # to upload the results to code-scanning dashboard
+      id-token: write # to publish results and get a badge
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
