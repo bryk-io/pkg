@@ -16,14 +16,24 @@ jobs:
   analyze:
     name: analyze
     runs-on: ubuntu-latest
+    permissions:
+      actions: read # for github/codeql-action/init to get workflow details
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/autobuild to send a status report
     strategy:
       fail-fast: false
       matrix:
         language: ["go"]
     steps:
+      # Harden workflow runner
+      - name: Harden workflow runner (audit all outbound calls)
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       # Get commit message
       - name: Get commit message
@@ -41,7 +51,7 @@ jobs:
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@2d92b76c45b91eb80fc44c74ce3fce0ee94e8f9d # v3.30.0
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
@@ -51,7 +61,7 @@ jobs:
 
       # Auto build attempts to build any compiled languages  (C/C++, C#, or Java).
       - name: Auto build
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@2d92b76c45b91eb80fc44c74ce3fce0ee94e8f9d # v3.30.0
 
       # Run manual build only if auto-build fails
       - name: Manual build
@@ -64,4 +74,4 @@ jobs:
       # Can be excluded if the commit message contains: [skip codeql]
       - name: Perform CodeQL analysis
         if: ${{ !contains(env.commit_msg, '[skip codeql]') }}
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@2d92b76c45b91eb80fc44c74ce3fce0ee94e8f9d # v3.30.0
