@@ -20,6 +20,7 @@ import (
 	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
 	"go.bryk.io/pkg/net/rpc/ws"
 	otelApi "go.bryk.io/pkg/otel/api"
+	otelGrpc "go.bryk.io/pkg/otel/grpc"
 	otelHttp "go.bryk.io/pkg/otel/http"
 	otelSdk "go.bryk.io/pkg/otel/sdk"
 	otelProm "go.bryk.io/pkg/prometheus"
@@ -57,7 +58,7 @@ func TestServer(t *testing.T) {
 			Name: "sample_counter_total",
 			Help: "Dummy counter to test custom metrics initialization.",
 		}, []string{"foo"})
-	for i := 1; i <= 10; i++ {
+	for range 10 {
 		sampleCounter.With(prometheus.Labels{"foo": "bar"}).Inc()
 	}
 
@@ -131,6 +132,7 @@ func TestServer(t *testing.T) {
 	// Client configuration options
 	clientOpts := []ClientOption{
 		WithUserAgent("sample-client/0.1.0"),
+		WithDialOptions(otelGrpc.ClientInstrumentation()),
 		WithCompression(),
 		WithKeepalive(10),
 		WithRetry(retryOpts),
@@ -354,6 +356,7 @@ func TestServer(t *testing.T) {
 			WithGatewayMiddleware(mwGzip.Handler(7), httpMonitor.ServerMiddleware()),
 			WithInterceptor(customFooPing),
 			WithResponseMutator(respMut),
+			WithClientOptions(clientOpts...),
 			WithSpanFormatter(func(r *http.Request) string {
 				return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 			}),
@@ -369,6 +372,7 @@ func TestServer(t *testing.T) {
 			WithHTTPGateway(gw),
 			WithWebSocketProxy(
 				ws.EnableCompression(),
+				ws.ForwardHeaders("Traceparent"),
 				ws.RemoveResultWrapper(),
 				ws.CheckOrigin(func(r *http.Request) bool { return true }),
 			))
@@ -481,7 +485,7 @@ func TestServer(t *testing.T) {
 				defer task.End(nil)
 
 				// Open websocket connection
-				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/server_stream?m=post&cc=true", otelApi.Headers(task))
+				wc, rr, err := websocket.DefaultDialer.DialContext(task.Context(), "ws://127.0.0.1:12137/foo/server_stream?m=post&cc=true", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -505,14 +509,13 @@ func TestServer(t *testing.T) {
 			})
 
 			t.Run("ClientSide", func(t *testing.T) {
-				t.SkipNow()
 				// Start span
 				task := otelApi.Start(context.Background(), "/foo/client_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
 				// Open websocket connection
 				pbM := protojson.MarshalOptions{EmitUnpopulated: true}
-				wc, rr, err := websocket.DefaultDialer.Dial("ws://127.0.0.1:12137/foo/client_stream?m=post", otelApi.Headers(task))
+				wc, rr, err := websocket.DefaultDialer.DialContext(task.Context(), "ws://127.0.0.1:12137/foo/client_stream?m=post", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -605,11 +608,9 @@ func TestServer(t *testing.T) {
 		gwOptions := []GatewayOption{
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
 			WithGatewayMiddleware(httpMonitor.ServerMiddleware()),
-			WithClientOptions(
-				WithClientTLS(ClientTLSConfig{
-					CustomCAs: [][]byte{ca},
-				}),
-			),
+			WithClientOptions(append(clientOpts, WithClientTLS(ClientTLSConfig{
+				CustomCAs: [][]byte{ca},
+			}))...),
 		}
 		gw, err := NewGateway(gwOptions...)
 		if err != nil {
@@ -623,6 +624,7 @@ func TestServer(t *testing.T) {
 			WithHTTPGateway(gw),
 			WithWebSocketProxy(
 				ws.EnableCompression(),
+				ws.ForwardHeaders("Traceparent"),
 				ws.RemoveResultWrapper(),
 				ws.CheckOrigin(func(r *http.Request) bool { return true }),
 			),
@@ -702,7 +704,7 @@ func TestServer(t *testing.T) {
 				task := otelApi.Start(context.Background(), "/foo/server_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
-				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/server_stream?m=post&cc=true", otelApi.Headers(task))
+				wc, rr, err := wsDialer.DialContext(task.Context(), "wss://127.0.0.1:12137/foo/server_stream?m=post&cc=true", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -740,7 +742,7 @@ func TestServer(t *testing.T) {
 				task := otelApi.Start(context.Background(), "/foo/client_stream", otelApi.WithSpanKind(otelApi.SpanKindClient))
 				defer task.End(nil)
 
-				wc, rr, err := wsDialer.Dial("wss://127.0.0.1:12137/foo/client_stream?m=post", otelApi.Headers(task))
+				wc, rr, err := wsDialer.DialContext(task.Context(), "wss://127.0.0.1:12137/foo/client_stream?m=post", otelApi.Headers(task))
 				if err != nil {
 					assert.Fail(err.Error())
 					return
@@ -751,7 +753,7 @@ func TestServer(t *testing.T) {
 				}()
 
 				// Send messages
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					t := <-time.After(100 * time.Millisecond)
 					c := &sampleV1.GenericStreamChunk{
 						Sender: "test-client",
@@ -778,17 +780,19 @@ func TestServer(t *testing.T) {
 		cert, _ := os.ReadFile("testdata/server.sample_cer")
 		key, _ := os.ReadFile("testdata/server.sample_key")
 
+		gwClientOptions := []ClientOption{
+			WithInsecureSkipVerify(),
+			WithAuthCertificate(cert, key),
+			WithClientTLS(ClientTLSConfig{
+				CustomCAs: [][]byte{ca},
+			}),
+		}
+
 		// Setup HTTP gateway
 		gwOptions := []GatewayOption{
 			WithCustomHandlerFunc(http.MethodPost, "/hello", customHandler),
 			WithGatewayMiddleware(httpMonitor.ServerMiddleware()),
-			WithClientOptions(
-				WithInsecureSkipVerify(),
-				WithAuthCertificate(cert, key),
-				WithClientTLS(ClientTLSConfig{
-					CustomCAs: [][]byte{ca},
-				}),
-			),
+			WithClientOptions(append(clientOpts, gwClientOptions...)...),
 		}
 		gw, err := NewGateway(gwOptions...)
 		if err != nil {
@@ -847,7 +851,6 @@ func TestServer(t *testing.T) {
 		// Get client connection
 		customOptions := []ClientOption{
 			WithServerNameOverride("node-01"),
-			// WaitForReady(),
 			WithTimeout(1 * time.Second),
 			WithAuthCertificate(cert, key),
 			WithClientTLS(ClientTLSConfig{
@@ -948,7 +951,6 @@ func TestServer(t *testing.T) {
 		// Get client connection
 		customOptions := []ClientOption{
 			WithInsecureSkipVerify(),
-			// WaitForReady(),
 			WithTimeout(1 * time.Second),
 			WithAuthToken(sampleToken),
 			WithClientTLS(ClientTLSConfig{
@@ -1042,6 +1044,7 @@ func TestEchoServer(t *testing.T) {
 	// Base client options
 	clientOpts := []ClientOption{
 		WithUserAgent("echo-client/0.1.0"),
+		WithDialOptions(otelGrpc.ClientInstrumentation()),
 		WithCompression(),
 		WithKeepalive(10),
 	}
@@ -1122,7 +1125,7 @@ func TestEchoServer(t *testing.T) {
 
 	t.Run("Slow", func(t *testing.T) {
 		var avg int64
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			start := time.Now()
 			_, err = cl.Slow(context.Background(), &empty.Empty{})
 			if err == nil {
@@ -1134,7 +1137,7 @@ func TestEchoServer(t *testing.T) {
 
 	t.Run("Faulty", func(t *testing.T) {
 		errCount := 0
-		for i := 0; i < 10; i++ {
+		for range 5 {
 			_, err := cl.Faulty(context.Background(), &empty.Empty{})
 			if err != nil {
 				errCount++

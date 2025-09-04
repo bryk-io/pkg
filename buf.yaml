@@ -16,4 +16,4 @@ modules:
 deps:
   - buf.build/googleapis/googleapis:61b203b9a9164be9a834f58c37be6f62
   - buf.build/bufbuild/protovalidate:v0.14.0
-  - buf.build/grpc-ecosystem/grpc-gateway:v2.27.1
+  - buf.build/grpc-ecosystem/grpc-gateway:v2.27.2
