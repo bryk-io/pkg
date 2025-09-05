@@ -1,4 +1,5 @@
 name: "maintenance"
+permissions: read-all
 on:
   schedule:
     - cron: "0 0 * * *" # daily at midnight
@@ -7,7 +8,6 @@ jobs:
     name: "close stale issues and pull requests"
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       issues: write # for actions/stale to close stale issues
       pull-requests: write # for actions/stale to close stale PRs
     steps:

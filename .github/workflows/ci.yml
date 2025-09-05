@@ -1,13 +1,8 @@
 name: ci
+permissions: read-all
 env:
   # used to hold the commit message
   commit_msg: ""
-# https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs
-permissions:
-  contents: read
-  pull-requests: write
-  checks: write # allow the actions to annotate code in a PR
-  issues: write # grants write access to issues
 on:
   push:
     branches:
@@ -15,6 +10,7 @@ on:
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened]
   workflow_dispatch: {}
 #    Inputs are available under: github.event.inputs.{name}
 #    inputs:
@@ -87,6 +83,8 @@ jobs:
     name: validate protobuf definitions
     needs: scan
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # allow buf to annotate PRs
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
@@ -119,6 +117,7 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
 
       # Setup buf
+      # https://buf.build/docs/bsr/ci-cd/github-actions/
       - name: Setup buf
         id: buf-setup
         uses: bufbuild/buf-action@8f4a1456a0ab6a1eb80ba68e53832e6fcfacc16c # v1.3.0
@@ -164,13 +163,6 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.0.0
         with:
           go-version: ${{ matrix.go-version }}
-
-      # Get commit message
-      - name: Get commit message
-        run: |
-          echo 'commit_msg<<EOF' >> $GITHUB_ENV
-          git log --format=%B -n 1 ${{ github.sha }} >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
 
       # Style consistency and static analysis using 'golangci-lint'
       # https://github.com/golangci/golangci-lint-action
