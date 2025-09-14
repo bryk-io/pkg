@@ -107,22 +107,6 @@ func WithResourceLimits(limits ResourceLimits) ServerOption {
 	}
 }
 
-// WithInputValidation will automatically detect any errors on received messages by
-// detecting if a `Validate` method is available and returning any produced errors
-// with an `InvalidArgument` status code.
-//
-// To further automate input validation use:
-//
-//	https://github.com/envoyproxy/protoc-gen-validate
-func WithInputValidation() ServerOption {
-	return func(srv *Server) error {
-		srv.mu.Lock()
-		srv.inputValidation = true
-		srv.mu.Unlock()
-		return nil
-	}
-}
-
 // WithProtoValidate enables automatic input validation using the `protovalidate`
 // package. Any validation errors will be returned with status code `InvalidArgument`.
 // https://github.com/bufbuild/protovalidate

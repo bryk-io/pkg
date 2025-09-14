@@ -10,9 +10,6 @@ import (
 	"sync"
 	"time"
 
-	mwAuth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	mwRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	mwValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/soheilhy/cmux"
 	"go.bryk.io/pkg/errors"
@@ -62,7 +59,6 @@ type Server struct {
 	resourceLimits   ResourceLimits                 // Settings to prevent resources abuse
 	enableValidator  bool                           // Enable protobuf validation
 	panicRecovery    bool                           // Enable panic recovery interceptor
-	inputValidation  bool                           // Enable automatic input validation
 	reflection       bool                           // Enable server reflection protocol
 	healthCheck      HealthCheck                    // Enable health checks
 	prometheus       prometheus.Operator            // Prometheus support
@@ -220,7 +216,6 @@ func (srv *Server) reset() {
 	srv.tlsConfig = nil
 	srv.clientCAs = [][]byte{}
 	srv.panicRecovery = false
-	srv.inputValidation = false
 	srv.gateway = nil
 	srv.opts = []grpc.ServerOption{}
 	srv.middlewareUnary = []grpc.UnaryServerInterceptor{}
@@ -405,14 +400,8 @@ func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream 
 
 	// If enabled, token validator must be the first operational middleware in the chain
 	if srv.tokenValidator != nil {
-		unary = append(unary, mwAuth.UnaryServerInterceptor(mwAuth.AuthFunc(srv.tokenValidator)))
-		stream = append(stream, mwAuth.StreamServerInterceptor(mwAuth.AuthFunc(srv.tokenValidator)))
-	}
-
-	// If enabled, input validation should be executed right after authentication
-	if srv.inputValidation {
-		unary = append(unary, mwValidator.UnaryServerInterceptor())
-		stream = append(stream, mwValidator.StreamServerInterceptor())
+		unary = append(unary, authUnaryServerInterceptor(srv.tokenValidator))
+		stream = append(stream, authStreamServerInterceptor(srv.tokenValidator))
 	}
 
 	// If enabled, execute protobuf validation using the `protovalidate` package
@@ -431,8 +420,8 @@ func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream 
 
 	// If enabled, panic recovery must be the last middleware to chain
 	if srv.panicRecovery {
-		unary = append(unary, mwRecovery.UnaryServerInterceptor())
-		stream = append(stream, mwRecovery.StreamServerInterceptor())
+		unary = append(unary, rcvUnaryServerInterceptor())
+		stream = append(stream, rcvStreamServerInterceptor())
 	}
 	return unary, stream
 }

@@ -102,7 +102,7 @@ func TestServer(t *testing.T) {
 	// Base server configuration options
 	serverOpts := []ServerOption{
 		WithPanicRecovery(),
-		WithInputValidation(),
+		WithProtoValidate(),
 		WithReflection(),
 		WithServiceProvider(&fooProvider{}),
 		WithPrometheus(prom),
@@ -121,21 +121,12 @@ func TestServer(t *testing.T) {
 		prom.MetricsHandler().ServeHTTP(w, r)
 	}
 
-	// Retry call configuration
-	retrySpan := 300 * time.Millisecond
-	retryOpts := &RetryOptions{
-		Attempts:           3,
-		PerRetryTimeout:    &retrySpan,
-		BackoffExponential: &retrySpan,
-	}
-
 	// Client configuration options
 	clientOpts := []ClientOption{
 		WithUserAgent("sample-client/0.1.0"),
 		WithDialOptions(otelGrpc.ClientInstrumentation()),
 		WithCompression(),
 		WithKeepalive(10),
-		WithRetry(retryOpts),
 	}
 
 	t.Run("WithDefaults", func(t *testing.T) {
@@ -1077,7 +1068,6 @@ func TestEchoServer(t *testing.T) {
 		WithReflection(),
 		WithProtoValidate(),
 		WithPanicRecovery(),
-		WithInputValidation(),
 		WithResourceLimits(ResourceLimits{
 			Connections: 100,
 			Requests:    100,

@@ -120,16 +120,6 @@ func WithDialOptions(opts ...grpc.DialOption) ClientOption {
 	}
 }
 
-// WithRetry will enable automatic error retries on all client requests.
-func WithRetry(config *RetryOptions) ClientOption {
-	return func(c *Client) error {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		c.callOpts = append(c.callOpts, Retry(config)...)
-		return nil
-	}
-}
-
 // WithKeepalive will configure the client to send a ping message when a certain
 // time (in seconds) has passed without activity in the connection. The minimum valid
 // interval is 10 seconds.

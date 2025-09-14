@@ -8,6 +8,7 @@ import (
 
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.bryk.io/pkg/errors"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -120,4 +121,102 @@ func GetAuthToken(ctx context.Context, scheme string) (string, error) {
 		return "", status.Errorf(codes.Unauthenticated, "bad token scheme")
 	}
 	return splits[1], nil
+}
+
+// ChainUnaryClient creates a single interceptor out of a chain of many interceptors.
+//
+// Execution is done in left-to-right order, including passing of context.
+// For example ChainUnaryClient(one, two, three) will execute one before two before three.
+func chainUnaryClient(interceptors ...grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
+	n := len(interceptors)
+
+	// Dummy interceptor maintained for backward compatibility to avoid returning nil.
+	if n == 0 {
+		return func(
+			ctx context.Context,
+			method string,
+			req any,
+			reply any,
+			cc *grpc.ClientConn,
+			invoker grpc.UnaryInvoker,
+			opts ...grpc.CallOption) error {
+			return invoker(ctx, method, req, reply, cc, opts...)
+		}
+	}
+
+	if n == 1 {
+		return interceptors[0]
+	}
+
+	return func(
+		ctx context.Context,
+		method string,
+		req any,
+		reply any,
+		cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		opts ...grpc.CallOption) error {
+		currInvoker := invoker
+		for i := n - 1; i > 0; i-- {
+			innerInvoker := currInvoker
+			currInvoker = func(
+				currentCtx context.Context,
+				currentMethod string,
+				currentReq any,
+				currentRepl any,
+				currentConn *grpc.ClientConn,
+				currentOpts ...grpc.CallOption) error {
+				return interceptors[i](currentCtx, currentMethod, currentReq,
+					currentRepl, currentConn, innerInvoker, currentOpts...)
+			}
+		}
+		return interceptors[0](ctx, method, req, reply, cc, currInvoker, opts...)
+	}
+}
+
+// ChainStreamClient creates a single interceptor out of a chain of many interceptors.
+//
+// Execution is done in left-to-right order, including passing of context.
+// For example ChainStreamClient(one, two, three) will execute one before two before three.
+func chainStreamClient(interceptors ...grpc.StreamClientInterceptor) grpc.StreamClientInterceptor {
+	n := len(interceptors)
+
+	// Dummy interceptor maintained for backward compatibility to avoid returning nil.
+	if n == 0 {
+		return func(
+			ctx context.Context,
+			desc *grpc.StreamDesc,
+			cc *grpc.ClientConn,
+			method string,
+			streamer grpc.Streamer,
+			opts ...grpc.CallOption) (grpc.ClientStream, error) {
+			return streamer(ctx, desc, cc, method, opts...)
+		}
+	}
+
+	if n == 1 {
+		return interceptors[0]
+	}
+
+	return func(
+		ctx context.Context,
+		desc *grpc.StreamDesc,
+		cc *grpc.ClientConn,
+		method string,
+		streamer grpc.Streamer,
+		opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		currStreamer := streamer
+		for i := n - 1; i > 0; i-- {
+			innerStreamer := currStreamer
+			currStreamer = func(
+				currentCtx context.Context,
+				currentDesc *grpc.StreamDesc,
+				currentConn *grpc.ClientConn,
+				currentMethod string,
+				currentOpts ...grpc.CallOption) (grpc.ClientStream, error) {
+				return interceptors[i](currentCtx, currentDesc, currentConn, currentMethod, innerStreamer, currentOpts...)
+			}
+		}
+		return interceptors[0](ctx, desc, cc, method, currStreamer, opts...)
+	}
 }

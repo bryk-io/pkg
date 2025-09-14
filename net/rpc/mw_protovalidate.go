@@ -12,7 +12,7 @@ import (
 
 func pvUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	// nolint: lll
-	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		msg, ok := req.(protoreflect.ProtoMessage)
 		if !ok {
 			return nil, status.Error(codes.InvalidArgument, "invalid message type")
@@ -26,7 +26,7 @@ func pvUnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func pvStreamServerInterceptor() grpc.StreamServerInterceptor {
 	// nolint: lll
-	return func(srv interface{}, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	return func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		return handler(srv, &recvWrapper{ServerStream: stream})
 	}
 }
@@ -35,7 +35,7 @@ type recvWrapper struct {
 	grpc.ServerStream
 }
 
-func (s *recvWrapper) RecvMsg(m interface{}) error {
+func (s *recvWrapper) RecvMsg(m any) error {
 	if err := s.ServerStream.RecvMsg(m); err != nil {
 		return err
 	}
