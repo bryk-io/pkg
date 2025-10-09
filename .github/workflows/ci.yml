@@ -55,16 +55,14 @@ jobs:
           git log --format=%B -n 1 ${{ github.sha }} >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
 
-      # List direct dependencies
-      - name: List dependencies
-        run: go list -mod=readonly -f '{{if not .Indirect}}{{.}}{{end}}' -m all > go.list
-
-      # Scan dependencies using Nancy
+      # Scan dependencies using `govuln`
       # Can be excluded if the commit message contains: [skip scan-deps]
-      # https://github.com/sonatype-nexus-community/nancy-github-action
+      # https://github.com/golang/vuln
       - name: Scan dependencies
         if: ${{ !contains(env.commit_msg, '[skip scan-deps]') }}
-        uses: sonatype-nexus-community/nancy-github-action@726e338312e68ecdd4b4195765f174d3b3ce1533 # v1.0.3
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck -format sarif .
 
       # Scan for leaked secrets
       # Can be excluded if the commit message contains: [skip scan-secrets]
