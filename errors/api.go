@@ -174,8 +174,8 @@ func As(err error, target interface{}) bool {
 //   - Comparison is true between `src` and `target` cause
 func Is(src, target error) bool {
 	// Are both the same object?
-	// reflect.ValueOf(src).Equal(reflect.ValueOf(target))
-	if reflect.DeepEqual(src, target) {
+	// reflect.DeepEqual(src, target)
+	if reflect.ValueOf(src).Equal(reflect.ValueOf(target)) {
 		return true
 	}
 

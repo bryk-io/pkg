@@ -1,7 +1,7 @@
 package shamir
 
 import (
-	cr "crypto/rand"
+	"crypto/rand"
 	"crypto/subtle"
 )
 
@@ -38,8 +38,8 @@ func makePolynomial(intercept, degree uint8) (polynomial, error) {
 	// Ensure the intercept is set
 	p.coefficients[0] = intercept
 
-	// Assign random co-efficients to the polynomial
-	if _, err := cr.Read(p.coefficients[1:]); err != nil {
+	// Assign random coefficients to the polynomial
+	if _, err := rand.Read(p.coefficients[1:]); err != nil {
 		return p, err
 	}
 

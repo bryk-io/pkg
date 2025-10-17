@@ -1,7 +1,8 @@
 package shamir
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 
 	"go.bryk.io/pkg/errors"
 )
@@ -37,7 +38,10 @@ func Split(secret []byte, parts, threshold int) ([][]byte, error) {
 	}
 
 	// Generate random list of x coordinates
-	xCoordinates := rand.Perm(255)
+	xCoordinates, err := perm(255)
+	if err != nil {
+		return nil, errors.New("failed to generate random x-coordinates")
+	}
 
 	// Allocate the output array, initialize the final byte
 	// of the output with the offset. The representation of each
@@ -124,4 +128,28 @@ func Combine(parts [][]byte) ([]byte, error) {
 		secret[idx] = val
 	}
 	return secret, nil
+}
+
+// Returns, as a slice of n ints, a cryptographically secure
+// random permutation of the integers [0, n-1).
+func perm(n int) ([]int, error) {
+	if n < 0 {
+		return nil, errors.New("invalid argument: n must be non-negative")
+	}
+	m := make([]int, n)
+	for i := range n {
+		m[i] = i
+	}
+
+	// Fisher-Yates shuffle
+	for i := n - 1; i > 0; i-- {
+		// j is a random int in [0, i+1)
+		bigJ, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			return nil, err
+		}
+		j := int(bigJ.Int64())
+		m[i], m[j] = m[j], m[i]
+	}
+	return m, nil
 }
