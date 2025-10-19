@@ -24,10 +24,10 @@ func NewServer(options ...Option) (*Server, error) {
 	srv := &Server{
 		nh: &lib.Server{
 			MaxHeaderBytes:    1024,
-			ReadHeaderTimeout: 5 * time.Second,
-			ReadTimeout:       10 * time.Second,
-			IdleTimeout:       10 * time.Second,
-			WriteTimeout:      10 * time.Second,
+			ReadHeaderTimeout: 2 * time.Second,
+			ReadTimeout:       5 * time.Second,
+			IdleTimeout:       5 * time.Second,
+			WriteTimeout:      5 * time.Second,
 		},
 		mw: []func(lib.Handler) lib.Handler{},
 	}

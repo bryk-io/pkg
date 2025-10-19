@@ -1,7 +1,7 @@
 # Public Packages
 
-[![Build Status](https://github.com/bryk-io/pkg/workflows/ci/badge.svg?branch=main)](https://github.com/bryk-io/pkg/actions)
-[![Version](https://img.shields.io/github/tag/bryk-io/pkg.svg)](https://github.com/bryk-io/pkg/releases)
+[![ci](https://github.com/bryk-io/pkg/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/bryk-io/pkg/actions/workflows/ci.yml)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11326/badge)](https://www.bestpractices.dev/projects/11326)
 [![Software License](https://img.shields.io/badge/license-BSD3-red.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bryk-io/pkg?style=flat)](https://goreportcard.com/report/github.com/bryk-io/pkg)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0-ff69b4.svg)](.github/CODE_OF_CONDUCT.md)

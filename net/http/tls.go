@@ -26,6 +26,10 @@ type TLS struct {
 
 	// Custom certificate authorities to include when accepting TLS connections.
 	CustomCAs [][]byte
+
+	// Minimal TLS version supported. If not provided `tls.VersionTLS12`
+	// will be used by default.
+	MinVersion uint16
 }
 
 // RecommendedCiphers provides a default list of secure/modern ciphers.
@@ -50,6 +54,11 @@ var recommendedCurves = []tls.CurveID{
 // Expand returns a TLS configuration instance based on the provided
 // settings.
 func (t TLS) Expand() (*tls.Config, error) {
+	// Use TLS 1.2 as minimum version supported as default.
+	if t.MinVersion == 0 {
+		t.MinVersion = tls.VersionTLS12
+	}
+
 	// Load key/pair
 	cert, err := tls.X509KeyPair(t.Cert, t.PrivateKey)
 	if err != nil {
@@ -87,11 +96,12 @@ func (t TLS) Expand() (*tls.Config, error) {
 	}
 
 	// Base TLS configuration
+	// nolint: gosec
 	return &tls.Config{
 		Certificates:     []tls.Certificate{cert},
 		CipherSuites:     ciphers,
 		CurvePreferences: curves,
 		RootCAs:          cp,
-		MinVersion:       tls.VersionTLS12,
+		MinVersion:       t.MinVersion,
 	}, nil
 }

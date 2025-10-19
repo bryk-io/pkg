@@ -134,6 +134,7 @@ func TestNewServer(t *testing.T) {
 			Cert:             cert,
 			PrivateKey:       key,
 			CustomCAs:        [][]byte{ca},
+			MinVersion:       tls.VersionTLS13, // enforce TLS 1.3
 		}))
 
 		// Server instance
