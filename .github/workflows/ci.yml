@@ -1,5 +1,4 @@
 name: ci
-permissions: read-all
 env:
   # used to hold the commit message
   commit_msg: ""
@@ -24,6 +23,8 @@ jobs:
   scan:
     name: scan for vulnerabilities
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
@@ -34,6 +35,8 @@ jobs:
       # Checkout code
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
 
       # Configure runner environment
       - name: Set up runner environment
@@ -82,6 +85,7 @@ jobs:
     needs: scan
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: write # allow buf to annotate PRs
     steps:
       # Harden workflow runner
@@ -93,6 +97,8 @@ jobs:
       # Checkout code
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
 
       # Configure runner environment
       - name: Set up runner environment
@@ -137,6 +143,9 @@ jobs:
         go-version: [1.24.x, 1.25.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
+    permissions:
+      actions: write
+      contents: read
     timeout-minutes: 15
     steps:
       # Harden workflow runner
@@ -148,6 +157,8 @@ jobs:
       # Checkout code
       - name: Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
 
       # Configure runner environment
       - name: Set up runner environment
