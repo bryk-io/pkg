@@ -41,6 +41,7 @@ docs:
 lint:
 	# Go code
 	golangci-lint run -v ./$(pkg)
+	semgrep --config "p/trailofbits"
 
 ## protos: Compile all protobuf definitions and RPC services
 protos:
@@ -50,27 +51,19 @@ protos:
 ## scan-ci: Look for vulnerabilities in CI Workflows
 # https://docs.zizmor.sh/usage/
 scan-ci:
+	actionlint
 	zizmor --gh-token `gh auth token` .github/workflows
 
-## scan-deps: Look for known vulnerabilities in the project dependencies
-# https://github.com/sonatype-nexus-community/nancy
-scan-deps:
-	@go list -json -deps ./... | nancy sleuth --skip-update-check
-
-## scan-secrets: Scan project code for accidentally leaked secrets
-# https://github.com/trufflesecurity/trufflehog
-scan-secrets:
-	@docker run -it --rm --platform linux/arm64 \
-	-v "$PWD:/repo" \
-	trufflesecurity/trufflehog:latest \
-	filesystem --directory /repo --only-verified
-
+## scan-deps: Scan code and dependencies for known vulnerabilities
 # https://appsec.guide/docs/static-analysis/semgrep/
 # https://go.googlesource.com/vuln
-## scan-vuln: Scan code and dependencies for known vulnerabilities
-scan-vuln:
-	govulncheck ./...
-	semgrep --config "p/trailofbits"
+scan-deps:
+	govulncheck -mode source -scan package ./...
+
+## scan-secrets: Scan project code for accidentally leaked secrets
+# https://gitleaks.io
+scan-secrets:
+	gitleaks git -v
 
 ## test: Run all unitary tests
 test:
