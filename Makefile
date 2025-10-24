@@ -47,6 +47,11 @@ protos:
 	# Generate package images and code
 	make proto-build pkg=sample/v1
 
+## scan-ci: Look for vulnerabilities in CI Workflows
+# https://docs.zizmor.sh/usage/
+scan-ci:
+	zizmor --gh-token `gh auth token` .github/workflows
+
 ## scan-deps: Look for known vulnerabilities in the project dependencies
 # https://github.com/sonatype-nexus-community/nancy
 scan-deps:
