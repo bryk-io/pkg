@@ -1,4 +1,7 @@
 name: ci
+# default job permissions
+permissions:
+  contents: read
 env:
   # used to hold the commit message
   commit_msg: ""
@@ -23,8 +26,6 @@ jobs:
   scan:
     name: scan for vulnerabilities
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
@@ -143,9 +144,6 @@ jobs:
         go-version: [1.24.x, 1.25.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
-    permissions:
-      actions: write
-      contents: read
     timeout-minutes: 15
     steps:
       # Harden workflow runner
