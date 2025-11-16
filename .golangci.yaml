@@ -60,10 +60,11 @@ linters:
       excludes:
         - G115
     govet:
+      disable:
+        - buildtag
       enable:
         - atomic
         - atomicalign
-        - buildtag
         - cgocall
         - composites
         - copylocks

@@ -12,7 +12,7 @@ repos:
   - repo: local
     hooks:
       - id: lint-and-test
-        name: Lint and test
+        name: Lint and Test
         entry: ./.pre-commit.sh
         language: system
         always_run: true
