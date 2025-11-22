@@ -120,7 +120,7 @@ func TestAES(t *testing.T) {
 	w, _ := NewWorker(conf)
 
 	// Get random original content as a byte array
-	originalContent := make([]byte, 1024*1024)
+	originalContent := make([]byte, 1024)
 	rand.Read(originalContent)
 
 	// Encrypt
@@ -162,6 +162,55 @@ func TestConcurrency(t *testing.T) {
 		}(v)
 	}
 	wg.Wait()
+}
+
+func FuzzInput(f *testing.F) {
+	// Get random encryption key
+	// Invalid key size, will be adjusted when expanding the secret key material
+	key := [20]byte{}
+	rand.Read(key[:])
+	conf, _ := DefaultConfig(key[:])
+
+	testcases := make([][]byte, 10)
+	for i := range 10 {
+		testcases[i] = make([]byte, 1024*1024)
+		rand.Read(testcases[i])
+		f.Add(testcases[i])
+	}
+
+	f.Fuzz(func(t *testing.T, originalContent []byte) {
+		t.Run("CHACHA20", func(t *testing.T) {
+			conf.Cipher = CHACHA20
+			w, _ := NewWorker(conf)
+
+			// Encrypt
+			output := bytes.NewBuffer([]byte{})
+			_, err := w.Encrypt(bytes.NewReader(originalContent), output)
+			tdd.Nil(t, err, "encrypt error")
+
+			// Decrypt
+			decrypted := bytes.NewBuffer([]byte{})
+			_, err = w.Decrypt(bytes.NewReader(output.Bytes()), decrypted)
+			tdd.Nil(t, err, "decrypt error")
+			tdd.Equal(t, originalContent, decrypted.Bytes(), "bad decrypt result")
+		})
+
+		t.Run("AES", func(t *testing.T) {
+			conf.Cipher = AES
+			w, _ := NewWorker(conf)
+
+			// Encrypt
+			output := bytes.NewBuffer([]byte{})
+			_, err := w.Encrypt(bytes.NewReader(originalContent), output)
+			tdd.Nil(t, err, "encrypt error")
+
+			// Decrypt
+			decrypted := bytes.NewBuffer([]byte{})
+			_, err = w.Decrypt(bytes.NewReader(output.Bytes()), decrypted)
+			tdd.Nil(t, err, "decrypt error")
+			tdd.Equal(t, originalContent, decrypted.Bytes(), "bad decrypt result")
+		})
+	})
 }
 
 func BenchmarkWorker_EncryptChaCha(b *testing.B) {

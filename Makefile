@@ -15,7 +15,7 @@ help:
 
 ## bench: Run benchmarks
 bench:
-	go test -run=XXX -bench=. -benchmem ./...
+	go test -run=XXX -bench=. -benchmem ./$(pkg)
 
 ## build: Build for the current architecture in use, intended for development
 build:
@@ -36,6 +36,10 @@ deps:
 docs:
 	@echo "Docs available at: http://localhost:8080/pkg/go.bryk.io/pkg/"
 	godoc -http=:8080 -goroot=${GOPATH} -play
+
+## fuzz: Run fuzz tests for 30 seconds
+fuzz:
+	go test -fuzz=. -fuzztime 30s -v ./$(pkg)
 
 ## lint: Static analysis
 lint:

@@ -122,25 +122,23 @@ func (w *Worker) Encrypt(input io.Reader, output io.Writer) (*Result, error) {
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
-		if n > 0 {
-			// Encrypt payload
-			// Use 'seq | nonce' as operation nonce
-			// Use 'version | cipher | payload length' as additional data
-			h := w.buildHeader(n)
-			ciphertext := c.Seal(nil, h[4:headerSize], payload, h[:4])
-
-			// Build package
-			packet := make([]byte, headerSize+len(ciphertext))
-			copy(packet[:headerSize], h)
-			copy(packet[headerSize:], ciphertext)
-			if _, err := output.Write(packet); err != nil {
-				return nil, err
-			}
-			w.seq++
-		}
-		if errors.Is(err, io.EOF) {
+		if n == 0 || errors.Is(err, io.EOF) {
 			break
 		}
+		// Encrypt payload
+		// Use 'seq | nonce' as operation nonce
+		// Use 'version | cipher | payload length' as additional data
+		h := w.buildHeader(n)
+		ciphertext := c.Seal(nil, h[4:headerSize], payload, h[:4])
+
+		// Build package
+		packet := make([]byte, headerSize+len(ciphertext))
+		copy(packet[:headerSize], h)
+		copy(packet[headerSize:], ciphertext)
+		if _, err := output.Write(packet); err != nil {
+			return nil, err
+		}
+		w.seq++
 	}
 
 	// Return final result
@@ -172,31 +170,32 @@ func (w *Worker) Decrypt(input io.Reader, output io.Writer) (*Result, error) {
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
-		if n > 0 {
-			// Validate packet sequence
-			h := header(packet)
-			if h.SequenceNumber() != w.seq {
-				return nil, errors.New(ErrInvalidSequenceNumber)
-			}
-
-			// Decrypt and validate packet ciphertext
-			ciphertext := packet[headerSize:]
-			payload, err := c.Open(nil, h[4:headerSize], ciphertext, h[:4])
-			if err != nil {
-				return nil, errors.New(ErrInvalidPacketTag)
-			}
-
-			// Validate payload length
-			if len(payload) < h.Len() {
-				return nil, errors.New(ErrInvalidPayloadLen)
-			}
-
-			// Add output
-			if _, err := output.Write(payload[:h.Len()]); err != nil {
-				return nil, err
-			}
-			w.seq++
+		if n == 0 || errors.Is(err, io.EOF) {
+			break
 		}
+		// Validate packet sequence
+		h := header(packet)
+		if h.SequenceNumber() != w.seq {
+			return nil, errors.New(ErrInvalidSequenceNumber)
+		}
+
+		// Decrypt and validate packet ciphertext
+		ciphertext := packet[headerSize:]
+		payload, err := c.Open(nil, h[4:headerSize], ciphertext, h[:4])
+		if err != nil {
+			return nil, errors.New(ErrInvalidPacketTag)
+		}
+
+		// Validate payload length
+		if len(payload) < h.Len() {
+			return nil, errors.New(ErrInvalidPayloadLen)
+		}
+
+		// Add output
+		if _, err := output.Write(payload[:h.Len()]); err != nil {
+			return nil, err
+		}
+		w.seq++
 		if errors.Is(err, io.EOF) {
 			break
 		}
