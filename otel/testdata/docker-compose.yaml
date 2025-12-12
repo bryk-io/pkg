@@ -1,6 +1,7 @@
+name: "otel-test"
 services:
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.134.1
+    image: otel/opentelemetry-collector-contrib:0.141.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -13,7 +14,7 @@ services:
       - zipkin
       - prometheus
   jaeger:
-    image: jaegertracing/all-in-one:1.73.0
+    image: jaegertracing/all-in-one:1.75.0
     ports:
       - "16686:16686" # ui
       - "14250" # grpc receiver endpoint
@@ -22,7 +23,7 @@ services:
     ports:
       - "9411:9411" # ui and HTTP API
   prometheus:
-    image: prom/prometheus:v3.5.0
+    image: prom/prometheus:v3.8.0
     volumes:
       - ./prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
