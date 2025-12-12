@@ -89,6 +89,18 @@ linters:
       simple: true
       range-loops: true
       for-loops: false
+    revive:
+      max-open-files: 100
+      enable-default-rules: true
+      rules:
+        # managed by `lll`
+        - name: line-length-limit
+          severity: warning
+          disabled: true
+        # managed by `gocyclo`
+        - name: cognitive-complexity
+          severity: warning
+          disabled: true
   exclusions:
     generated: lax
     rules:
