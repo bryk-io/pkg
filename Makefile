@@ -45,7 +45,6 @@ fuzz:
 lint:
 	# Go code
 	golangci-lint run -v ./$(pkg)
-	semgrep --config "p/trailofbits"
 
 ## protos: Compile all protobuf definitions and RPC services
 protos:
@@ -63,9 +62,11 @@ scan-ci:
 # https://go.googlesource.com/vuln
 scan-deps:
 	govulncheck -mode source -scan package ./...
+	semgrep --config "p/trailofbits"
 
 ## scan-secrets: Scan project code for accidentally leaked secrets
 # https://gitleaks.io
+# gitleaks dir --no-banner -f json -r - | jq -r '.[].Fingerprint' > .gitleaksignore
 scan-secrets:
 	gitleaks git -v
 

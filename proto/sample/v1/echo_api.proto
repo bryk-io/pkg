@@ -88,10 +88,8 @@ message FaultyError {
   // RPC error code. MUST be a valid code value registered in the
   // google.golang.org/grpc/codes package.
   uint32 code = 1;
-
   // General description of the error.
   string desc = 2;
-
   // Custom key/value pairs providing additional details about the error.
   map<string, string> metadata = 3;
 }

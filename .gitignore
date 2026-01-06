@@ -6,6 +6,9 @@
 # Deps
 vendor/**
 
+# Buf dependencies; updated with: `buf export --all -o .buf-deps`
+.buf-deps
+
 # NodeJS
 node_modules
 package-lock.json
