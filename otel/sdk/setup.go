@@ -123,6 +123,7 @@ func (app *Instrumentation) setupProviders() {
 	}
 
 	// Trace provider options.
+	// nolint: prealloc
 	tpOpts := []sdkTrace.TracerProviderOption{
 		sdkTrace.WithResource(app.resource),        // adjust monitored resource
 		sdkTrace.WithSampler(app.sampler),          // set sampling strategy

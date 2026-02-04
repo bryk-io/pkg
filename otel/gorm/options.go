@@ -2,7 +2,7 @@ package gorm
 
 import (
 	"go.bryk.io/pkg/otel"
-	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 // Option defines a function that configures the plugin behavior.

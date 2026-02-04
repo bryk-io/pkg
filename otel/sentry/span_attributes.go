@@ -7,7 +7,7 @@ import (
 	sdk "github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/otel/attribute"
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.39.0"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -48,7 +48,7 @@ func parseSpanAttributes(s sdkTrace.ReadOnlySpan) spanAttributes {
 			result = descriptionForHTTPMethod(s)
 		case semConv.DBSystemNameKey:
 			result = descriptionForDBSystem(s)
-		case semConv.RPCSystemKey:
+		case semConv.RPCSystemNameKey:
 			result.Op = "rpc"
 			result.Source = sdk.SourceRoute
 		case semConv.MessagingSystemKey:

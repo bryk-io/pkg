@@ -101,10 +101,15 @@ linters:
         - name: cognitive-complexity
           severity: warning
           disabled: true
+        # accept package names
+        - name: var-naming
+          severity: warning
+          disabled: true
   exclusions:
     generated: lax
     rules:
-      - linters:
+      - path: (.+)_test.go
+        linters:
           - dupl
           - errcheck
           - funlen
@@ -114,8 +119,14 @@ linters:
           - nakedret
           - nestif
           - noctx
+          - prealloc
           - revive
-        path: (.+)_test.go
+      - path: internal
+        linters:
+          - revive
+      - path: net/http
+        linters:
+          - revive
     paths:
       - crypto/vrf/*
       - third_party$

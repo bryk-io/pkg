@@ -1260,7 +1260,7 @@ func ExampleNewClientConnection() {
 func availableExporters() (sdkTrace.SpanExporter, sdkMetric.Exporter) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:13133/", nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:12345/", nil)
 	res, err := http.DefaultClient.Do(req)
 	if res != nil {
 		_ = res.Body.Close()

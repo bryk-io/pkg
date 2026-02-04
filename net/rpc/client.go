@@ -50,9 +50,6 @@ func NewClient(options ...ClientOption) (*Client, error) {
 		c.dialOpts = append(c.dialOpts, grpc.WithDefaultCallOptions(c.callOpts...))
 	}
 
-	// Setup instrumentation
-	// c.dialOpts = append(c.dialOpts, otelGrpc.ClientInstrumentation())
-
 	// Add middleware
 	unary, stream := c.getMiddleware()
 	c.dialOpts = append(c.dialOpts, grpc.WithUnaryInterceptor(chainUnaryClient(unary...)))

@@ -14,7 +14,7 @@ import (
 	"github.com/soheilhy/cmux"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/net/rpc/ws"
-	otelgrpc "go.bryk.io/pkg/otel/grpc"
+	otelGrpc "go.bryk.io/pkg/otel/grpc"
 	"go.bryk.io/pkg/prometheus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -57,7 +57,7 @@ type Server struct {
 	gw               *http.Server                   // Gateway HTTP server
 	wsProxy          *ws.Proxy                      // WebSocket proxy
 	resourceLimits   ResourceLimits                 // Settings to prevent resources abuse
-	enableValidator  bool                           // Enable protobuf validation
+	protoValidator   bool                           // Enable protobuf validation
 	panicRecovery    bool                           // Enable panic recovery interceptor
 	reflection       bool                           // Enable server reflection protocol
 	healthCheck      HealthCheck                    // Enable health checks
@@ -73,7 +73,7 @@ func NewServer(options ...ServerOption) (*Server, error) {
 	}
 
 	// enable server instrumentation by default
-	srv.opts = append(srv.opts, otelgrpc.ServerInstrumentation())
+	srv.opts = append(srv.opts, otelGrpc.ServerInstrumentation())
 	return srv, nil
 }
 
@@ -149,7 +149,7 @@ func (srv *Server) Start(ready chan<- bool) (err error) {
 		}
 	}
 
-	// enable health checks protocol
+	// enable health check protocol
 	if srv.healthCheck != nil {
 		srv.services = append(srv.services, &healthSvc{srv: srv})
 	}
@@ -405,7 +405,7 @@ func (srv *Server) getMiddleware() (unary []grpc.UnaryServerInterceptor, stream 
 	}
 
 	// If enabled, execute protobuf validation using the `protovalidate` package
-	if srv.enableValidator {
+	if srv.protoValidator {
 		unary = append(unary, pvUnaryServerInterceptor())
 		stream = append(stream, pvStreamServerInterceptor())
 	}

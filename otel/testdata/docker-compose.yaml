@@ -1,30 +1,40 @@
+version: "3.8"
 name: "otel-test"
 services:
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.141.0
-    command: ["--config=/etc/otel-collector-config.yaml"]
+  alloy:
+    image: grafana/alloy:v1.12.2
+    command: [ "run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy" ]
     volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ./config.alloy:/etc/alloy/config.alloy
     ports:
-      - "13133:13133" # health_check extension
-      - "4317:4317" # default grpc receiver endpoint
-      - "4318:4318" # default http receiver endpoint
+      - 12345:12345 # ui
+      - 4317:4317 # grpc
     depends_on:
       - jaeger
-      - zipkin
-      - prometheus
   jaeger:
     image: jaegertracing/all-in-one:1.75.0
     ports:
-      - "16686:16686" # ui
-      - "14250" # grpc receiver endpoint
-  zipkin:
-    image: openzipkin/zipkin:3.5
-    ports:
-      - "9411:9411" # ui and HTTP API
-  prometheus:
-    image: prom/prometheus:v3.8.0
-    volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
+      - 16686:16686 # ui
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:0.141.0
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "13133:13133" # health_check extension
+  #     - "4317:4317" # default grpc receiver endpoint
+  #     - "4318:4318" # default http receiver endpoint
+  #   depends_on:
+  #     - jaeger
+  #     - zipkin
+  #     - prometheus
+  # zipkin:
+  #   image: openzipkin/zipkin:3.5
+  #   ports:
+  #     - "9411:9411" # ui and HTTP API
+  # prometheus:
+  #   image: prom/prometheus:v3.8.0
+  #   volumes:
+  #     - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - "9090:9090"

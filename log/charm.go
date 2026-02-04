@@ -133,7 +133,7 @@ func (h *charmHandler) Debug(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []any{}
+	fields := []any{} // nolint: prealloc
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Debug(args[0], fields...)
@@ -153,7 +153,7 @@ func (h *charmHandler) Info(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []any{}
+	fields := []any{} // nolint: prealloc
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Info(args[0], fields...)
@@ -173,7 +173,7 @@ func (h *charmHandler) Warning(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []any{}
+	fields := []any{} // nolint: prealloc
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Warn(args[0], fields...)
@@ -193,7 +193,7 @@ func (h *charmHandler) Error(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []any{}
+	fields := []any{} // nolint: prealloc
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Error(args[0], fields...)
@@ -213,7 +213,7 @@ func (h *charmHandler) Panic(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []any{}
+	fields := []any{} // nolint: prealloc
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Error(args[0], fields...)
@@ -235,7 +235,7 @@ func (h *charmHandler) Fatal(args ...any) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.cl.Helper()
-	fields := []any{}
+	fields := []any{} // nolint: prealloc
 	fields = append(fields, expand(h.fields.Values())...)
 	fields = append(fields, args[1:]...)
 	h.cl.Fatal(args[0], fields...)

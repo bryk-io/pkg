@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"go.bryk.io/pkg/errors"
+	otelGrpc "go.bryk.io/pkg/otel/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/keepalive"
@@ -116,6 +117,17 @@ func WithDialOptions(opts ...grpc.DialOption) ClientOption {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		c.dialOpts = append(c.dialOpts, opts...)
+		return nil
+	}
+}
+
+// WithClientInstrumentation enable automatic OpenTelemetry instrumentation for
+// the client connection.
+func WithClientInstrumentation() ClientOption {
+	return func(c *Client) error {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		c.dialOpts = append(c.dialOpts, otelGrpc.ClientInstrumentation())
 		return nil
 	}
 }

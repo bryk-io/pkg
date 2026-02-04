@@ -41,6 +41,8 @@ type GatewayUnaryErrorHandler func(
 	*http.Request,
 	error)
 
+// ! MARK: options
+
 // WithGatewayPort adjust the gateway to handle requests on a different port. If not
 // set the gateway will use the same port as the RPC server by default. If a custom and
 // different port is provided, the gateway will manage its own network interface. If

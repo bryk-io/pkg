@@ -88,7 +88,7 @@ func WithBaseLogger(ll log.Logger) Option {
 // WithSampler adjust the sampling strategy used by the application.
 // All traces are sampled by default.
 //
-// https://opentelemetry.io/docs/instrumentation/go/exporting_data/#sampling
+// https://opentelemetry.io/docs/languages/go/sampling/
 func WithSampler(ss sdkTrace.Sampler) Option {
 	return func(op *Instrumentation) {
 		op.sampler = ss

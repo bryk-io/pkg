@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.39.0"
 	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 )
@@ -205,11 +205,11 @@ func dbSystem(tx *gorm.DB) attribute.KeyValue {
 	case "postgres", "postgresql":
 		return semConv.DBSystemNamePostgreSQL
 	case "sqlite":
-		return semConv.DBSystemNameSqlite
+		return semConv.DBSystemNameSQLite
 	case "sqlserver":
 		return semConv.DBSystemNameMicrosoftSQLServer
 	case "clickhouse":
-		return semConv.DBSystemNameClickhouse
+		return semConv.DBSystemNameClickHouse
 	case "spanner":
 		return semConv.DBSystemNameGCPSpanner
 	default:

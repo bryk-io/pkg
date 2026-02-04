@@ -8,7 +8,7 @@ import (
 	"go.bryk.io/pkg/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.39.0"
 	apiTrace "go.opentelemetry.io/otel/trace"
 )
 

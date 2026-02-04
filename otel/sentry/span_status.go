@@ -4,7 +4,7 @@ import (
 	sdk "github.com/getsentry/sentry-go"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
-	semConv "go.opentelemetry.io/otel/semconv/v1.30.0"
+	semConv "go.opentelemetry.io/otel/semconv/v1.39.0"
 )
 
 // Maps some HTTP codes to Sentry's span statuses.
@@ -54,7 +54,7 @@ func getStatus(s trace.ReadOnlySpan) sdk.SpanStatus {
 			}
 		}
 
-		if attribute.Key == semConv.RPCGRPCStatusCodeKey {
+		if attribute.Key == semConv.RPCResponseStatusCodeKey {
 			if status, ok := canonicalCodesGrpcMap[attribute.Value.AsString()]; ok {
 				return status
 			}

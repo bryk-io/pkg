@@ -15,18 +15,23 @@ import (
 type HealthCheck func(ctx context.Context, service string) error
 
 type healthSvc struct {
-	srv *Server
+	srv *Server // monitored server
 }
 
 func (hs *healthSvc) Services() []string {
 	return []string{healthV1.Health_ServiceDesc.ServiceName}
 }
 
+func (hs *healthSvc) ServiceDesc() grpc.ServiceDesc {
+	return healthV1.Health_ServiceDesc
+}
+
 func (hs *healthSvc) ServerSetup(_ *grpc.Server) {
 	healthV1.RegisterHealthServer(hs.srv.grpc, hs)
 }
 
-func (hs *healthSvc) Check(ctx context.Context, req *healthV1.HealthCheckRequest) (*healthV1.HealthCheckResponse, error) { // nolint: lll
+// nolint: lll
+func (hs *healthSvc) Check(ctx context.Context, req *healthV1.HealthCheckRequest) (*healthV1.HealthCheckResponse, error) {
 	// status field should be set to `SERVING` or `NOT_SERVING` accordingly.
 	status := healthV1.HealthCheckResponse_SERVING
 	if err := hs.srv.healthCheck(ctx, req.Service); err != nil {
@@ -39,7 +44,7 @@ func (hs *healthSvc) List(ctx context.Context, _ *healthV1.HealthListRequest) (*
 	res := &healthV1.HealthListResponse{
 		Statuses: make(map[string]*healthV1.HealthCheckResponse),
 	}
-	var services []string
+	var services []string // nolint: prealloc
 	for _, svc := range hs.srv.services {
 		services = append(services, svc.Services()...)
 	}
@@ -92,8 +97,4 @@ func (hs *healthSvc) Watch(req *healthV1.HealthCheckRequest, stream healthV1.Hea
 		}
 	}(res.Status, req, stream)
 	return nil
-}
-
-func (hs *healthSvc) ServiceDesc() grpc.ServiceDesc {
-	return healthV1.Health_ServiceDesc
 }

@@ -113,7 +113,7 @@ func WithResourceLimits(limits ResourceLimits) ServerOption {
 func WithProtoValidate() ServerOption {
 	return func(srv *Server) (err error) {
 		srv.mu.Lock()
-		srv.enableValidator = true
+		srv.protoValidator = true
 		srv.mu.Unlock()
 		return nil
 	}
