@@ -2,8 +2,9 @@ package proxy
 
 import (
 	"net/http"
-	"regexp"
 	"strings"
+
+	regexp "github.com/coregx/coregex"
 )
 
 // Handler inspects common reverse proxy headers and sets the corresponding

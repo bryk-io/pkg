@@ -3,7 +3,8 @@ package errors
 import (
 	"fmt"
 	"io"
-	"regexp"
+
+	regexp "github.com/coregx/coregex"
 )
 
 // Placeholder used for "redacted out" parameters.
@@ -13,7 +14,7 @@ const piiMarker = "‹×›"
 // https://pkg.go.dev/fmt
 const escapeCode = `%[+\w]+`
 
-var ecr *regexp.Regexp
+var ecr *regexp.Regex
 
 func init() {
 	ecr = regexp.MustCompile(escapeCode)
