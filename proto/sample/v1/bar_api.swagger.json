@@ -81,7 +81,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/samplev1Response"
+              "$ref": "#/definitions/sampleV1Response"
             }
           },
           "default": {
@@ -126,7 +126,7 @@
         }
       }
     },
-    "samplev1Response": {
+    "sampleV1Response": {
       "type": "object",
       "properties": {
         "name": {

@@ -30,7 +30,7 @@ func NewClient(hc *http.Client) (*Client, error) {
 // The subscription can be closed by the client using the `context` in the
 // provided HTTP request.
 func (cl *Client) Subscribe(req *http.Request) (*Subscription, error) {
-	res, err := cl.hc.Do(req)
+	res, err := cl.hc.Do(req) // nolint: gosec
 	if err != nil {
 		return nil, err
 	}

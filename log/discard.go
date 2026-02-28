@@ -1,5 +1,4 @@
 //go:build !go1.16
-// +build !go1.16
 
 package log
 
@@ -12,8 +11,8 @@ import (
 func Discard() Logger {
 	return &stdLogger{
 		log:     stdL.New(ioutil.Discard, "", 0),
-		tags:   metadata.New(),
-		fields: metadata.New(),
+		tags:    metadata.New(),
+		fields:  metadata.New(),
 		discard: true,
 	}
 }

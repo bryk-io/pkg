@@ -84,5 +84,5 @@ func (c *Client) do(req *lib.Request) (*lib.Response, error) {
 	for _, ci := range c.mw {
 		ci(req)
 	}
-	return c.hc.Do(req)
+	return c.hc.Do(req) // nolint: gosec
 }

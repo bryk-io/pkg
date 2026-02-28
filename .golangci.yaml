@@ -59,6 +59,9 @@ linters:
     gosec:
       excludes:
         - G115
+      config:
+        G117:
+          pattern: "(?i)secret|token|private_key"
     govet:
       disable:
         - buildtag
