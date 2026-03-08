@@ -11,7 +11,7 @@ require (
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/log v0.4.2
 	github.com/chzyer/readline v1.5.1
-	github.com/coregx/coregex v0.12.3
+	github.com/coregx/coregex v0.12.4
 	github.com/getsentry/sentry-go v0.30.0
 	github.com/google/sqlcommenter/go/core v0.1.2
 	github.com/google/sqlcommenter/go/database/sql v0.1.1
@@ -55,11 +55,11 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/term v0.40.0
-	golang.org/x/time v0.14.0
+	golang.org/x/time v0.15.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57
-	google.golang.org/grpc v1.79.1
+	google.golang.org/grpc v1.79.2
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.31.1

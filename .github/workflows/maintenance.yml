@@ -13,12 +13,12 @@ jobs:
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: Tag stale issues and PRs
-        uses: actions/stale@997185467fa4f803885201cee163a9f38240193d # v10.1.1
+        uses: actions/stale@b5d41d4e1d5dceea10e7104786b73624c18a190f # v10.2.0
         with:
           # On the 'debug' mode the action will not perform any operation.
           # Add the secret ACTIONS_STEP_DEBUG with a value of 'true' in the repository.
