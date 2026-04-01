@@ -11,7 +11,7 @@ require (
 	github.com/briandowns/spinner v1.23.2
 	github.com/charmbracelet/log v1.0.0
 	github.com/chzyer/readline v1.5.1
-	github.com/coregx/coregex v0.12.16
+	github.com/coregx/coregex v0.12.21
 	github.com/getsentry/sentry-go v0.30.0
 	github.com/google/sqlcommenter/go/core v0.1.2
 	github.com/google/sqlcommenter/go/database/sql v0.1.1
