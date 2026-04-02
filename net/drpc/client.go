@@ -77,6 +77,7 @@ func (cl *Client) Close() error {
 	for err := range cl.cache.Drain() {
 		cl.log.Warning(err)
 	}
+	cl.halt()
 	close(cl.closed)
 	return nil
 }

@@ -90,10 +90,10 @@ func (k *ecKey) Sign(rr io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, e
 
 	// Encode signature
 	rb := r.Bytes()
-	rbp := make([]byte, kbs)
-	copy(rbp[kbs-len(rb):], rb)
 	sb := s.Bytes()
-	sbp := make([]byte, kbs)
+	rbp := make([]byte, kbs) // nolint: prealloc
+	sbp := make([]byte, kbs) // nolint: prealloc
+	copy(rbp[kbs-len(rb):], rb)
 	copy(sbp[kbs-len(sb):], sb)
 	signature := append(rbp, sbp...)
 	return signature, nil
