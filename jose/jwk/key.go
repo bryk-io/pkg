@@ -13,6 +13,60 @@ import (
 	"go.bryk.io/pkg/jose/jwa"
 )
 
+// Key represents a cryptographic key used to sign and verify JWT instances.
+// Different key types are required to support the different algorithms (i.e.
+// methods) included in the RFC-7519 specification.
+type Key interface {
+	// ID returns a unique identifier for the key. If no `id` was
+	// explicitly set for the key, a deterministic fingerprint will
+	// be returned instead.
+	ID() string
+
+	// SetID adjust the `id` value for the key instance.
+	SetID(id string)
+
+	// Alg returns the JWA cryptographic algorithm identifier intended for the key.
+	Alg() jwa.Alg
+
+	// Thumbprint returns a unique key identifier as defined by RFC-7638.
+	//
+	// https://www.rfc-editor.org/rfc/rfc7638.html
+	Thumbprint() (string, error)
+
+	// Public returns the public key corresponding to the opaque,
+	// private key.
+	Public() crypto.PublicKey
+
+	// Sign will produce a valid digital signature. The original `data` will be
+	// hashed using the provided `hh` hash function.
+	Sign(rand io.Reader, data []byte, hh crypto.SignerOpts) (signature []byte, err error)
+
+	// Verify the authenticity of a provided signature against the original data.
+	Verify(hh crypto.Hash, data, signature []byte) bool
+
+	// Export a portable representation of the key instance.
+	// When `safe` is true, the private key information won't be included
+	// in the exported data.
+	//
+	// https://www.rfc-editor.org/rfc/rfc7517.html
+	Export(safe bool) Record
+
+	// Import a key instance from a previously generated record.
+	Import(src Record) error
+
+	// MarshalBinary encodes the receiver into a binary form and returns the result.
+	MarshalBinary() ([]byte, error)
+
+	// UnmarshalBinary decodes the `data` produced by `MarshalBinary` into the
+	// receiver.
+	UnmarshalBinary(data []byte) error
+
+	// Validate checks the key for compliance with RFC 7517 security requirements.
+	// It verifies algorithm-specific constraints such as key sizes, curve types,
+	// and other cryptographic parameters to ensure the key is suitable for use.
+	Validate() error
+}
+
 // Base64 encoding used consistently by all standard keys.
 var b64 = base64.RawURLEncoding
 
@@ -55,6 +109,7 @@ func New(alg jwa.Alg) (Key, error) {
 }
 
 // Import a cryptographic key from its portable JWK representation.
+// After importing, the key is validated to ensure it meets RFC 7517 security requirements.
 func Import(jwk Record) (Key, error) {
 	k, err := New(jwa.Alg(jwk.Alg))
 	if err != nil {
@@ -62,6 +117,10 @@ func Import(jwk Record) (Key, error) {
 	}
 	if err = k.Import(jwk); err != nil {
 		return nil, err
+	}
+	// Validate the imported key meets security requirements
+	if err = k.Validate(); err != nil {
+		return nil, errors.Wrap(err, "imported key failed validation")
 	}
 	return k, nil
 }
@@ -94,59 +153,18 @@ func thumbprint(k Key, segments []string) (string, error) {
 	return b64.EncodeToString(hash[:]), nil
 }
 
-// Key represents a cryptographic key used to sign and verify JWT instances.
-// Different key types are required to support the different algorithms (i.e.
-// methods) included in the RFC-7519 specification.
-type Key interface {
-	// ID returns a unique identifier for the key. If no `id` was
-	// explicitly set for the key, a deterministic fingerprint will
-	// be returned instead.
-	ID() string
-
-	// SetID adjust the `id` value for the key instance.
-	SetID(id string)
-
-	// Alg returns the JWA cryptographic algorithm identifier intended for the key.
-	Alg() jwa.Alg
-
-	// Thumbprint returns a unique key identifier as defined by RFC-7638.
-	//
-	// https://www.rfc-editor.org/rfc/rfc7638.html
-	Thumbprint() (string, error)
-
-	// Public returns the public key corresponding to the opaque,
-	// private key.
-	Public() crypto.PublicKey
-
-	// Sign will produce a valid digital signature. The original `data` will be
-	// hashed using the provided `hh` hash function.
-	Sign(rand io.Reader, data []byte, hh crypto.SignerOpts) (signature []byte, err error)
-
-	// Verify the authenticity of a provided signature against the original data.
-	Verify(hh crypto.Hash, data, signature []byte) bool
-
-	// Export a portable representation of the key instance.
-	// When `safe` is true, the private key information won't be included
-	// in the exported data.
-	// https://www.rfc-editor.org/rfc/rfc7517.html
-	Export(safe bool) Record
-
-	// Import a key instance from a previously generated record.
-	Import(src Record) error
-
-	// MarshalBinary encodes the receiver into a binary form and returns the result.
-	MarshalBinary() ([]byte, error)
-
-	// UnmarshalBinary decodes the `data` produced by `MarshalBinary` into the
-	// receiver.
-	UnmarshalBinary(data []byte) error
-}
-
 // Record is an object that represents a cryptographic key.
 // https://www.rfc-editor.org/rfc/rfc7517.html#section-4
 type Record struct {
+	// The "kid" (key ID) parameter is used to match a specific key.  This
+	// is used, for instance, to choose among a set of keys within a JWK Set
+	// during key rollover. The structure of the "kid" value is
+	// unspecified.  When "kid" values are used within a JWK Set, different
+	// keys within the JWK Set SHOULD use distinct "kid" values.
+	KeyID string `json:"kid" yaml:"kid" mapstructure:"kid"`
+
 	// The "kty" (key type) parameter identifies the cryptographic algorithm
-	// family used with the key, such as "RSA" or "EC".  "kty" values should
+	// family used with the key, such as "RSA" or "EC". "kty" values should
 	// either be registered in the IANA "JSON Web Key Types" registry
 	// established by [JWA] or be a value that contains a Collision-Resistant
 	// name. The "kty" value is a case-sensitive string. This member MUST be
@@ -156,7 +174,7 @@ type Record struct {
 	KeyType string `json:"kty" yaml:"kty" mapstructure:"kty"`
 
 	// The "key_ops" (key operations) parameter identifies the operation(s)
-	// for which the key is intended to be used.  The "key_ops" parameter is
+	// for which the key is intended to be used. The "key_ops" parameter is
 	// intended for use cases in which public, private, or symmetric keys
 	// may be present.
 	//  - "sign" (compute digital signature or MAC)
@@ -169,15 +187,8 @@ type Record struct {
 	//  - "deriveBits" (derive bits not to be used as a key)
 	KeyOps []string `json:"key_ops" yaml:"key_ops" mapstructure:"key_ops"`
 
-	// The "kid" (key ID) parameter is used to match a specific key.  This
-	// is used, for instance, to choose among a set of keys within a JWK Set
-	// during key rollover.  The structure of the "kid" value is
-	// unspecified.  When "kid" values are used within a JWK Set, different
-	// keys within the JWK Set SHOULD use distinct "kid" values.
-	KeyID string `json:"kid" yaml:"kid" mapstructure:"kid"`
-
 	// The "use" (public key use) parameter identifies the intended use of
-	// the public key.  The "use" parameter is employed to indicate whether
+	// the public key. The "use" parameter is employed to indicate whether
 	// a public key is used for encrypting ("enc") data or verifying the signature
 	// on data ("sig").
 	Use string `json:"use" yaml:"use" mapstructure:"use"`
@@ -258,11 +269,90 @@ type Record struct {
 	CertificateThumbprintSHA2 string `json:"x5t#S256,omitempty" yaml:"x5t#S256,omitempty" mapstructure:"x5t#S256,omitempty"` // nolint: lll
 }
 
-// Set is an object that represents a collection of "JSON Web Keys".
-// https://www.rfc-editor.org/rfc/rfc7517.html#section-5
-type Set struct {
-	// The value of the "keys" parameter is an array of JWK values.
-	// By default, the order of the JWK values within the array does
-	// not imply an order of preference among them.
-	Keys []Record `json:"keys" yaml:"keys" mapstructure:"keys"`
+// Validate checks if the JWK Record is valid according to RFC 7517.
+// It validates required fields, key operations, and consistency between fields.
+func (r *Record) Validate() error {
+	// kty is required
+	if r.KeyType == "" {
+		return errors.New("kty (key type) is required")
+	}
+	// Validate key type
+	validKeyTypes := map[string]bool{
+		keyTypeRSA: true,
+		keyTypeEC:  true,
+		keyTypeOct: true,
+		keyTypePSS: true,
+		keyTypeOKP: true,
+	}
+	if !validKeyTypes[r.KeyType] {
+		return errors.Errorf("invalid key type: %s", r.KeyType)
+	}
+	// Validate use parameter
+	if r.Use != "" && r.Use != UseSignature && r.Use != UseEncryption {
+		return errors.Errorf("invalid use value: %s (must be 'sig' or 'enc')", r.Use)
+	}
+	// Validate key_ops
+	if err := validateKeyOps(r.KeyOps); err != nil {
+		return err
+	}
+	// Check consistency between use and key_ops
+	if err := checkUseAndKeyOpsConsistency(r.Use, r.KeyOps); err != nil {
+		return err
+	}
+	// Validate that algorithm is consistent with key type
+	if r.Alg != "" {
+		if err := validateAlgorithm(r.KeyType, r.Alg); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Clone creates a deep copy of the Record.
+func (r *Record) Clone() Record {
+	clone := Record{
+		KeyType:                   r.KeyType,
+		KeyID:                     r.KeyID,
+		Use:                       r.Use,
+		Alg:                       r.Alg,
+		K:                         r.K,
+		Crv:                       r.Crv,
+		X:                         r.X,
+		Y:                         r.Y,
+		D:                         r.D,
+		N:                         r.N,
+		E:                         r.E,
+		P:                         r.P,
+		Q:                         r.Q,
+		DP:                        r.DP,
+		DQ:                        r.DQ,
+		Qi:                        r.Qi,
+		CertificateURL:            r.CertificateURL,
+		CertificateThumbprintSHA1: r.CertificateThumbprintSHA1,
+		CertificateThumbprintSHA2: r.CertificateThumbprintSHA2,
+	}
+	// Deep copy slices
+	if r.KeyOps != nil {
+		clone.KeyOps = make([]string, len(r.KeyOps))
+		copy(clone.KeyOps, r.KeyOps)
+	}
+	if r.CertificateChain != nil {
+		clone.CertificateChain = make([]string, len(r.CertificateChain))
+		copy(clone.CertificateChain, r.CertificateChain)
+	}
+	return clone
+}
+
+// HasPrivateKey returns true if the record contains private key material.
+func (r *Record) HasPrivateKey() bool {
+	switch r.KeyType {
+	case keyTypeEC:
+		return r.D != ""
+	case keyTypeRSA, keyTypePSS:
+		return r.D != ""
+	case keyTypeOct:
+		return r.K != ""
+	default:
+		return false
+	}
 }

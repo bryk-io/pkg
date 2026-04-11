@@ -9,20 +9,28 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 // Maximum number of frames to include on a stack trace.
 const maxStackDepth = 64
 
 var (
-	goPath string
-	goRoot string
+	goPath    string
+	goRoot    string
+	fileCache sync.Map // caches file contents to avoid repeated disk I/O
 )
 
 // Capture GOROOT and GOPATH once.
 func init() {
 	goPath = os.Getenv("GOPATH")
 	goRoot = os.Getenv("GOROOT")
+}
+
+// fileContentCache stores the lines of a file for caching.
+type fileContentCache struct {
+	lines []string
+	err   error
 }
 
 // A StackFrame contains all necessary information about a specific line
@@ -105,26 +113,58 @@ func convertFrame(rf runtime.Frame) StackFrame {
 	}
 }
 
+// unknownLine is returned when source line cannot be determined.
+const unknownLine = "???"
+
 // Return the line of source code from the specified file, if available.
+// Uses an internal cache to avoid repeated disk I/O for the same file.
 func sourceLine(file string, line int) string {
 	if line <= 0 {
-		return "???"
+		return unknownLine
 	}
+
+	// Check cache first
+	cacheKey := file
+	if cached, ok := fileCache.Load(cacheKey); ok {
+		fc, valid := cached.(fileContentCache)
+		if !valid || fc.err != nil {
+			return unknownLine
+		}
+		if line <= len(fc.lines) {
+			return fc.lines[line-1]
+		}
+		return unknownLine
+	}
+
+	// Read file and populate cache
+	lines, err := readFileLines(file)
+	fc := fileContentCache{lines: lines, err: err}
+	fileCache.Store(cacheKey, fc)
+
+	if err != nil {
+		return unknownLine
+	}
+	if line <= len(lines) {
+		return lines[line-1]
+	}
+	return unknownLine
+}
+
+// readFileLines reads all lines from a file.
+func readFileLines(file string) ([]string, error) {
 	sf, err := os.Open(filepath.Clean(file))
 	if err != nil {
-		return "???"
+		return nil, err
 	}
+	defer func() { _ = sf.Close() }()
+
+	var lines []string
 	scanner := bufio.NewScanner(sf)
-	currentLine := 1
 	for scanner.Scan() {
-		if currentLine == line {
-			_ = sf.Close()
-			return string(bytes.Trim(scanner.Bytes(), " \t"))
-		}
-		currentLine++
+		line := string(bytes.Trim(scanner.Bytes(), " \t"))
+		lines = append(lines, line)
 	}
-	_ = sf.Close()
-	return "???"
+	return lines, scanner.Err()
 }
 
 // Return the package and name for the provided function.

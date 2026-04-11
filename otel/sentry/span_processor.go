@@ -354,9 +354,6 @@ func extractError(ev sdkTrace.Event, codec errors.Codec) error {
 	if !ok {
 		return nil // invalid error payload
 	}
-	ok, recErr := codec.Unmarshal([]byte(payload))
-	if !ok {
-		return nil // failed to decode error payload
-	}
-	return recErr // return recovered error
+	// return recovered error, `nil` if codec failed
+	return codec.Unmarshal([]byte(payload))
 }

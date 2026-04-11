@@ -197,3 +197,103 @@ func (k *rsaKey) new(bits int, pss bool) error {
 	k.key, err = rsa.GenerateKey(rand.Reader, bits)
 	return err
 }
+
+// Validate checks the RSA key for compliance with RFC 7517 and RFC 7518
+// security requirements. It verifies the key size meets minimum requirements
+// and that the RSA key parameters are valid.
+func (k *rsaKey) Validate() error {
+	if err := k.validateBasic(); err != nil {
+		return err
+	}
+	if err := k.validateAlgorithmType(); err != nil {
+		return err
+	}
+	if err := k.validateKeySize(); err != nil {
+		return err
+	}
+	if err := k.validatePublicKey(); err != nil {
+		return err
+	}
+	if k.key.D != nil {
+		if err := k.validatePrivateKey(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateBasic checks that algorithm and key are set.
+func (k *rsaKey) validateBasic() error {
+	if k.alg == "" {
+		return errors.New("RSA key algorithm is not set")
+	}
+	if k.key == nil {
+		return errors.New("RSA key is nil")
+	}
+	return nil
+}
+
+// validateAlgorithmType checks algorithm prefix and PSS flag consistency.
+func (k *rsaKey) validateAlgorithmType() error {
+	if len(k.alg) < 2 {
+		return errors.Errorf("unsupported RSA algorithm: %s", k.alg)
+	}
+	algPrefix := string(k.alg[0:2])
+	switch algPrefix {
+	case "RS":
+		if k.pss {
+			return errors.New("RSA key has PSS flag set but uses RS algorithm")
+		}
+	case "PS":
+		if !k.pss {
+			return errors.New("RSA key does not have PSS flag set but uses PS algorithm")
+		}
+	default:
+		return errors.Errorf("unsupported RSA algorithm: %s", k.alg)
+	}
+	return nil
+}
+
+// validateKeySize checks minimum RSA key size requirement.
+func (k *rsaKey) validateKeySize() error {
+	const minRSABits = 2048
+	keyBits := k.key.N.BitLen()
+	if keyBits < minRSABits {
+		return errors.Errorf("RSA key size %d bits is less than minimum required %d bits",
+			keyBits, minRSABits)
+	}
+	return nil
+}
+
+// validatePublicKey checks public exponent and modulus validity.
+func (k *rsaKey) validatePublicKey() error {
+	if k.key.E <= 1 {
+		return errors.New("RSA public exponent must be greater than 1")
+	}
+	if k.key.E%2 == 0 {
+		return errors.New("RSA public exponent must be odd")
+	}
+	if k.key.N == nil || k.key.N.Sign() <= 0 {
+		return errors.New("RSA modulus must be positive")
+	}
+	return nil
+}
+
+// validatePrivateKey checks private key components and runs standard validation.
+func (k *rsaKey) validatePrivateKey() error {
+	if k.key.D.Sign() <= 0 {
+		return errors.New("RSA private exponent must be positive")
+	}
+	if len(k.key.Primes) < 2 {
+		return errors.New("RSA key must have at least two prime factors")
+	}
+	for i, prime := range k.key.Primes {
+		if prime == nil || prime.Sign() <= 0 {
+			return errors.Errorf("RSA prime factor %d is invalid", i)
+		}
+	}
+	if err := k.key.Validate(); err != nil {
+		return errors.Wrap(err, "RSA key validation failed")
+	}
+	return nil
+}

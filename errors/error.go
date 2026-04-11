@@ -128,20 +128,42 @@ func (e *Error) Stamp() int64 {
 // key/value pairs. If no tags are set on the error instance this method
 // returns `nil`.
 func (e *Error) Tags() map[string]interface{} {
-	return e.tags
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.tags == nil {
+		return nil
+	}
+	// Return a copy to prevent race conditions
+	tagsCopy := make(map[string]interface{}, len(e.tags))
+	for k, v := range e.tags {
+		tagsCopy[k] = v
+	}
+	return tagsCopy
 }
 
 // Hints provide additional context to an error in the form of meaningful
 // text messages. If no hints are set on the error instance this method
 // returns `nil`.
 func (e *Error) Hints() []string {
-	return e.hints
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.hints == nil {
+		return nil
+	}
+	// Return a copy to prevent race conditions
+	return append([]string{}, e.hints...)
 }
 
 // Events associated to the error, if any. Events usually provide valuable
 // information on when/how an exception occurred.
 func (e *Error) Events() []Event {
-	return e.events
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.events == nil {
+		return nil
+	}
+	// Return a copy to prevent race conditions
+	return append([]Event{}, e.events...)
 }
 
 // Format error values using the escape codes defined by fmt.Formatter.

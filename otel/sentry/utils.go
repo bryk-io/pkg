@@ -136,7 +136,7 @@ func asString(v attribute.Value) string {
 	case attribute.BOOLSLICE, attribute.FLOAT64SLICE, attribute.INT64SLICE, attribute.STRINGSLICE:
 		js, _ := json.Marshal(v.AsInterface())
 		res = string(js)
-	case attribute.INVALID:
+	case attribute.EMPTY:
 		res = "-"
 	}
 	return res

@@ -92,12 +92,24 @@ func WithStackAt(err error, at int) error {
 // operand that does not implement the `error` interface. The `%w` verb is
 // otherwise a synonym for `%v`.
 func Errorf(format string, args ...interface{}) error {
-	return &Error{
+	// Use fmt.Errorf to create the error - this handles %w properly
+	formattedErr := fmt.Errorf(format, args...)
+
+	// Check if the formatted error wraps another error (supports %w verb)
+	var wrappedErr error
+	if unwrapped := stdErrors.Unwrap(formattedErr); unwrapped != nil {
+		// fmt.Errorf with %w creates an error that implements Unwrap()
+		// We need to preserve this chain
+		wrappedErr = unwrapped
+	}
+
+	err := &Error{
 		ts:     time.Now().UnixMilli(),
-		err:    fmt.Errorf(format, args...),
-		prev:   nil,
+		err:    formattedErr,
+		prev:   wrappedErr,
 		frames: getStack(1),
 	}
+	return err
 }
 
 // Wrapf returns a wrapped version of the provided error using a formatted
@@ -172,11 +184,25 @@ func As(err error, target interface{}) bool {
 //     it will be used and the result returned
 //   - Comparison is true between `target` and `src` cause
 //   - Comparison is true between `src` and `target` cause
+//   - Comparison is true between `target` and any error in a joined group
 func Is(src, target error) bool {
 	// Are both the same object?
 	// reflect.DeepEqual(src, target)
 	if reflect.ValueOf(src).Equal(reflect.ValueOf(target)) {
 		return true
+	}
+
+	// Handle errors that wrap multiple errors (e.g., joinedError).
+	// This check must come before the *Error check because joinedError
+	// can be cast to *Error but that would only match the first wrapped
+	// error instead of checking all of them.
+	var mws multiWrapper
+	if As(src, &mws) {
+		for _, err := range mws.Unwrap() {
+			if Is(err, target) {
+				return true
+			}
+		}
 	}
 
 	// Compare with `src` cause
@@ -229,16 +255,50 @@ func IsAny(src error, target ...error) bool {
 // Considerations:
 //   - If `other` is nil, the first error is returned as-is.
 //   - If `err` doesn't support adding additional details, it is returned as-is.
+//   - If `other` is an *Error instance, its structured details (tags, hints,
+//     events, stack trace) are preserved and merged into the primary error.
 func Combine(err, other error) error {
 	if err == nil || other == nil {
 		return err
 	}
 	var oe *Error
-	if As(err, &oe) {
-		oe.AddHint(other.Error())
-		return oe
+	if !As(err, &oe) {
+		return err
 	}
-	return err
+
+	// If other is also an *Error, merge its structured details
+	var otherErr *Error
+	if As(other, &otherErr) {
+		// Merge tags
+		if tags := otherErr.Tags(); len(tags) > 0 {
+			for k, v := range tags {
+				oe.SetTag(fmt.Sprintf("related.%s", k), v)
+			}
+		}
+		// Merge hints
+		if hints := otherErr.Hints(); len(hints) > 0 {
+			for _, h := range hints {
+				oe.AddHint(fmt.Sprintf("related: %s", h))
+			}
+		}
+		// Merge events
+		if events := otherErr.Events(); len(events) > 0 {
+			for _, ev := range events {
+				oe.AddEvent(Event{
+					Kind:       fmt.Sprintf("related.%s", ev.Kind),
+					Message:    ev.Message,
+					Stamp:      ev.Stamp,
+					Attributes: ev.Attributes,
+				})
+			}
+		}
+		// Add the related error message with its stack trace info
+		oe.AddHint(fmt.Sprintf("related error: %s", otherErr.Error()))
+	} else {
+		// For non-Error types, just add the error message as before
+		oe.AddHint(other.Error())
+	}
+	return oe
 }
 
 // HasStack is implemented by error types that natively

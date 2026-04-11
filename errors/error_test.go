@@ -22,11 +22,12 @@ func TestErrorUsage(t *testing.T) {
 
 	// Create a second custom error object and combine it with the first.
 	var ew *Error
-	b1 := New(&customErrorB{msg: "b-1"})  // new error from custom error object
-	e2 := Combine(b1, e1)                 // combine both
-	assert.False(Is(e2, e1))              // first error don't influence cause analysis
-	assert.True(As(e2, &ew))              // type casting should work
-	assert.Equal(ew.hints[0], e1.Error()) // first error is available as hint
+	b1 := New(&customErrorB{msg: "b-1"}) // new error from custom error object
+	e2 := Combine(b1, e1)                // combine both
+	assert.False(Is(e2, e1))             // first error don't influence cause analysis
+	assert.True(As(e2, &ew))             // type casting should work
+	// When combining, the related error is stored with "related error:" prefix
+	assert.Equal(fmt.Sprintf("related error: %s", e1.Error()), ew.Hints()[0]) // first error is available as hint
 }
 
 func TestReport(t *testing.T) {
@@ -57,8 +58,8 @@ func TestReport(t *testing.T) {
 
 	t.Run("Unmarshal", func(t *testing.T) {
 		codec := CodecJSON(true)
-		ok, recErr := codec.Unmarshal(js)
-		assert.True(ok, "unmarshal failed")
+		recErr := codec.Unmarshal(js)
+		assert.NotNil(recErr, "unmarshal failed")
 		fmt.Printf("recovered error: %+v", recErr)
 	})
 }

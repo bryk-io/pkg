@@ -20,39 +20,35 @@ The main goals of this package are:
 - Being easily composable; by making it extensible with additional error annotations
   and supporting special behavior on custom error types.
 
-## Inspiration
+## API Reference
 
-This library is mainly inspired on the original <https://github.com/cockroachdb/errors>
-package, while adding some specific adjustments. For additional information about the
-original package refer to [PR-36987](https://github.com/cockroachdb/cockroach/pull/36987).
+### Error Constructors
 
-## Motivation
+- `New(v interface{}) error` - Create a new error from a value
+- `Errorf(format string, args ...interface{}) error` - Create formatted error with `%w` support
+- `Wrap(err error, prefix string) error` - Wrap an error with context
+- `Wrapf(err error, format string, args ...interface{}) error` - Wrap with formatted message
+- `WithStack(err error) error` - Attach stack trace to existing error
+- `Opaque(err error) error` - Create error barrier (hides underlying error)
+- `Join(errs ...error) error` - Join multiple errors into one
+- `Combine(err, other error) error` - Combine two errors preserving structure
 
-Go provides 4 "idiomatic" ways to inspect errors:
+### Error Inspection
 
-1. Reference comparison to global objects. `err == io.EOF`
+- `Is(src, target error) bool` - Check error equality (handles wrapped and joined errors)
+- `IsAny(src error, targets ...error) bool` - Check against multiple targets
+- `As(err error, target interface{}) bool` - Type assertion for errors
+- `Cause(err error) error` - Get root cause of error chain
+- `Unwrap(err error) error` - Unwrap one level of error wrapping
 
-2. Type assertions to known error types. `err.(*os.PathError)`
+### Reporting
 
-3. Predicate provided by library. `os.IsNotExists(err)`
+- `Report(err error, cc Codec) ([]byte, error)` - Generate error report
+- `CodecJSON(pretty bool) Codec` - JSON codec implementation
 
-4. String comparison on the result of `err.Error()`
+### Utility
 
-__Method 1__ breaks down when using wrapped errors, or when transferring errors over
-the network.
-
-__Method 2__ breaks down if the error object is converted to a different type. When
-wire representations are available, the method is generally reliable; however, if
-errors are implemented as a chain of causes, care should be taken to perform the test
-on all the intermediate levels.
-
-__Method 3__ is generally reliable although the predicates in the standard library
-obviously do not know about any additional custom types. Also, the implementation of
-the predicate method can be cumbersome if one must test errors from multiple packages
-(dependency cycles). This method loses its reliability if the predicate itself
-relies on one of the other methods in a way that's unreliable.
-
-__Method 4__ is the most problematic and unreliable.
+- `SensitiveMessage(format string, args ...interface{}) Redactable` - Create redactable message
 
 ## Usage
 
@@ -70,6 +66,78 @@ another error via `Unwrap()` and/or `Cause()`.
 
 - Wrapper constructors, i.e., `Wrap()` can be applied safely to a `nil` error; the function
   will behave as no-op in this case.
+- `Errorf()` supports the `%w` verb for wrapping errors, just like `fmt.Errorf()`.
+
+## Joining Multiple Errors
+
+This package provides a `Join()` function that combines multiple errors into a single
+error value, similar to Go 1.20's `errors.Join()`. Unlike the standard library version,
+this implementation preserves structured error details (stack traces, tags, hints, events)
+from any `*Error` instances in the list.
+
+```go
+err1 := New("database connection failed")
+err2 := New("cache unavailable")
+err3 := New("service timeout")
+
+// Join errors into a single value
+joined := Join(err1, err2, err3)
+fmt.Println(joined.Error())
+// Output: joined 3 errors: [ database connection failed; cache unavailable; service timeout ]
+
+// errors.Is works with any wrapped error
+if Is(joined, err1) {
+    // This will match
+}
+
+// Structured data is preserved and prefixed with error index
+var e1 *Error = err1.(*Error)
+e1.SetTag("service", "postgres")
+
+joined = Join(err1, err2)
+// The joined error will have tag "err.0.service" = "postgres"
+```
+
+### Accessing Joined Errors
+
+The returned error implements `Unwrap() []error`, making it compatible with the
+standard library's `errors.Is()` and `errors.As()` functions:
+
+```go
+joined := Join(err1, err2, err3)
+
+// Check if any wrapped error matches
+if errors.Is(joined, io.EOF) {
+    // Handle EOF
+}
+
+// Extract all wrapped errors
+var je *joinedError
+if As(joined, &je) {
+    for _, err := range je.Unwrap() {
+        fmt.Println(err.Error())
+    }
+}
+```
+
+## Combining Errors with Context
+
+The `Combine()` function merges two errors, preserving structured details when both
+are `*Error` instances. This is useful when you want to add related error context
+without affecting error chain analysis (`Is()`, `IsAny()`, etc.).
+
+```go
+primaryErr := New("primary operation failed")
+relatedErr := New("secondary check also failed")
+
+// Combine preserves structured data
+combined := Combine(primaryErr, relatedErr)
+
+// The related error's details are merged:
+// - Tags become "related.{original_tag_name}"
+// - Hints get "related: " prefix
+// - Events get "related." prefix on their Kind
+```
 
 ## Custom error types
 
@@ -290,6 +358,22 @@ a: b: c: d: deep error
 ‹events›
  - (console) additional debugging information
 ```
+
+### Codec Interface
+
+The `Codec` interface provides a pluggable way to serialize and deserialize
+errors for transmission across service boundaries (e.g., via HTTP, message
+queues, etc.).
+
+```go
+type Codec interface {
+    Marshal(err error) ([]byte, error)
+    Unmarshal(src []byte) error
+}
+```
+
+The `Unmarshal` method returns the recovered error instance on success, or `nil`
+if deserialization fails (e.g., invalid format, corruption).
 
 ### Reports
 

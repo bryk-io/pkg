@@ -42,11 +42,11 @@ func (c *jsonCodec) Marshal(err error) ([]byte, error) {
 	return json.Marshal(rec)
 }
 
-func (c *jsonCodec) Unmarshal(src []byte) (bool, error) {
+func (c *jsonCodec) Unmarshal(src []byte) error {
 	// validate error report
 	rep := new(errReport)
 	if err := json.Unmarshal(src, rep); err != nil {
-		return false, nil
+		return nil
 	}
 
 	// restore recovered error details
@@ -65,5 +65,5 @@ func (c *jsonCodec) Unmarshal(src []byte) (bool, error) {
 	} else {
 		rec.err = fmt.Errorf("%s", rep.Msg)
 	}
-	return true, rec
+	return rec
 }

@@ -125,3 +125,35 @@ func (k *hmacKey) new(size int) error {
 	k.key, err = cryptoutils.Expand(sec, size, nil)
 	return err
 }
+
+// Validate checks the HMAC key for compliance with RFC 7517 and RFC 7518
+// security requirements. It verifies the key size meets the minimum
+// requirements for the algorithm.
+func (k *hmacKey) Validate() error {
+	// HMAC keys must have a valid algorithm
+	if k.alg == "" {
+		return errors.New("HMAC key algorithm is not set")
+	}
+	// Check key is not nil
+	if k.key == nil {
+		return errors.New("HMAC key is nil")
+	}
+	// Get minimum key size based on algorithm
+	// RFC 7518 Section 3.2: HMAC keys must be >= hash size
+	var minKeySize int
+	switch k.alg {
+	case jwa.HS256:
+		minKeySize = 32 // 256 bits
+	case jwa.HS384:
+		minKeySize = 48 // 384 bits
+	case jwa.HS512:
+		minKeySize = 64 // 512 bits
+	default:
+		return errors.Errorf("unsupported HMAC algorithm: %s", k.alg)
+	}
+	if len(k.key) < minKeySize {
+		return errors.Errorf("HMAC key size %d is less than minimum required %d for %s",
+			len(k.key), minKeySize, k.alg)
+	}
+	return nil
+}

@@ -210,3 +210,67 @@ func (k *ecKey) Import(r Record) error {
 	k.sk.D = new(big.Int).SetBytes(dB)
 	return nil
 }
+
+// Validate checks the EC key for compliance with RFC 7517 and RFC 7518
+// security requirements. It verifies the curve is valid for the algorithm
+// and that the key coordinates are on the curve.
+func (k *ecKey) Validate() error {
+	// EC keys must have a valid algorithm
+	if k.alg == "" {
+		return errors.New("EC key algorithm is not set")
+	}
+	// Check key is not nil
+	if k.sk == nil {
+		return errors.New("EC key is nil")
+	}
+	// Validate algorithm is an EC algorithm
+	if len(k.alg) < 2 || k.alg[0:2] != "ES" {
+		return errors.Errorf("unsupported EC algorithm: %s", k.alg)
+	}
+	// Get the expected curve for the algorithm
+	expectedCurve, err := k.alg.Curve()
+	if err != nil {
+		return errors.Wrap(err, "failed to get curve for algorithm")
+	}
+	// Verify the key's curve matches the expected curve
+	if k.sk.Curve != expectedCurve {
+		return errors.Errorf("curve mismatch: key uses %s but algorithm %s requires %s",
+			k.sk.Curve.Params().Name, k.alg, expectedCurve.Params().Name)
+	}
+	// Verify the curve is one of the supported curves
+	// RFC 7518 Section 3.4: Only P-256, P-384, P-521 are supported
+	curveName := k.sk.Curve.Params().Name
+	switch curveName {
+	case "P-256", "P-384", "P-521":
+		// Supported curves
+	default:
+		return errors.Errorf("unsupported curve: %s (only P-256, P-384, P-521 are supported)",
+			curveName)
+	}
+	// Validate the public key coordinates are on the curve
+	// This is a critical security check
+	if k.sk.X == nil || k.sk.Y == nil {
+		return errors.New("EC public key coordinates are not set")
+	}
+	// Check that the point is on the curve by verifying the curve equation
+	// y² = x³ + ax + b (mod p)
+	// nolint: staticcheck // IsOnCurve is deprecated but still the correct
+	// approach for ecdsa package validation. The crypto/ecdh package is the
+	// recommended alternative but is not a drop-in replacement for ecdsa.
+	if !k.sk.Curve.IsOnCurve(k.sk.X, k.sk.Y) {
+		return errors.New("EC public key point is not on the curve")
+	}
+	// If private key is present, validate it
+	if k.sk.D != nil {
+		// Ensure D is valid (positive and less than curve order)
+		if k.sk.D.Sign() <= 0 {
+			return errors.New("EC private key must be positive")
+		}
+		// D should be less than the curve order
+		curveOrder := k.sk.Curve.Params().N
+		if k.sk.D.Cmp(curveOrder) >= 0 {
+			return errors.New("EC private key is not within valid range")
+		}
+	}
+	return nil
+}
