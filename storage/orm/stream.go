@@ -61,7 +61,7 @@ func (ce *ChangeEvent) Decode(target interface{}) error {
 	}
 
 	// Verify target type
-	if err := checkType(target, reflect.Ptr, "pointer"); err != nil {
+	if err := checkType(target, reflect.Pointer, "pointer"); err != nil {
 		return err
 	}
 

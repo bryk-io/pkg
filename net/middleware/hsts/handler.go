@@ -16,7 +16,7 @@ const (
 	httpHeaderKey = "Strict-Transport-Security"
 
 	// Schema used for secure communication.
-	scheme = "https"
+	httpsScheme = "https"
 )
 
 // Handler provides an HTTP Strict Transport Security (HSTS) implementation.
@@ -39,8 +39,8 @@ func Handler(options Options) func(http.Handler) http.Handler {
 				r.URL.Host = r.Host
 			}
 
-			r.URL.Scheme = scheme
-			http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently)
+			r.URL.Scheme = httpsScheme
+			http.Redirect(w, r, r.URL.String(), http.StatusMovedPermanently) // nolint: gosec
 		}
 		return http.HandlerFunc(fn)
 	}
@@ -82,7 +82,7 @@ func DefaultOptions() Options {
 // Inspect if the provided HTTP request is a valid HTTPS request.
 func isHTTPS(r *http.Request, options *Options) bool {
 	// Added by common load balancer which do TLS offloading
-	if options.AcceptXForwardedProtoHeader && r.Header.Get("X-Forwarded-Proto") == scheme {
+	if options.AcceptXForwardedProtoHeader && r.Header.Get("X-Forwarded-Proto") == httpsScheme {
 		return true
 	}
 	// If the X-Forwarded-Proto was set upstream as HTTP, then the request came in without TLS.
@@ -90,7 +90,7 @@ func isHTTPS(r *http.Request, options *Options) bool {
 		return false
 	}
 	// Set by some middleware.
-	if r.URL.Scheme == scheme {
+	if r.URL.Scheme == httpsScheme {
 		return true
 	}
 	// Set when the Go server is running HTTPS itself

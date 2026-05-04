@@ -53,7 +53,7 @@ func (k *ecKey) Alg() jwa.Alg {
 }
 
 func (k *ecKey) Thumbprint() (string, error) {
-	return thumbprint(k, []string{"crv", "kty", "x", "y"})
+	return thumbprint(k, []string{"crv", fieldKTY, "x", "y"})
 }
 
 func (k *ecKey) Sign(rr io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, error) {
@@ -152,16 +152,16 @@ func (k *ecKey) UnmarshalBinary(data []byte) error {
 func (k *ecKey) Export(safe bool) Record {
 	rec := Record{
 		KeyID:   k.ID(),
-		KeyType: "EC",
-		Use:     "sig",
+		KeyType: keyTypeEC,
+		Use:     UseSignature,
 		Alg:     string(k.alg),
-		KeyOps:  []string{"verify"},
+		KeyOps:  []string{KeyOpVerify},
 		Crv:     k.sk.Curve.Params().Name,
 		X:       b64.EncodeToString(k.sk.X.Bytes()),
 		Y:       b64.EncodeToString(k.sk.Y.Bytes()),
 	}
 	if !safe {
-		rec.KeyOps = append(rec.KeyOps, "sign")
+		rec.KeyOps = append(rec.KeyOps, KeyOpSign)
 		rec.D = b64.EncodeToString(k.sk.D.Bytes())
 	}
 	return rec

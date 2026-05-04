@@ -45,7 +45,7 @@ func (k *hmacKey) Alg() jwa.Alg {
 }
 
 func (k *hmacKey) Thumbprint() (string, error) {
-	return thumbprint(k, []string{"k", "kty"})
+	return thumbprint(k, []string{"k", fieldKTY})
 }
 
 func (k *hmacKey) Sign(_ io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, error) {
@@ -90,10 +90,10 @@ func (k *hmacKey) UnmarshalBinary(data []byte) error {
 func (k *hmacKey) Export(safe bool) Record {
 	rec := Record{
 		KeyID:   k.ID(),
-		KeyType: "oct",
-		Use:     "enc",
+		KeyType: keyTypeOct,
+		Use:     UseEncryption,
 		Alg:     string(k.alg),
-		KeyOps:  []string{"encrypt", "decrypt"},
+		KeyOps:  []string{KeyOpEncrypt, KeyOpDecrypt},
 	}
 	if !safe {
 		rec.K = b64.EncodeToString(k.key)

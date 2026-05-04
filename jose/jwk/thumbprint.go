@@ -14,11 +14,11 @@ import (
 // that must be included in the thumbprint computation per RFC 7638.
 // The members are listed in lexicographic order as required by the spec.
 var thumbprintFields = map[string][]string{
-	keyTypeRSA: {"e", "kty", "n"},
-	keyTypeEC:  {"crv", "kty", "x", "y"},
-	keyTypeOct: {"k", "kty"},
-	keyTypePSS: {"e", "kty", "n"},   // Same as RSA
-	keyTypeOKP: {"crv", "kty", "x"}, // For EdDSA/X25519/X448
+	keyTypeRSA: {"e", fieldKTY, "n"},
+	keyTypeEC:  {"crv", fieldKTY, "x", "y"},
+	keyTypeOct: {"k", fieldKTY},
+	keyTypePSS: {"e", fieldKTY, "n"},   // Same as RSA
+	keyTypeOKP: {"crv", fieldKTY, "x"}, // For EdDSA/X25519/X448
 }
 
 // ParseThumbprintURI parses a thumbprint URI and extracts the hash algorithm and thumbprint.

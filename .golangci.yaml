@@ -54,6 +54,8 @@ linters:
     goconst:
       min-len: 3
       min-occurrences: 5
+      ignore-string-values:
+        - "error"
     gocyclo:
       min-complexity: 18
     gosec:
@@ -116,6 +118,7 @@ linters:
           - dupl
           - errcheck
           - funlen
+          - goconst
           - gocyclo
           - gosec
           - lll
@@ -130,6 +133,9 @@ linters:
       - path: net/http
         linters:
           - revive
+      - path: proto/sample/v1
+        linters:
+          - goconst
     paths:
       - crypto/vrf/*
       - third_party$

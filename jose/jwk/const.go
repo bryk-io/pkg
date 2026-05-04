@@ -1,5 +1,7 @@
 package jwk
 
+const fieldKTY = "kty"
+
 // Constants for "use" (public key use) parameter values as defined in RFC 7517.
 const (
 	// UseSignature indicates a key is used for digital signature or MAC.

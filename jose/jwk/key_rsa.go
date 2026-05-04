@@ -48,7 +48,7 @@ func (k *rsaKey) Alg() jwa.Alg {
 }
 
 func (k *rsaKey) Thumbprint() (string, error) {
-	return thumbprint(k, []string{"e", "kty", "n"})
+	return thumbprint(k, []string{"e", fieldKTY, "n"})
 }
 
 func (k *rsaKey) Sign(rr io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, error) {
@@ -116,21 +116,21 @@ func (k *rsaKey) UnmarshalBinary(data []byte) error {
 }
 
 func (k *rsaKey) Export(safe bool) Record {
-	kyt := "RSA"
+	kyt := keyTypeRSA
 	if k.pss {
-		kyt = "PSS"
+		kyt = keyTypePSS
 	}
 	rec := Record{
 		KeyID:   k.ID(),
 		KeyType: kyt,
-		Use:     "sig",
+		Use:     UseSignature,
 		Alg:     string(k.alg),
-		KeyOps:  []string{"verify"},
+		KeyOps:  []string{KeyOpVerify},
 		N:       b64.EncodeToString(k.key.N.Bytes()),
 		E:       b64.EncodeToString(big.NewInt(int64(k.key.E)).Bytes()),
 	}
 	if !safe {
-		rec.KeyOps = append(rec.KeyOps, "sign")
+		rec.KeyOps = append(rec.KeyOps, KeyOpSign)
 		rec.D = b64.EncodeToString(k.key.D.Bytes())
 		rec.P = b64.EncodeToString(k.key.Primes[0].Bytes())
 		rec.Q = b64.EncodeToString(k.key.Primes[1].Bytes())
@@ -158,7 +158,7 @@ func (k *rsaKey) Import(r Record) error {
 	}
 	k.alg = jwa.Alg(r.Alg)
 	k.id = r.KeyID
-	k.pss = r.KeyType == "PSS"
+	k.pss = r.KeyType == keyTypePSS
 	k.key = key
 
 	// no private key available

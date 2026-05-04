@@ -200,7 +200,7 @@ func (m *Model) DeleteAll(filter map[string]interface{}) (int64, error) {
 // that must be a pointer to a given struct.
 func (m *Model) FindByID(id string, result interface{}) error {
 	// Verify target type
-	if err := checkType(result, reflect.Ptr, "pointer"); err != nil {
+	if err := checkType(result, reflect.Pointer, "pointer"); err != nil {
 		return err
 	}
 
@@ -225,7 +225,7 @@ func (m *Model) FindByID(id string, result interface{}) error {
 // 'result', that must be a pointer to a given struct.
 func (m *Model) First(filter map[string]interface{}, result interface{}, opts ...*options.FindOneOptions) error {
 	// Verify target type
-	if err := checkType(result, reflect.Ptr, "pointer"); err != nil {
+	if err := checkType(result, reflect.Pointer, "pointer"); err != nil {
 		return err
 	}
 
@@ -250,7 +250,7 @@ func (m *Model) First(filter map[string]interface{}, result interface{}, opts ..
 // must be a pointer to a slice.
 func (m *Model) Find(filter map[string]interface{}, result interface{}, opts ...*options.FindOptions) error {
 	// Verify target type
-	if err := checkType(result, reflect.Ptr, "pointer to a slice"); err != nil {
+	if err := checkType(result, reflect.Pointer, "pointer to a slice"); err != nil {
 		return err
 	}
 
