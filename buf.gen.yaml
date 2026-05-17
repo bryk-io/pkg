@@ -20,7 +20,7 @@ plugins:
     out: .
     opt:
       - paths=source_relative
-  - remote: buf.build/grpc/go:v1.6.1
+  - remote: buf.build/grpc/go:v1.6.2
     out: .
     opt:
       - paths=source_relative
@@ -34,7 +34,7 @@ plugins:
     opt:
       - paths=source_relative
       - logtostderr=true
-  # - local: go-drpc
-  #   out: .
-  #   opt:
-  #     - paths=source_relative
+  - local: protoc-gen-go-drpc
+    out: .
+    opt:
+      - paths=source_relative

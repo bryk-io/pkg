@@ -1,0 +1,24 @@
+{
+  "version": "v2",
+  "purpose": pPublic,
+  "payload": {
+    "foo": "bar",
+    "sub": "this-value-will-be-overwritten"
+  },
+  "footer": {
+    "dimension": "c137",
+    "kid": "this-value-will-be-overwritten"
+  },
+  "subject": "my-user-id",
+  "audience": [
+    "myservice.com"
+  ],
+  "expiration": "24h",
+  "not_before": "0s",
+  "amr": [
+    "pin",
+    "face"
+  ],
+  "utc": false,
+  "key": "sample-1"
+}
