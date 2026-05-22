@@ -26,7 +26,7 @@ jobs:
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
@@ -52,7 +52,7 @@ jobs:
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           languages: ${{ matrix.language }}
           # If you wish to specify custom queries, you can do so here or in a config file.
@@ -62,7 +62,7 @@ jobs:
 
       # Auto build attempts to build any compiled languages  (C/C++, C#, or Java).
       - name: Auto build
-        uses: github/codeql-action/autobuild@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        uses: github/codeql-action/autobuild@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
 
       # Run manual build only if auto-build fails
       - name: Manual build
@@ -75,4 +75,4 @@ jobs:
       # Can be excluded if the commit message contains: [skip codeql]
       - name: Perform CodeQL analysis
         if: ${{ !contains(env.commit_msg, '[skip codeql]') }}
-        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
