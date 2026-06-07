@@ -133,7 +133,8 @@ func asString(v attribute.Value) string {
 		res = fmt.Sprintf("%f", v.AsFloat64())
 	case attribute.STRING:
 		res = v.AsString()
-	case attribute.BOOLSLICE, attribute.FLOAT64SLICE, attribute.INT64SLICE, attribute.STRINGSLICE:
+	case attribute.BOOLSLICE, attribute.FLOAT64SLICE, attribute.INT64SLICE,
+		attribute.STRINGSLICE, attribute.BYTESLICE, attribute.SLICE:
 		js, _ := json.Marshal(v.AsInterface())
 		res = string(js)
 	case attribute.EMPTY:

@@ -53,29 +53,30 @@ type Options struct {
 	// The sample rate for sampling traces in the range [0.0, 1.0].
 	TracesSampleRate float64 `mapstructure:"traces_sample_rate" yaml:"traces_sample_rate" json:"traces_sample_rate"`
 
-	// The sample rate for profiling traces in the range [0.0, 1.0].
-	// Relative to `TracesSampleRate`; i.e., it is a ratio of profiled
-	// traces out of all sampled traces.
-	ProfilingSampleRate float64 `mapstructure:"profiling_sample_rate" yaml:"profiling_sample_rate" json:"profiling_sample_rate"` // nolint: lll
-
 	// The maximum time to wait for events to be sent before shutdown.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout" yaml:"flush_timeout" json:"flush_timeout"`
 
 	// Maximum number of events per-span to keep. Defaults to 100.
 	MaxEvents int `mapstructure:"max_events" yaml:"max_events" json:"max_events"`
+
+	// The sample rate for profiling traces in the range [0.0, 1.0].
+	// Relative to `TracesSampleRate`; i.e., it is a ratio of profiled
+	// traces out of all sampled traces.
+	// nolint: lll
+	// ProfilingSampleRate float64 `mapstructure:"profiling_sample_rate" yaml:"profiling_sample_rate" json:"profiling_sample_rate"`
 }
 
 // NewReporter returns a new Sentry reporter instance.
 func NewReporter(opts *Options) (*Reporter, error) {
 	err := sdk.Init(sdk.ClientOptions{
-		Dsn:                opts.DSN,
-		Debug:              false,
-		Release:            opts.Release,
-		Environment:        opts.Environment,
-		EnableTracing:      opts.EnablePerformanceMonitoring,
-		TracesSampleRate:   opts.TracesSampleRate,
-		ProfilesSampleRate: opts.ProfilingSampleRate,
-		AttachStacktrace:   true,
+		AttachStacktrace: true,
+		Dsn:              opts.DSN,
+		Debug:            false,
+		Release:          opts.Release,
+		Environment:      opts.Environment,
+		EnableTracing:    opts.EnablePerformanceMonitoring,
+		TracesSampleRate: opts.TracesSampleRate,
+		// ProfilesSampleRate: opts.ProfilingSampleRate,
 		Integrations: func(list []sdk.Integration) []sdk.Integration {
 			var filtered []sdk.Integration
 			for _, el := range list {

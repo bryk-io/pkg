@@ -5,6 +5,8 @@ package log
 import (
 	"io/ioutil"
 	stdL "log"
+
+	"go.bryk.io/pkg/metadata"
 )
 
 // Discard returns a no-op handler that will discard all generated output.

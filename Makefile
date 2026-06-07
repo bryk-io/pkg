@@ -37,6 +37,11 @@ docs:
 	@echo "Docs available at: http://localhost:8080/pkg/go.bryk.io/pkg/"
 	godoc -http=:8080 -goroot=${GOPATH} -play
 
+## format: Apply consistent styling on all `.go` files
+format:
+	gofmt -s -w .
+	goimports -w .
+
 ## fuzz: Run fuzz tests for 30 seconds
 fuzz:
 	go test -fuzz=. -fuzztime 30s -v ./$(pkg)
@@ -68,7 +73,8 @@ scan-deps:
 # https://gitleaks.io
 # gitleaks dir --no-banner -f json -r - | jq -r '.[].Fingerprint' > .gitleaksignore
 scan-secrets:
-	gitleaks git -v
+	# gitleaks git -v
+	gitleaks dir -v
 
 ## test: Run all unitary tests
 test:

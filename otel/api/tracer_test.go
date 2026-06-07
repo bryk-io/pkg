@@ -258,7 +258,6 @@ func setupInstrumentation() (*sdk.Instrumentation, error) {
 		FlushTimeout:                3 * time.Second,
 		EnablePerformanceMonitoring: true, // capture performance metrics
 		TracesSampleRate:            1.0,  // capture all traces
-		ProfilingSampleRate:         0.5,  // profile 50% of traces
 		MaxEvents:                   50,   // max breadcrumb count per event
 	})
 	settings = append(settings,
