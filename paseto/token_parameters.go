@@ -141,7 +141,14 @@ func (tp *TokenParameters) getPayload(issuer string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(pld)
+	pldB, err := json.Marshal(pld)
+	if err != nil {
+		return nil, err
+	}
+	if len(pldB) > 512 {
+		return nil, errors.New("maximum payload size exceeded")
+	}
+	return pldB, nil
 }
 
 // Return the registered claims to include on the token.
