@@ -8,16 +8,15 @@ import (
 	"time"
 
 	"github.com/go-faster/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-	"go.opentelemetry.io/otel/trace"
-
 	ht "github.com/ogen-go/ogen/http"
 	"github.com/ogen-go/ogen/middleware"
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/otelogen"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type codeRecorder struct {
@@ -28,6 +27,10 @@ type codeRecorder struct {
 func (c *codeRecorder) WriteHeader(status int) {
 	c.status = status
 	c.ResponseWriter.WriteHeader(status)
+}
+
+func (c *codeRecorder) Unwrap() http.ResponseWriter {
+	return c.ResponseWriter
 }
 
 // handleAddPetRequest handles addPet operation.
@@ -43,6 +46,8 @@ func (s *Server) handleAddPetRequest(args [0]string, argsEscaped bool, w http.Re
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.HTTPRouteKey.String("/pet"),
 	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
 	ctx, span := s.cfg.Tracer.Start(r.Context(), AddPetOperation,
@@ -66,7 +71,7 @@ func (s *Server) handleAddPetRequest(args [0]string, argsEscaped bool, w http.Re
 		if code != 0 {
 			codeAttr := semconv.HTTPResponseStatusCode(code)
 			attrs = append(attrs, codeAttr)
-			span.SetAttributes(codeAttr)
+			span.SetAttributes(attrs...)
 		}
 		attrOpt := metric.WithAttributes(attrs...)
 
@@ -86,7 +91,7 @@ func (s *Server) handleAddPetRequest(args [0]string, argsEscaped bool, w http.Re
 			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
 			// max redirects exceeded), in which case status MUST be set to Error.
 			code := statusWriter.status
-			if code >= 100 && code < 500 {
+			if code < 100 || code >= 500 {
 				span.SetStatus(codes.Error, stage)
 			}
 
@@ -104,7 +109,9 @@ func (s *Server) handleAddPetRequest(args [0]string, argsEscaped bool, w http.Re
 			ID:   "addPet",
 		}
 	)
-	request, close, err := s.decodeAddPetRequest(r)
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeAddPetRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -128,6 +135,7 @@ func (s *Server) handleAddPetRequest(args [0]string, argsEscaped bool, w http.Re
 			OperationSummary: "Add a new pet to the store",
 			OperationID:      "addPet",
 			Body:             request,
+			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
 			Raw:              r,
 		}
@@ -181,6 +189,8 @@ func (s *Server) handleDeletePetRequest(args [1]string, argsEscaped bool, w http
 		semconv.HTTPRequestMethodKey.String("DELETE"),
 		semconv.HTTPRouteKey.String("/pet/{petId}"),
 	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
 	ctx, span := s.cfg.Tracer.Start(r.Context(), DeletePetOperation,
@@ -204,7 +214,7 @@ func (s *Server) handleDeletePetRequest(args [1]string, argsEscaped bool, w http
 		if code != 0 {
 			codeAttr := semconv.HTTPResponseStatusCode(code)
 			attrs = append(attrs, codeAttr)
-			span.SetAttributes(codeAttr)
+			span.SetAttributes(attrs...)
 		}
 		attrOpt := metric.WithAttributes(attrs...)
 
@@ -224,7 +234,7 @@ func (s *Server) handleDeletePetRequest(args [1]string, argsEscaped bool, w http
 			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
 			// max redirects exceeded), in which case status MUST be set to Error.
 			code := statusWriter.status
-			if code >= 100 && code < 500 {
+			if code < 100 || code >= 500 {
 				span.SetStatus(codes.Error, stage)
 			}
 
@@ -253,6 +263,8 @@ func (s *Server) handleDeletePetRequest(args [1]string, argsEscaped bool, w http
 		return
 	}
 
+	var rawBody []byte
+
 	var response *DeletePetOK
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
@@ -261,6 +273,7 @@ func (s *Server) handleDeletePetRequest(args [1]string, argsEscaped bool, w http
 			OperationSummary: "Deletes a pet",
 			OperationID:      "deletePet",
 			Body:             nil,
+			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
 					Name: "petId",
@@ -319,6 +332,8 @@ func (s *Server) handleGetPetByIdRequest(args [1]string, argsEscaped bool, w htt
 		semconv.HTTPRequestMethodKey.String("GET"),
 		semconv.HTTPRouteKey.String("/pet/{petId}"),
 	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
 	ctx, span := s.cfg.Tracer.Start(r.Context(), GetPetByIdOperation,
@@ -342,7 +357,7 @@ func (s *Server) handleGetPetByIdRequest(args [1]string, argsEscaped bool, w htt
 		if code != 0 {
 			codeAttr := semconv.HTTPResponseStatusCode(code)
 			attrs = append(attrs, codeAttr)
-			span.SetAttributes(codeAttr)
+			span.SetAttributes(attrs...)
 		}
 		attrOpt := metric.WithAttributes(attrs...)
 
@@ -362,7 +377,7 @@ func (s *Server) handleGetPetByIdRequest(args [1]string, argsEscaped bool, w htt
 			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
 			// max redirects exceeded), in which case status MUST be set to Error.
 			code := statusWriter.status
-			if code >= 100 && code < 500 {
+			if code < 100 || code >= 500 {
 				span.SetStatus(codes.Error, stage)
 			}
 
@@ -391,6 +406,8 @@ func (s *Server) handleGetPetByIdRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
+	var rawBody []byte
+
 	var response GetPetByIdRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
@@ -399,6 +416,7 @@ func (s *Server) handleGetPetByIdRequest(args [1]string, argsEscaped bool, w htt
 			OperationSummary: "Find pet by ID",
 			OperationID:      "getPetById",
 			Body:             nil,
+			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
 					Name: "petId",
@@ -457,6 +475,8 @@ func (s *Server) handleUpdatePetRequest(args [1]string, argsEscaped bool, w http
 		semconv.HTTPRequestMethodKey.String("POST"),
 		semconv.HTTPRouteKey.String("/pet/{petId}"),
 	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
 	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdatePetOperation,
@@ -480,7 +500,7 @@ func (s *Server) handleUpdatePetRequest(args [1]string, argsEscaped bool, w http
 		if code != 0 {
 			codeAttr := semconv.HTTPResponseStatusCode(code)
 			attrs = append(attrs, codeAttr)
-			span.SetAttributes(codeAttr)
+			span.SetAttributes(attrs...)
 		}
 		attrOpt := metric.WithAttributes(attrs...)
 
@@ -500,7 +520,7 @@ func (s *Server) handleUpdatePetRequest(args [1]string, argsEscaped bool, w http
 			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
 			// max redirects exceeded), in which case status MUST be set to Error.
 			code := statusWriter.status
-			if code >= 100 && code < 500 {
+			if code < 100 || code >= 500 {
 				span.SetStatus(codes.Error, stage)
 			}
 
@@ -529,6 +549,8 @@ func (s *Server) handleUpdatePetRequest(args [1]string, argsEscaped bool, w http
 		return
 	}
 
+	var rawBody []byte
+
 	var response *UpdatePetOK
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
@@ -537,6 +559,7 @@ func (s *Server) handleUpdatePetRequest(args [1]string, argsEscaped bool, w http
 			OperationSummary: "Updates a pet in the store",
 			OperationID:      "updatePet",
 			Body:             nil,
+			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
 					Name: "petId",

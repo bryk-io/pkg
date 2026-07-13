@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/validate"
 )
@@ -61,7 +60,7 @@ func decodeAddPetResponse(resp *http.Response) (res *Pet, _ error) {
 			return res, validate.InvalidContentType(ct)
 		}
 	}
-	return res, validate.UnexpectedStatusCode(resp.StatusCode)
+	return res, validate.UnexpectedStatusCodeWithResponse(resp)
 }
 
 func decodeDeletePetResponse(resp *http.Response) (res *DeletePetOK, _ error) {
@@ -70,7 +69,7 @@ func decodeDeletePetResponse(resp *http.Response) (res *DeletePetOK, _ error) {
 		// Code 200.
 		return &DeletePetOK{}, nil
 	}
-	return res, validate.UnexpectedStatusCode(resp.StatusCode)
+	return res, validate.UnexpectedStatusCodeWithResponse(resp)
 }
 
 func decodeGetPetByIdResponse(resp *http.Response) (res GetPetByIdRes, _ error) {
@@ -123,7 +122,7 @@ func decodeGetPetByIdResponse(resp *http.Response) (res GetPetByIdRes, _ error) 
 		// Code 404.
 		return &GetPetByIdNotFound{}, nil
 	}
-	return res, validate.UnexpectedStatusCode(resp.StatusCode)
+	return res, validate.UnexpectedStatusCodeWithResponse(resp)
 }
 
 func decodeUpdatePetResponse(resp *http.Response) (res *UpdatePetOK, _ error) {
@@ -132,5 +131,5 @@ func decodeUpdatePetResponse(resp *http.Response) (res *UpdatePetOK, _ error) {
 		// Code 200.
 		return &UpdatePetOK{}, nil
 	}
-	return res, validate.UnexpectedStatusCode(resp.StatusCode)
+	return res, validate.UnexpectedStatusCodeWithResponse(resp)
 }

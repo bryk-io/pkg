@@ -7,7 +7,6 @@ import (
 	"net/url"
 
 	"github.com/go-faster/errors"
-
 	"github.com/ogen-go/ogen/conv"
 	"github.com/ogen-go/ogen/middleware"
 	"github.com/ogen-go/ogen/ogenerrors"
@@ -152,9 +151,9 @@ type UpdatePetParams struct {
 	// ID of pet that needs to be updated.
 	PetId int64
 	// Name of pet that needs to be updated.
-	Name OptString
+	Name OptString `json:",omitempty,omitzero"`
 	// Status of pet that needs to be updated.
-	Status OptPetStatus
+	Status OptPetStatus `json:",omitempty,omitzero"`
 }
 
 func unpackUpdatePetParams(packed middleware.Parameters) (params UpdatePetParams) {

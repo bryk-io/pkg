@@ -10,6 +10,12 @@ import (
 	"github.com/ogen-go/ogen/uri"
 )
 
+var (
+	rn1AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
+)
+
 func (s *Server) cutPrefix(path string) (string, bool) {
 	prefix := s.cfg.Prefix
 	if prefix == "" {
@@ -62,7 +68,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				case "POST":
 					s.handleAddPetRequest([0]string{}, elemIsEscaped, w, r)
 				default:
-					s.notAllowed(w, r, "POST")
+					s.notAllowed(w, r, notAllowedParams{
+						allowedMethods: "POST",
+						allowedHeaders: rn1AllowedHeaders,
+						acceptPost:     "application/json",
+						acceptPatch:    "",
+					})
 				}
 
 				return
@@ -101,7 +112,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							args[0],
 						}, elemIsEscaped, w, r)
 					default:
-						s.notAllowed(w, r, "DELETE,GET,POST")
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "DELETE,GET,POST",
+							allowedHeaders: nil,
+							acceptPost:     "",
+							acceptPatch:    "",
+						})
 					}
 
 					return
@@ -116,12 +132,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Route is route object.
 type Route struct {
-	name        string
-	summary     string
-	operationID string
-	pathPattern string
-	count       int
-	args        [1]string
+	name           string
+	summary        string
+	operationID    string
+	operationGroup string
+	pathPattern    string
+	count          int
+	args           [1]string
 }
 
 // Name returns ogen operation name.
@@ -139,6 +156,11 @@ func (r Route) Summary() string {
 // OperationID returns OpenAPI operationId.
 func (r Route) OperationID() string {
 	return r.operationID
+}
+
+// OperationGroup returns the x-ogen-operation-group value.
+func (r Route) OperationGroup() string {
+	return r.operationGroup
 }
 
 // PathPattern returns OpenAPI path.
@@ -203,6 +225,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					r.name = AddPetOperation
 					r.summary = "Add a new pet to the store"
 					r.operationID = "addPet"
+					r.operationGroup = ""
 					r.pathPattern = "/pet"
 					r.args = args
 					r.count = 0
@@ -236,6 +259,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						r.name = DeletePetOperation
 						r.summary = "Deletes a pet"
 						r.operationID = "deletePet"
+						r.operationGroup = ""
 						r.pathPattern = "/pet/{petId}"
 						r.args = args
 						r.count = 1
@@ -244,6 +268,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						r.name = GetPetByIdOperation
 						r.summary = "Find pet by ID"
 						r.operationID = "getPetById"
+						r.operationGroup = ""
 						r.pathPattern = "/pet/{petId}"
 						r.args = args
 						r.count = 1
@@ -252,6 +277,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						r.name = UpdatePetOperation
 						r.summary = "Updates a pet in the store"
 						r.operationID = "updatePet"
+						r.operationGroup = ""
 						r.pathPattern = "/pet/{petId}"
 						r.args = args
 						r.count = 1

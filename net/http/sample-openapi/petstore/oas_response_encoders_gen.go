@@ -7,14 +7,12 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
 func encodeAddPetResponse(response *Pet, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -27,7 +25,6 @@ func encodeAddPetResponse(response *Pet, w http.ResponseWriter, span trace.Span)
 
 func encodeDeletePetResponse(response *DeletePetOK, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	return nil
 }
@@ -37,7 +34,6 @@ func encodeGetPetByIdResponse(response GetPetByIdRes, w http.ResponseWriter, spa
 	case *Pet:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(200)
-		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		e := new(jx.Encoder)
 		response.Encode(e)
@@ -49,7 +45,6 @@ func encodeGetPetByIdResponse(response GetPetByIdRes, w http.ResponseWriter, spa
 
 	case *GetPetByIdNotFound:
 		w.WriteHeader(404)
-		span.SetStatus(codes.Error, http.StatusText(404))
 
 		return nil
 
@@ -60,7 +55,6 @@ func encodeGetPetByIdResponse(response GetPetByIdRes, w http.ResponseWriter, spa
 
 func encodeUpdatePetResponse(response *UpdatePetOK, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	return nil
 }

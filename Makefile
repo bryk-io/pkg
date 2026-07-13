@@ -92,7 +92,7 @@ updates:
 
 proto-test:
 	# Verify style and consistency
-	# buf format --exit-code -w
+	buf format -w
 	buf lint
 
 	# Verify breaking changes. This fails if no image is already present,
