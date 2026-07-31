@@ -39,7 +39,9 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
       }
     }
   }
-  security: {security_requirement: {key: "bearer"}}
+  security: {
+    security_requirement: {key: "bearer"}
+  }
 };
 
 // Echo service main interface.
