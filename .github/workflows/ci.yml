@@ -35,9 +35,18 @@ jobs:
 
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # Go module cache for faster subsequent builds
+      - name: Go module cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       # Configure runner environment
       - name: Set up runner environment
@@ -48,7 +57,7 @@ jobs:
 
       # Go
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 1.25.x
 
@@ -72,7 +81,7 @@ jobs:
       # Can be excluded if the commit message contains: [skip scan-secrets]
       # https://github.com/marketplace/actions/trufflehog-oss
       - name: Scan for leaked secrets
-        uses: trufflesecurity/trufflehog@27b0417c16317ca9a472a9a8092acce143b49c55 # v3.95.9
+        uses: trufflesecurity/trufflehog@6f3c981e7b77f235fd2702dd74af25fc4b72bf11 # v3.96.0
         if: ${{ !contains(env.commit_msg, '[skip scan-secrets]') }}
         with:
           base: "" # scan entire branch
@@ -97,7 +106,7 @@ jobs:
 
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -110,7 +119,7 @@ jobs:
 
       # Go
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 1.25.x
 
@@ -125,9 +134,9 @@ jobs:
       # https://buf.build/docs/bsr/ci-cd/github-actions/
       - name: Setup buf
         id: buf-setup
-        uses: bufbuild/buf-action@fd21066df7214747548607aaa45548ba2b9bc1ff # v1.4.0
+        uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
         with:
-          version: 1.71.0
+          version: 1.72.0
           lint: true
           format: true
           breaking: ${{ !contains(env.commit_msg, '[skip buf-breaking]') }}
@@ -154,9 +163,18 @@ jobs:
 
       # Checkout code
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # Go module cache for faster subsequent builds
+      - name: Go module cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       # Configure runner environment
       - name: Set up runner environment
@@ -167,7 +185,7 @@ jobs:
 
       # Go
       - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -182,10 +200,11 @@ jobs:
       - name: Test
         run: make test
 
-      # Save artifacts
-      - name: Save artifacts
+      # Upload coverage report as artifact (not only on failure)
+      - name: Upload coverage report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
         with:
-          name: assets-${{ matrix.go-version }}
-          path: |
-            coverage.html
+          name: coverage-${{ matrix.go-version }}
+          path: coverage.html
+          retention-days: 30
