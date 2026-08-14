@@ -10,7 +10,8 @@
   },
   "tags": [
     {
-      "name": "EchoAPI"
+      "name": "EchoAPI",
+      "description": "Echo service main interface."
     }
   ],
   "schemes": [

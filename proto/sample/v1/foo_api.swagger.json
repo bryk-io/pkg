@@ -10,7 +10,8 @@
   },
   "tags": [
     {
-      "name": "FooAPI"
+      "name": "FooAPI",
+      "description": "Sample \"foo\" service server."
     }
   ],
   "schemes": [

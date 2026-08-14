@@ -10,7 +10,8 @@
   },
   "tags": [
     {
-      "name": "BarAPI"
+      "name": "BarAPI",
+      "description": "Sample \"bar\" service server."
     }
   ],
   "schemes": [

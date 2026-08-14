@@ -1,8 +1,7 @@
-version: "3.8"
 name: "otel-test"
 services:
   alloy:
-    image: grafana/alloy:v1.16.2
+    image: grafana/alloy:v1.18.1
     command: [ "run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.alloy" ]
     volumes:
       - ./config.alloy:/etc/alloy/config.alloy
