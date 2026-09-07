@@ -29,7 +29,7 @@ jobs:
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.25.x
+          go-version: 1.26.x
 
       # Get commit message
       - name: Get commit message
@@ -81,7 +81,7 @@ jobs:
       # Can be excluded if the commit message contains: [skip scan-secrets]
       # https://github.com/marketplace/actions/trufflehog-oss
       - name: Scan for leaked secrets
-        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318 # v3.97.0
+        uses: trufflesecurity/trufflehog@363923b901c911a9164f50b6c423f47c15372b1c # v3.97.4
         if: ${{ !contains(env.commit_msg, '[skip scan-secrets]') }}
         with:
           base: "" # scan entire branch
@@ -100,7 +100,7 @@ jobs:
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -121,7 +121,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: 1.25.x
+          go-version: 1.26.x
 
       # Get commit message
       - name: Get commit message
@@ -150,14 +150,14 @@ jobs:
     needs: protos
     strategy:
       matrix:
-        go-version: [1.25.x, 1.26.x]
+        go-version: [1.26.x, 1.27.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -194,7 +194,7 @@ jobs:
       - name: Static analysis
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.12
+          version: v2.13
 
       # Run unit tests
       - name: Test

@@ -136,6 +136,16 @@ linters:
       - path: proto/sample/v1
         linters:
           - goconst
+      # allow `crypto/ecdsa` deprecations`
+      # https://pkg.go.dev/crypto/ecdsa#PublicKey
+      - path: jose/jwk
+        linters:
+          - staticcheck
+        text: "SA1019:"
+      - path: paseto
+        linters:
+          - staticcheck
+        text: "SA1019:"
     paths:
       - crypto/vrf/*
       - third_party$

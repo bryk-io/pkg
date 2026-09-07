@@ -16,7 +16,7 @@ func TestNew(t *testing.T) {
 		err  error
 	)
 	prev, _ = New()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-time.After(100 * time.Millisecond)
 
 		// Create and use new instance

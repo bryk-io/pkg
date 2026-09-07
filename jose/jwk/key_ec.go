@@ -69,12 +69,6 @@ func (k *ecKey) Sign(rr io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, e
 	}
 	msg := ih.Sum(nil)
 
-	// Sign message
-	r, s, err := ecdsa.Sign(rr, k.sk, msg[:])
-	if err != nil {
-		return nil, err
-	}
-
 	// Verify key size is secure to use with the selected hash method
 	hhs := hh.HashFunc().Size() * 8
 	if hhs == 512 {
@@ -86,6 +80,12 @@ func (k *ecKey) Sign(rr io.Reader, data []byte, hh crypto.SignerOpts) ([]byte, e
 	}
 	if k.sk.Curve.Params().BitSize != hhs {
 		return nil, fmt.Errorf("invalid key size (%d) for selected hash method (%d)", k.sk.Curve.Params().BitSize, hhs)
+	}
+
+	// Sign message
+	r, s, err := ecdsa.Sign(rr, k.sk, msg[:])
+	if err != nil {
+		return nil, err
 	}
 
 	// Encode signature
