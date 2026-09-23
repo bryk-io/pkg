@@ -188,7 +188,8 @@ func (c *Consumer) Subscribe(opts SubscribeOptions) (<-chan Delivery, string, er
 // TemporaryQueue can be used to implement a "publish/subscribe" where messages
 // from a "fanout" exchange are delivered to all the connected consumers. The
 // returned identifier can be used to release/remove the queue using the
-// `CloseSubscription` method.
+// `CloseSubscription` method. The queue will be automatically deleted when the
+// last consumer disconnects.
 func (c *Consumer) TemporaryQueue(exchange string) (<-chan Delivery, string, error) {
 	if !c.session.isReady() {
 		c.log.Warning("consumer session is not ready")
@@ -196,8 +197,12 @@ func (c *Consumer) TemporaryQueue(exchange string) (<-chan Delivery, string, err
 	}
 
 	// Declare a temporary queue with a random name and connect
-	// it to the "fanout" exchange.
-	qn, err := c.AddQueue(Queue{Exclusive: true})
+	// it to the "fanout" exchange. Exclusive queues are implicitly
+	// deleted when the connection closes; marking them as
+	// auto-delete ensures the broker also removes them when the
+	// last consumer is released, which is required on RabbitMQ 4
+	// where non-exclusive transient queues are no longer permitted.
+	qn, err := c.AddQueue(Queue{Exclusive: true, AutoDelete: true})
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to add queue")
 	}

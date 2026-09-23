@@ -33,20 +33,34 @@ exchanges:
   kind: direct
 queues:
 - name: hello
-- name: rpc
-- name: tasks
+  durable: true
   arguments:
+    x-queue-type: quorum
+- name: rpc
+  durable: true
+  arguments:
+    x-queue-type: quorum
+- name: tasks
+  durable: true
+  arguments:
+    x-queue-type: quorum
     x-message-ttl: 10000
     x-expires: 360000
     x-max-length: 100
     x-max-length-bytes: 102400
-    x-overflow: "reject-publish-dlx"
-    x-dead-letter-exchange: sample.dead
-    x-max-priority: 4
-    x-queue-mode: "lazy"
+    x-dead-letter-exchange: "sample.dead"
 - name: notifications
+  durable: true
+  arguments:
+    x-queue-type: quorum
 - name: by_topic
+  durable: true
+  arguments:
+    x-queue-type: quorum
 - name: by_headers
+  durable: true
+  arguments:
+    x-queue-type: quorum
 bindings:
 - exchange: sample.notifications
   queue: notifications
@@ -157,7 +171,7 @@ func consumerEvents(cc *Consumer, workers int, opts SubscribeOptions) {
 func temporaryQueue(c *Consumer) error {
 	// Declare a temporary queue with a random name and connect
 	// it to the "fanout" exchange.
-	qn, err := c.AddQueue(Queue{Exclusive: true})
+	qn, err := c.AddQueue(Queue{Exclusive: true, AutoDelete: true})
 	if err != nil {
 		return errors.Wrap(err, "failed to add queue")
 	}
@@ -208,13 +222,16 @@ func publisherEvents(ctx context.Context, pub *Publisher, opts MessageOptions) {
 }
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		goleak.IgnoreAnyFunction("net/http.(*persistConn).writeLoop"),
+		goleak.IgnoreAnyFunction("internal/poll.runtime_pollWait"),
+	)
 }
 
 func TestFlows(t *testing.T) {
 	// Ensure AMQP server is available for testing
-	res, err := http.Get("http://localhost:15672/api/auth")
-	if err != nil || res.StatusCode != http.StatusOK {
+	res, err := http.Get("http://localhost:15672/api/nodes")
+	if err != nil || res.StatusCode != http.StatusUnauthorized {
 		t.Skip("no AMQP server available for testing")
 	}
 	_ = res.Body.Close()

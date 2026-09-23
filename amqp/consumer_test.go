@@ -60,7 +60,7 @@ func ExampleConsumer_AddQueue() {
 		Name:       "my_temporal_and_exclusive_queue",
 		AutoDelete: true,
 		Exclusive:  true,
-		Durable:    false,
+		Durable:    true,
 	})
 	if err != nil {
 		panic(err)

@@ -34,6 +34,7 @@ queues:
   auto_delete: false
   exclusive: false
 - name: by_topic
+  durable: true
 bindings:
 - exchange: sample.notifications
   queue: notifications

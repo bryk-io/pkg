@@ -81,7 +81,7 @@ jobs:
       # Can be excluded if the commit message contains: [skip scan-secrets]
       # https://github.com/marketplace/actions/trufflehog-oss
       - name: Scan for leaked secrets
-        uses: trufflesecurity/trufflehog@363923b901c911a9164f50b6c423f47c15372b1c # v3.97.4
+        uses: trufflesecurity/trufflehog@64d939a56362f519781c53ea09b27f8d1dc0140a # v3.97.6
         if: ${{ !contains(env.commit_msg, '[skip scan-secrets]') }}
         with:
           base: "" # scan entire branch
@@ -134,9 +134,9 @@ jobs:
       # https://buf.build/docs/bsr/ci-cd/github-actions/
       - name: Setup buf
         id: buf-setup
-        uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
+        uses: bufbuild/buf-action@85aebf73123b5c15fd5528aaecbf9129cddf7fa7 # v1.6.0
         with:
-          version: 1.72.0
+          version: 1.73.0
           lint: true
           format: true
           breaking: ${{ !contains(env.commit_msg, '[skip buf-breaking]') }}

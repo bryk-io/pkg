@@ -99,7 +99,7 @@ func (app *Instrumentation) Logger() log.Logger {
 }
 
 // Flush immediately exports all spans that have not yet been exported for all
-// registered span processors and shut down them down. No further data will be
+// registered span processors and shuts them down. No further data will be
 // captured or processed after this call.
 func (app *Instrumentation) Flush(ctx context.Context) {
 	// Stop trace provider and exporter

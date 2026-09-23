@@ -69,7 +69,7 @@ type Queue struct {
 	//   Set the queue into lazy mode, keeping as many messages as possible on
 	//   disk to reduce RAM usage; if not set, the queue will keep an in-memory
 	//   cache to deliver messages as fast as possible
-	Arguments map[string]interface{} `json:"arguments,omitempty" yaml:"arguments,omitempty"`
+	Arguments map[string]any `json:"arguments,omitempty" yaml:"arguments,omitempty"`
 }
 
 // Exchange is an AMQP entity where messages are sent. Exchanges take a message
@@ -111,7 +111,7 @@ type Exchange struct {
 	Internal bool `json:"internal"`
 
 	// Additional arguments.
-	Arguments map[string]interface{} `json:"arguments,omitempty" yaml:",omitempty"`
+	Arguments map[string]any `json:"arguments,omitempty" yaml:",omitempty"`
 }
 
 // Binding declarations connects an exchange to a queue so that messages
@@ -138,7 +138,7 @@ type Binding struct {
 	RoutingKey []string `json:"routing_key" yaml:"routing_key"`
 
 	// Additional arguments.
-	Arguments map[string]interface{} `json:"arguments,omitempty" yaml:",omitempty"`
+	Arguments map[string]any `json:"arguments,omitempty" yaml:",omitempty"`
 }
 
 // QueueOptions provide a helper mechanism to adjust commonly used
@@ -188,8 +188,8 @@ type QueueOptions struct {
 }
 
 // AsArguments returns the options as a properly encoded set of arguments.
-func (qo *QueueOptions) AsArguments() map[string]interface{} {
-	list := make(map[string]interface{})
+func (qo *QueueOptions) AsArguments() map[string]any {
+	list := make(map[string]any)
 	if qo.MessageTTL != nil {
 		list["x-message-ttl"] = qo.MessageTTL.Milliseconds()
 	}

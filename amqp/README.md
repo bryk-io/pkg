@@ -36,8 +36,11 @@ format.
 ```yaml
 queues:
 - name: tasks
+  durable: true
 - name: notifications
+  durable: true
 - name: by_topic
+  durable: true
  exchanges:
 - name: sample.notifications
      kind: fanout
