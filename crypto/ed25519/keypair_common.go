@@ -4,7 +4,6 @@ import (
 	e "crypto/ed25519"
 	"crypto/sha512"
 	"encoding/pem"
-	"fmt"
 	"math/big"
 
 	"go.bryk.io/pkg/errors"
@@ -21,8 +20,9 @@ const keyType = "ED25519 PRIVATE KEY"
 func New() (*KeyPair, error) {
 	_, priv, err := e.GenerateKey(nil)
 	if err != nil {
-		return nil, errors.New("failed to generate new random key")
+		return nil, errors.Wrap(err, "failed to generate new random key")
 	}
+	defer wipeBytes(priv)
 	return fromPrivateKey(priv)
 }
 
@@ -42,11 +42,12 @@ func Unmarshal(src []byte) (*KeyPair, error) {
 func FromSeed(seed []byte) (*KeyPair, error) {
 	secret, err := cryptoutils.Expand(seed, e.SeedSize, nil)
 	if err != nil {
-		return nil, errors.New("failed to expand seed")
+		return nil, errors.Wrap(err, "failed to expand seed")
 	}
-
-	// Get private key from seed
-	return fromPrivateKey(e.NewKeyFromSeed(secret))
+	defer wipeBytes(secret)
+	priv := e.NewKeyFromSeed(secret)
+	defer wipeBytes(priv)
+	return fromPrivateKey(priv)
 }
 
 // FromPrivateKey restores a key pair instance using the provided
@@ -55,12 +56,12 @@ func FromPrivateKey(priv []byte) (*KeyPair, error) {
 	if len(priv) != e.PrivateKeySize {
 		return nil, errors.New("invalid private key")
 	}
-	return fromPrivateKey(e.PrivateKey(priv))
+	return fromPrivateKey(priv)
 }
 
 // Verify performs a digital signature verification.
 func Verify(message, signature, publicKey []byte) bool {
-	if len(signature) > e.SignatureSize {
+	if len(signature) != e.SignatureSize {
 		return false
 	}
 	if len(publicKey) != e.PublicKeySize {
@@ -107,8 +108,11 @@ func ToCurve25519(pub [32]byte) []byte {
 // from memory by calling the "Destroy" method.
 func (k *KeyPair) UnmarshalBinary(data []byte) error {
 	bl, _ := pem.Decode(data)
+	if bl == nil {
+		return errors.New("invalid PEM data")
+	}
 	if bl.Type != keyType {
-		return fmt.Errorf("invalid key type: '%s'", bl.Type)
+		return errors.Errorf("invalid key type: '%s'", bl.Type)
 	}
 	if len(bl.Bytes) != e.PrivateKeySize {
 		return errors.New("invalid key size")
@@ -117,8 +121,7 @@ func (k *KeyPair) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
-
-	// Assign keypair
+	k.Destroy()
 	*k = *kp
 	return nil
 }
@@ -139,13 +142,21 @@ func (k *KeyPair) PublicKey() [32]byte {
 
 // Sign generates a digital signature for the provided content.
 func (k *KeyPair) Sign(message []byte) []byte {
-	pvt := e.PrivateKey(k.PrivateKey())
-	return e.Sign(pvt, message)
+	priv := k.PrivateKey()
+	if priv == nil {
+		return nil
+	}
+	// crypto/ed25519 requires the key to live in Go-managed memory, so use a
+	// copy of the locked buffer contents.
+	key := make([]byte, len(priv))
+	copy(key, priv)
+	defer wipeBytes(key)
+	return e.Sign(key, message)
 }
 
 // Verify performs a digital signature verification.
 func (k *KeyPair) Verify(message, signature []byte) bool {
-	if len(signature) > e.SignatureSize {
+	if len(signature) != e.SignatureSize {
 		return false
 	}
 	pub := e.PublicKey(k.pub[:])
@@ -166,27 +177,34 @@ func (k *KeyPair) DH(pub [32]byte) []byte {
 
 // ToX25519 returns a X25519 public key generated using the original keypair
 // as seed material. The returned public key is suitable to perform secure
-// Diffie-Hellman agreements using a single keypair instance.
+// Diffie-Hellman agreements using a single keypair instance and matches the
+// conversion provided by ToCurve25519.
 func (k *KeyPair) ToX25519() [32]byte {
 	pub, _ := k.toX25519()
 	return pub
 }
 
 // Return an X25519 key pair using original private key as seed material.
+// The conversion follows the standard algorithm: the X25519 scalar is
+// derived from the Ed25519 seed (SHA-512 of the first 32 key bytes, then
+// clamped) and the X25519 public key is the birational-map conversion of
+// the Ed25519 public key.
 func (k *KeyPair) toX25519() (pub [32]byte, priv [32]byte) {
-	// Use private key as original seed value
-	seed := sha512.Sum512_256(k.PrivateKey())
+	privKey := k.PrivateKey()
+	if privKey == nil {
+		return
+	}
 
 	// Get Curve25519 private key
 	// https://cr.yp.to/ecdh.html
-	seed[0] &= 248
-	seed[31] &= 127
-	seed[31] |= 64
-	copy(priv[:], seed[:c.ScalarSize])
+	h := sha512.Sum512(privKey[:e.SeedSize])
+	copy(priv[:], h[:c.ScalarSize])
+	priv[0] &= 248
+	priv[31] &= 127
+	priv[31] |= 64
 
-	// Get Curve25519 public key using scalar multiplication
-	if pb, err := c.X25519(priv[:], c.Basepoint); err == nil {
-		copy(pub[:], pb)
-	}
+	// Get Curve25519 public key
+	cpub := ToCurve25519(k.PublicKey())
+	copy(pub[:], cpub)
 	return
 }

@@ -3,7 +3,6 @@ package x25519
 import (
 	"crypto/rand"
 	"encoding/pem"
-	"fmt"
 
 	"go.bryk.io/pkg/errors"
 	cryptoutils "go.bryk.io/pkg/internal/crypto"
@@ -18,8 +17,9 @@ const keyType = "X25519 PRIVATE KEY"
 func New() (*KeyPair, error) {
 	seed := make([]byte, 32)
 	if _, err := rand.Read(seed); err != nil {
-		return nil, errors.New("failed to generate random seed")
+		return nil, errors.Wrap(err, "failed to generate random seed")
 	}
+	defer wipeBytes(seed)
 	return fromPrivateKey(seed, true)
 }
 
@@ -30,8 +30,9 @@ func FromSeed(seed []byte) (*KeyPair, error) {
 	// Expand provided seed to obtain the private key material
 	priv, err := cryptoutils.Expand(seed, 32, nil)
 	if err != nil {
-		return nil, errors.New("failed to expand seed")
+		return nil, errors.Wrap(err, "failed to expand seed")
 	}
+	defer wipeBytes(priv)
 	return fromPrivateKey(priv, true)
 }
 
@@ -60,8 +61,11 @@ func (k *KeyPair) MarshalBinary() ([]byte, error) {
 // from memory by calling the "Destroy" method.
 func (k *KeyPair) UnmarshalBinary(data []byte) error {
 	bl, _ := pem.Decode(data)
+	if bl == nil {
+		return errors.New("invalid PEM data")
+	}
 	if bl.Type != keyType {
-		return fmt.Errorf("invalid key type: '%s'", bl.Type)
+		return errors.Errorf("invalid key type: '%s'", bl.Type)
 	}
 	if len(bl.Bytes) != 32 {
 		return errors.New("invalid key size")
@@ -70,19 +74,34 @@ func (k *KeyPair) UnmarshalBinary(data []byte) error {
 	if err != nil {
 		return err
 	}
+	k.Destroy()
 	*k = *kp
 	return nil
 }
 
 // DH calculates a byte sequence which is the shared secret output from an
 // Elliptic Curve Diffie-Hellman of the provided public key. In case of error
-// the function return 'nil'.
+// the function return 'nil'. The returned value is the raw X25519 output and
+// it must be passed through a key derivation function (e.g. DHWithKDF) before
+// being used as key material.
 func (k *KeyPair) DH(pub [32]byte) []byte {
 	res, err := c.X25519(k.PrivateKey(), pub[:])
 	if err != nil {
 		return nil
 	}
 	return res
+}
+
+// WithKDF calculates a byte sequence which is the shared secret output from
+// an Elliptic Curve Diffie-Hellman of the provided public key and expands it
+// to the requested size using a key derivation function (HKDF with SHA-512).
+func (k *KeyPair) WithKDF(pub [32]byte, size int, info []byte) ([]byte, error) {
+	secret := k.DH(pub)
+	if secret == nil {
+		return nil, errors.New("failed to compute shared secret")
+	}
+	defer wipeBytes(secret)
+	return cryptoutils.Expand(secret, size, info)
 }
 
 // PublicKey returns the public key bytes of the key pair instance.

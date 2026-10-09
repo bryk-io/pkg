@@ -3,8 +3,6 @@ package tred
 import (
 	"crypto/rand"
 	"io"
-
-	"go.bryk.io/pkg/errors"
 )
 
 // Config provides all configuration parameters available when creating a new
@@ -20,8 +18,7 @@ type Config struct {
 	Key []byte
 
 	// Internals
-	rng   io.Reader
-	nonce [8]byte
+	rng io.Reader
 }
 
 // DefaultConfig generates sane default configuration parameters using the provided key value.
@@ -38,17 +35,17 @@ func DefaultConfig(k []byte) (*Config, error) {
 func (c *Config) Validate() error {
 	// Cipher
 	if _, ok := supportedCiphers[c.Cipher]; !ok {
-		return errors.New(ErrUnsupportedCipher)
+		return ErrUnsupportedCipher
 	}
 
 	// Version
 	if c.Version != Version10 {
-		return errors.New(ErrUnsupportedVersion)
+		return ErrUnsupportedVersion
 	}
 
 	// No key if provided
 	if len(c.Key) == 0 {
-		return errors.New(ErrNoKey)
+		return ErrNoKey
 	}
 	return nil
 }
@@ -56,8 +53,5 @@ func (c *Config) Validate() error {
 // Initialize internal configuration elements.
 func (c *Config) init() error {
 	c.rng = rand.Reader
-	if _, err := c.rng.Read(c.nonce[:]); err != nil {
-		return errors.New(ErrRandomNonce)
-	}
 	return nil
 }

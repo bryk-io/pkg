@@ -30,14 +30,18 @@ challenge, or to verify (audit) the correctness of previously generated values (
 Both operations utilize a 'Source' element as target and two main configuration options to
 dynamically adjust the algorithm settings.
 
-The provided digest parameter specify the hashing mechanism to use when creating and validating
-PoW solutions. The difficulty level is specified as an unsigned integer that determines the
-number of bits that must be zeroed when producing the hash to be considered a valid solution to
-the challenge.
+The provided digest parameter specify the hashing mechanism to use when creating and
+validating PoW solutions. The difficulty level is specified as an unsigned integer that
+determines the number of bits that must be zeroed when producing the hash to be considered
+a valid solution to the challenge. The difficulty value cannot exceed the bit size of the
+selected digest.
 
 	// Start a new PoW round using SHA256 and a difficulty level of 16 bits
-	res := Solve(ctx, src, sha256.New(), 16)
-	log.Printf("solution found: %x", <-res)
+	res, err := Solve(ctx, src, sha256.New, 16)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("solution found: %s", <-res)
 
 	// The solution will be similar to:
 	// 0000ff54fb17895b926a1c52efa92d0c86636194612cbbd527d8c931024e5fc6

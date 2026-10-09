@@ -40,7 +40,7 @@ func Split(secret []byte, parts, threshold int) ([][]byte, error) {
 	// Generate random list of x coordinates
 	xCoordinates, err := perm(255)
 	if err != nil {
-		return nil, errors.New("failed to generate random x-coordinates")
+		return nil, errors.Wrap(err, "failed to generate random x-coordinates")
 	}
 
 	// Allocate the output array, initialize the final byte
@@ -59,7 +59,7 @@ func Split(secret []byte, parts, threshold int) ([][]byte, error) {
 	for idx, val := range secret {
 		p, err := makePolynomial(val, uint8(threshold-1))
 		if err != nil {
-			return nil, errors.New("failed to generate polynomial")
+			return nil, errors.Wrap(err, "failed to generate polynomial")
 		}
 
 		// Generate a `parts` number of (x,y) pairs
@@ -122,7 +122,10 @@ func Combine(parts [][]byte) ([]byte, error) {
 		}
 
 		// Interpolate the polynomial and compute the value at 0
-		val := interpolatePolynomial(xSamples, ySamples, 0)
+		val, err := interpolatePolynomial(xSamples, ySamples, 0)
+		if err != nil {
+			return nil, err
+		}
 
 		// Evaluate the 0th value to get the intercept
 		secret[idx] = val

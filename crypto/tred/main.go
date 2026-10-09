@@ -44,13 +44,13 @@ const (
 
 // Common error values.
 var (
-	ErrInvalidSequenceNumber = "out of order packet"
-	ErrInvalidPacketTag      = "invalid packet tag"
-	ErrInvalidPayloadLen     = "invalid payload size"
-	ErrUnsupportedCipher     = "unsupported cipher suite"
-	ErrUnsupportedVersion    = "unsupported version code"
-	ErrNoKey                 = "value for key is required"
-	ErrRandomNonce           = "failed to read random nonce"
+	ErrInvalidSequenceNumber = errors.New("out of order packet")
+	ErrInvalidPacketTag      = errors.New("invalid packet tag")
+	ErrInvalidPayloadLen     = errors.New("invalid payload size")
+	ErrUnsupportedCipher     = errors.New("unsupported cipher suite")
+	ErrUnsupportedVersion    = errors.New("unsupported version code")
+	ErrNoKey                 = errors.New("value for key is required")
+	ErrRandomNonce           = errors.New("failed to read random nonce")
 )
 
 // Supported cipher suites.
@@ -78,6 +78,7 @@ type Result struct {
 type Worker struct {
 	conf  *Config
 	seq   uint32
+	nonce [8]byte
 	mutex sync.Mutex
 }
 
@@ -99,10 +100,24 @@ func NewWorker(c *Config) (*Worker, error) {
 	return w, nil
 }
 
+// Destroy will securely remove the key material held by the worker. Note that
+// the worker shares its configuration with the caller, so a configuration
+// instance should not be shared across workers when calling this method.
+func (w *Worker) Destroy() {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	wipeBytes(w.conf.Key)
+	w.conf.Key = nil
+}
+
 // Encrypt will secure the 'input' content and send it to 'output'.
 func (w *Worker) Encrypt(input io.Reader, output io.Writer) (*Result, error) {
 	// Get cipher
-	c, err := supportedCiphers[w.conf.Cipher](w.conf.Key[:])
+	c, ok := supportedCiphers[w.conf.Cipher]
+	if !ok {
+		return nil, ErrUnsupportedCipher
+	}
+	aead, err := c(w.conf.Key[:])
 	if err != nil {
 		return nil, err
 	}
@@ -114,32 +129,41 @@ func (w *Worker) Encrypt(input io.Reader, output io.Writer) (*Result, error) {
 	// Reset worker
 	payload := make([]byte, payloadSize)
 	w.seq = 0
+	if err := w.newNonce(); err != nil {
+		return nil, err
+	}
 	start := time.Now()
 
 	// Process input
 	for {
+		// Avoid leaking plaintext bytes from a previous packet into the
+		// current encryption round.
+		clear(payload)
 		n, err := input.Read(payload)
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
-		if n == 0 || errors.Is(err, io.EOF) {
+		if n > 0 {
+			// Encrypt payload
+			// Use 'seq | nonce' as operation nonce
+			// Use 'version | cipher | payload length' as additional data
+			h := w.buildHeader(n)
+			ciphertext := aead.Seal(nil, h[4:headerSize], payload, h[:4])
+
+			// Build package
+			packet := make([]byte, headerSize+len(ciphertext))
+			copy(packet[:headerSize], h)
+			copy(packet[headerSize:], ciphertext)
+			if err := writeFull(output, packet); err != nil {
+				return nil, err
+			}
+			w.seq++
+		}
+		if errors.Is(err, io.EOF) || n == 0 {
 			break
 		}
-		// Encrypt payload
-		// Use 'seq | nonce' as operation nonce
-		// Use 'version | cipher | payload length' as additional data
-		h := w.buildHeader(n)
-		ciphertext := c.Seal(nil, h[4:headerSize], payload, h[:4])
-
-		// Build package
-		packet := make([]byte, headerSize+len(ciphertext))
-		copy(packet[:headerSize], h)
-		copy(packet[headerSize:], ciphertext)
-		if _, err := output.Write(packet); err != nil {
-			return nil, err
-		}
-		w.seq++
 	}
+	wipeBytes(payload)
 
 	// Return final result
 	return &Result{
@@ -150,7 +174,12 @@ func (w *Worker) Encrypt(input io.Reader, output io.Writer) (*Result, error) {
 
 // Decrypt will open the secure 'input' content and send it to 'output'.
 func (w *Worker) Decrypt(input io.Reader, output io.Writer) (*Result, error) {
-	c, err := supportedCiphers[w.conf.Cipher](w.conf.Key[:])
+	// Get cipher
+	c, ok := supportedCiphers[w.conf.Cipher]
+	if !ok {
+		return nil, ErrUnsupportedCipher
+	}
+	aead, err := c(w.conf.Key[:])
 	if err != nil {
 		return nil, err
 	}
@@ -166,39 +195,33 @@ func (w *Worker) Decrypt(input io.Reader, output io.Writer) (*Result, error) {
 
 	// Process input
 	for {
-		n, err := input.Read(packet)
-		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, err
-		}
-		if n == 0 || errors.Is(err, io.EOF) {
-			break
+		if _, err := io.ReadFull(input, packet); err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, errors.Wrap(err, ErrInvalidPacketTag.Error())
 		}
 		// Validate packet sequence
 		h := header(packet)
 		if h.SequenceNumber() != w.seq {
-			return nil, errors.New(ErrInvalidSequenceNumber)
+			return nil, ErrInvalidSequenceNumber
+		}
+		if h.Len() > payloadSize {
+			return nil, ErrInvalidPayloadLen
 		}
 
 		// Decrypt and validate packet ciphertext
 		ciphertext := packet[headerSize:]
-		payload, err := c.Open(nil, h[4:headerSize], ciphertext, h[:4])
+		payload, err := aead.Open(nil, h[4:headerSize], ciphertext, h[:4])
 		if err != nil {
-			return nil, errors.New(ErrInvalidPacketTag)
-		}
-
-		// Validate payload length
-		if len(payload) < h.Len() {
-			return nil, errors.New(ErrInvalidPayloadLen)
+			return nil, errors.Wrap(err, ErrInvalidPacketTag.Error())
 		}
 
 		// Add output
-		if _, err := output.Write(payload[:h.Len()]); err != nil {
+		if err := writeFull(output, payload[:h.Len()]); err != nil {
 			return nil, err
 		}
 		w.seq++
-		if errors.Is(err, io.EOF) {
-			break
-		}
 	}
 
 	// Return final result
@@ -208,6 +231,14 @@ func (w *Worker) Decrypt(input io.Reader, output io.Writer) (*Result, error) {
 	}, nil
 }
 
+// Generate a fresh random nonce for a new encryption round.
+func (w *Worker) newNonce() error {
+	if _, err := w.conf.rng.Read(w.nonce[:]); err != nil {
+		return ErrRandomNonce
+	}
+	return nil
+}
+
 // Build a valid packet header block.
 func (w *Worker) buildHeader(packetLength int) headerBlock {
 	h := headerBlock(make([]byte, headerSize))
@@ -215,7 +246,7 @@ func (w *Worker) buildHeader(packetLength int) headerBlock {
 	h.SetCipher(w.conf.Cipher)
 	h.SetLen(packetLength)
 	h.SetSequenceNumber(w.seq)
-	h.SetNonce(w.conf.nonce)
+	h.SetNonce(w.nonce)
 	return h
 }
 
@@ -231,15 +262,35 @@ func (w *Worker) buildManifest(digest []byte) manifestBlock {
 
 // Securely expand secret key material.
 func (w *Worker) expandKey(info []byte) error {
-	f := [keySize]byte{}
-	for i := 0; i < len(f); i++ {
-		f[i] = 0xff
-	}
 	h := hkdf.New(sha3.New256, w.conf.Key, make([]byte, keySize), info)
 	buf := make([]byte, keySize)
 	if _, err := io.ReadFull(h, buf); err != nil {
-		return errors.New("failed to read HKDF key")
+		return errors.Wrap(err, "failed to read HKDF key")
 	}
-	w.conf.Key = buf[:keySize]
+	old := w.conf.Key
+	w.conf.Key = buf
+	wipeBytes(old)
+	return nil
+}
+
+// Securely removes the contents of the provided buffer.
+func wipeBytes(b []byte) {
+	for i := range b {
+		b[i] = 0
+	}
+}
+
+// Writes the complete buffer to the provided writer, handling short writes.
+func writeFull(w io.Writer, b []byte) error {
+	for len(b) > 0 {
+		n, err := w.Write(b)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return io.ErrShortWrite
+		}
+		b = b[n:]
+	}
 	return nil
 }

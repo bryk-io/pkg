@@ -3,6 +3,7 @@
 package x25519
 
 import (
+	"go.bryk.io/pkg/errors"
 	c "golang.org/x/crypto/curve25519"
 )
 
@@ -22,11 +23,23 @@ func (k *KeyPair) PrivateKey() []byte {
 
 // Destroy will safely release the allocated mlock/VirtualLock memory
 func (k *KeyPair) Destroy() {
+	wipeBytes(k.private)
 	k.private = nil
+}
+
+// Securely removes the contents of the provided buffer.
+func wipeBytes(b []byte) {
+	for i := range b {
+		b[i] = 0
+	}
 }
 
 // Setup a key pair instance from the provided private key bytes
 func fromPrivateKey(priv []byte, adjust bool) (*KeyPair, error) {
+	if len(priv) != 32 {
+		return nil, errors.New("private key must be 32 bytes")
+	}
+
 	// Adjust private key value
 	// https://cr.yp.to/ecdh.html
 	if adjust {
@@ -40,10 +53,11 @@ func fromPrivateKey(priv []byte, adjust bool) (*KeyPair, error) {
 	publicKey := [32]byte{}
 	copy(privateKey[:], priv)
 	c.ScalarBaseMult(&publicKey, &privateKey)
+	wipeBytes(privateKey[:])
 
 	// Clean and return key pair instance
 	return &KeyPair{
 		public:  publicKey,
-		private: priv,
+		private: append([]byte(nil), priv...),
 	}, nil
 }

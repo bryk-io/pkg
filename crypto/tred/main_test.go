@@ -3,12 +3,13 @@ package tred
 import (
 	"bytes"
 	"crypto/rand"
+	"io"
 	mr "math/rand"
-	"strings"
 	"sync"
 	"testing"
 
 	tdd "github.com/stretchr/testify/assert"
+	"go.bryk.io/pkg/errors"
 	"go.uber.org/goleak"
 )
 
@@ -26,14 +27,14 @@ func TestConfig(t *testing.T) {
 	conf.Cipher = 0x03
 	err := conf.Validate()
 	assert.NotNil(err, "invalid configuration")
-	assert.True(strings.Contains(err.Error(), ErrUnsupportedCipher), "invalid error")
+	assert.True(errors.Is(err, ErrUnsupportedCipher), "invalid error")
 
 	// Invalid protocol version
 	conf.Version = 0x11
 	conf.Cipher = CHACHA20
 	err = conf.Validate()
 	assert.NotNil(err, "invalid configuration")
-	assert.True(strings.Contains(err.Error(), ErrUnsupportedVersion), "invalid error")
+	assert.True(errors.Is(err, ErrUnsupportedVersion), "invalid error")
 
 	// No key provided
 	c2 := &Config{
@@ -42,12 +43,13 @@ func TestConfig(t *testing.T) {
 	}
 	err = c2.Validate()
 	assert.NotNil(err, "invalid configuration")
-	assert.True(strings.Contains(err.Error(), ErrNoKey), "invalid error")
+	assert.True(errors.Is(err, ErrNoKey), "invalid error")
 
 	// Start a valid worker
 	conf.Version = Version10
 	conf.Cipher = AES
 	w, _ := NewWorker(conf)
+	defer w.Destroy()
 
 	// Key expand
 	assert.NotEqual(key, w.conf.Key, "failed to expand key material")
@@ -70,6 +72,7 @@ func TestManifest(t *testing.T) {
 	rand.Read(key[:])
 	conf, _ := DefaultConfig(key[:])
 	w, _ := NewWorker(conf)
+	defer w.Destroy()
 
 	fakeDigest := [32]byte{}
 	rand.Read(fakeDigest[:])
@@ -93,6 +96,7 @@ func TestChaCha(t *testing.T) {
 	conf, _ := DefaultConfig(key[:])
 	conf.Cipher = CHACHA20
 	w, _ := NewWorker(conf)
+	defer w.Destroy()
 
 	// Get random original content as a byte array
 	originalContent := make([]byte, 1024*1024)
@@ -118,6 +122,7 @@ func TestAES(t *testing.T) {
 	rand.Read(key[:])
 	conf, _ := DefaultConfig(key[:])
 	w, _ := NewWorker(conf)
+	defer w.Destroy()
 
 	// Get random original content as a byte array
 	originalContent := make([]byte, 1024)
@@ -142,6 +147,7 @@ func TestConcurrency(t *testing.T) {
 	rand.Read(key[:])
 	conf, _ := DefaultConfig(key[:])
 	w, _ := NewWorker(conf)
+	defer w.Destroy()
 
 	// Get pool of random data streams
 	pool := mr.Intn(50)
@@ -162,6 +168,82 @@ func TestConcurrency(t *testing.T) {
 		}(v)
 	}
 	wg.Wait()
+}
+
+func TestNoncePerRun(t *testing.T) {
+	assert := tdd.New(t)
+	key := [32]byte{}
+	rand.Read(key[:])
+	conf, _ := DefaultConfig(key[:])
+	w, _ := NewWorker(conf)
+	defer w.Destroy()
+
+	encrypt := func() []byte {
+		out := bytes.NewBuffer([]byte{})
+		_, err := w.Encrypt(bytes.NewReader([]byte("hello world")), out)
+		assert.Nil(err, "encrypt error")
+		return out.Bytes()
+	}
+
+	// Every encryption round must use a fresh nonce.
+	a := header(encrypt())
+	b := header(encrypt())
+	assert.NotEqual(a[8:], b[8:], "nonce must differ between encryption rounds")
+}
+
+// shortReader limits each Read call to a small number of bytes.
+type shortReader struct {
+	r io.Reader
+	n int
+}
+
+func (s *shortReader) Read(p []byte) (int, error) {
+	if len(p) > s.n {
+		p = p[:s.n]
+	}
+	return s.r.Read(p)
+}
+
+// eofReader delivers data in full-size chunks and returns io.EOF together
+// with the remaining bytes on the final read.
+type eofReader struct {
+	data []byte
+	off  int
+}
+
+func (r *eofReader) Read(p []byte) (int, error) {
+	if r.off >= len(r.data) {
+		return 0, io.EOF
+	}
+	n := copy(p, r.data[r.off:])
+	r.off += n
+	if r.off >= len(r.data) {
+		return n, io.EOF
+	}
+	return n, nil
+}
+
+func TestReaderEdgeCases(t *testing.T) {
+	assert := tdd.New(t)
+	content := make([]byte, 1024*1024)
+	rand.Read(content)
+
+	key := [32]byte{}
+	rand.Read(key[:])
+	conf, _ := DefaultConfig(key[:])
+	w, _ := NewWorker(conf)
+	defer w.Destroy()
+
+	// Encrypt from a reader that returns data together with io.EOF.
+	encrypted := bytes.NewBuffer([]byte{})
+	_, err := w.Encrypt(&eofReader{data: content}, encrypted)
+	assert.Nil(err, "encrypt error")
+
+	// Decrypt through a reader that only delivers short reads.
+	decrypted := bytes.NewBuffer([]byte{})
+	_, err = w.Decrypt(&shortReader{r: bytes.NewReader(encrypted.Bytes()), n: 137}, decrypted)
+	assert.Nil(err, "decrypt error")
+	assert.Equal(content, decrypted.Bytes(), "bad decrypt result")
 }
 
 func FuzzInput(f *testing.F) {
@@ -225,11 +307,10 @@ func BenchmarkWorker_EncryptChaCha(b *testing.B) {
 	content := make([]byte, 1024*1024)
 	rand.Read(content)
 
-	input := bytes.NewReader(content)
 	output := bytes.NewBuffer([]byte{})
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _ = w.Encrypt(input, output)
+		_, _ = w.Encrypt(bytes.NewReader(content), output)
 	}
 }
 
@@ -245,11 +326,10 @@ func BenchmarkWorker_EncryptAES(b *testing.B) {
 	content := make([]byte, 1024*1024)
 	rand.Read(content)
 
-	input := bytes.NewReader(content)
 	output := bytes.NewBuffer([]byte{})
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _ = w.Encrypt(input, output)
+		_, _ = w.Encrypt(bytes.NewReader(content), output)
 	}
 }
 
@@ -274,7 +354,7 @@ func BenchmarkWorker_DecryptChaCha(b *testing.B) {
 	// Measure decrypt time
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _ = w.Decrypt(ciphertext, output)
+		_, _ = w.Decrypt(bytes.NewReader(ciphertext.Bytes()), output)
 	}
 }
 
@@ -299,7 +379,7 @@ func BenchmarkWorker_DecryptAES(b *testing.B) {
 	// Measure decrypt time
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, _ = w.Decrypt(ciphertext, output)
+		_, _ = w.Decrypt(bytes.NewReader(ciphertext.Bytes()), output)
 	}
 }
 

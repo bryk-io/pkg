@@ -2,6 +2,7 @@ package x25519
 
 import (
 	"bytes"
+	"encoding/pem"
 	"testing"
 
 	tdd "github.com/stretchr/testify/assert"
@@ -50,6 +51,48 @@ func TestMarshal(t *testing.T) {
 
 	k.Destroy()
 	k2.Destroy()
+}
+
+func TestUnmarshalInvalid(t *testing.T) {
+	assert := tdd.New(t)
+
+	// Non-PEM content must return an error instead of panicking.
+	kp, err := Unmarshal([]byte("this is not PEM data"))
+	assert.Nil(kp, "expected no key pair on invalid data")
+	assert.NotNil(err, "expected error on invalid data")
+
+	// PEM content with an unexpected block type must be rejected.
+	bl := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: make([]byte, 32),
+	}
+	kp, err = Unmarshal(pem.EncodeToMemory(bl))
+	assert.Nil(kp, "expected no key pair on invalid type")
+	assert.NotNil(err, "expected error on invalid type")
+}
+
+func TestDHWithKDF(t *testing.T) {
+	assert := tdd.New(t)
+	k1, _ := New()
+	k2, _ := New()
+	defer k1.Destroy()
+	defer k2.Destroy()
+
+	s1, err := k1.WithKDF(k2.PublicKey(), 32, nil)
+	assert.Nil(err, "kdf error")
+	s2, err := k2.WithKDF(k1.PublicKey(), 32, nil)
+	assert.Nil(err, "kdf error")
+	assert.Equal(s1, s2, "bad diffie-hellman result")
+
+	// The raw DH output must agree with the KDF expansion on both sides.
+	raw := k1.DH(k2.PublicKey())
+	assert.NotNil(raw, "raw dh failed")
+	assert.NotEqual(s1, raw, "kdf output must differ from the raw secret")
+
+	// Different context information must derive different keys.
+	s3, err := k1.WithKDF(k2.PublicKey(), 32, []byte("other-context"))
+	assert.Nil(err, "kdf error")
+	assert.NotEqual(s1, s3, "info must change the derived key")
 }
 
 func TestDestroy(t *testing.T) {

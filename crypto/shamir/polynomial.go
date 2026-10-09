@@ -2,8 +2,12 @@ package shamir
 
 import (
 	"crypto/rand"
-	"crypto/subtle"
+
+	"go.bryk.io/pkg/errors"
 )
+
+// irreducible polynomial used to reduce multiplication results in GF(2^8).
+const gfPoly = 0x1b
 
 // Represents a polynomial of arbitrary degree.
 type polynomial struct {
@@ -48,7 +52,7 @@ func makePolynomial(intercept, degree uint8) (polynomial, error) {
 
 // Rakes N sample points and returns the value at a given x using a
 // lagrange interpolation.
-func interpolatePolynomial(xSamples, ySamples []uint8, x uint8) uint8 {
+func interpolatePolynomial(xSamples, ySamples []uint8, x uint8) (uint8, error) {
 	limit := len(xSamples)
 	var result, basis uint8
 	for i := 0; i < limit; i++ {
@@ -59,73 +63,65 @@ func interpolatePolynomial(xSamples, ySamples []uint8, x uint8) uint8 {
 			}
 			num := add(x, xSamples[j])
 			denominator := add(xSamples[i], xSamples[j])
-			term := div(num, denominator)
+			term, err := div(num, denominator)
+			if err != nil {
+				return 0, err
+			}
 			basis = multiply(basis, term)
 		}
 		group := multiply(ySamples[i], basis)
 		result = add(result, group)
 	}
-	return result
+	return result, nil
 }
 
-// Divides two numbers in GF(2^8).
-func div(a, b uint8) uint8 {
+// Divides two numbers in GF(2^8). Returns an error if b is zero.
+func div(a, b uint8) (uint8, error) {
 	if b == 0 {
-		// leaks some timing information but we don't care anyways as this
-		// should never happen, hence the panic
-		panic("divide by zero")
+		return 0, errors.New("divide by zero")
 	}
-
-	var goodVal, zero uint8
-	logA := logTable[a]
-	logB := logTable[b]
-	diff := (int(logA) - int(logB)) % 255
-	if diff < 0 {
-		diff += 255
+	inv, err := inverse(b)
+	if err != nil {
+		return 0, err
 	}
-	ret := expTable[diff]
-
-	// Ensure we return zero if a is zero but aren't subject to timing attacks
-	goodVal = ret
-	if subtle.ConstantTimeByteEq(a, 0) == 1 {
-		ret = zero
-	} else {
-		ret = goodVal
-	}
-	return ret
+	return multiply(a, inv), nil
 }
 
-// Multiplies two numbers in GF(2^8).
+// Returns the multiplicative inverse of b in GF(2^8), i.e. b^(2^8-2).
+// The exponent is a constant, so the control flow does not depend on the
+// value of b; together with the constant-time multiply this avoids leaking
+// information about secret inputs through branches or memory access patterns.
+func inverse(b uint8) (uint8, error) {
+	if b == 0 {
+		return 0, errors.New("cannot invert zero")
+	}
+	result := uint8(1)
+	base := b
+	// 254 = 0b11111110: square-and-multiply over the fixed exponent.
+	for i := 0; i < 8; i++ {
+		if 254&(1<<i) != 0 {
+			result = multiply(result, base)
+		}
+		base = multiply(base, base)
+	}
+	return result, nil
+}
+
+// Multiplies two numbers in GF(2^8). Runs in constant time with respect to
+// the inputs: the number of iterations is fixed and there are no branches or
+// memory accesses depending on the values of a or b.
 func multiply(a, b uint8) (out uint8) {
-	var goodVal, zero uint8
-	logA := logTable[a]
-	logB := logTable[b]
-	sum := (int(logA) + int(logB)) % 255
-	ret := expTable[sum]
+	for i := 0; i < 8; i++ {
+		// Select a when the current bit of b is set, without branching.
+		mask := uint8(-int8(b & 1))
+		out ^= a & mask
 
-	// Ensure we return zero if either a or b are zero but aren't subject to
-	// timing attacks
-	goodVal = ret
-
-	if subtle.ConstantTimeByteEq(a, 0) == 1 {
-		ret = zero
-	} else {
-		ret = goodVal
+		// Shift a and reduce with the irreducible polynomial when the
+		// most significant bit was set, without branching.
+		a = a<<1 ^ uint8(-int8(a>>7))&gfPoly
+		b >>= 1
 	}
-
-	if subtle.ConstantTimeByteEq(b, 0) == 1 {
-		ret = zero
-	} else {
-		// This operation does not do anything logically useful. It
-		// only ensures a constant number of assignments to thwart
-		// timing attacks.
-		// goodVal = zero
-
-		// The original proposal is detected as an ineffective assignment, this way
-		// should keep the desired effects and keep the compiler happy
-		_ = zero
-	}
-	return ret
+	return out
 }
 
 // Combines two numbers in GF(2^8), can also be used for subtraction since

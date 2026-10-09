@@ -4,6 +4,7 @@ package x25519
 
 import (
 	"github.com/awnumar/memguard"
+	"go.bryk.io/pkg/errors"
 	c "golang.org/x/crypto/curve25519"
 )
 
@@ -33,8 +34,17 @@ func (k *KeyPair) Destroy() {
 	k.lb = nil
 }
 
+// Securely removes the contents of the provided buffer.
+func wipeBytes(b []byte) {
+	memguard.WipeBytes(b)
+}
+
 // Setup a key pair instance from the provided private key bytes.
 func fromPrivateKey(priv []byte, adjust bool) (*KeyPair, error) {
+	if len(priv) != 32 {
+		return nil, errors.New("private key must be 32 bytes")
+	}
+
 	// Adjust private key value
 	// https://cr.yp.to/ecdh.html
 	if adjust {
@@ -47,9 +57,11 @@ func fromPrivateKey(priv []byte, adjust bool) (*KeyPair, error) {
 	privateKey := [32]byte{}
 	publicKey := [32]byte{}
 	copy(privateKey[:], priv)
-	if pb, err := c.X25519(privateKey[:], c.Basepoint); err == nil {
-		copy(publicKey[:], pb)
+	pb, err := c.X25519(privateKey[:], c.Basepoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to derive public key")
 	}
+	copy(publicKey[:], pb)
 
 	// Clean and return key pair instance
 	memguard.ScrambleBytes(privateKey[:])

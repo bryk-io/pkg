@@ -1,6 +1,7 @@
 package ed25519
 
 import (
+	"encoding/pem"
 	"fmt"
 	"testing"
 
@@ -63,10 +64,39 @@ func TestDestroy(t *testing.T) {
 	assert := tdd.New(t)
 	ed, _ := New()
 	ed.Destroy()
-	assert.Empty(ed.priv, "failed to destroy locked memory buffer")
+	assert.Nil(ed.lb, "failed to destroy locked memory buffer")
 
 	// This time lb is no longer initialized but runs ok
 	ed.Destroy()
+}
+
+func TestUnmarshalInvalid(t *testing.T) {
+	assert := tdd.New(t)
+
+	// Non-PEM content must return an error instead of panicking.
+	kp, err := Unmarshal([]byte("this is not PEM data"))
+	assert.Nil(kp, "expected no key pair on invalid data")
+	assert.NotNil(err, "expected error on invalid data")
+
+	// PEM content with an unexpected block type must be rejected.
+	bl := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: make([]byte, 64),
+	}
+	kp, err = Unmarshal(pem.EncodeToMemory(bl))
+	assert.Nil(kp, "expected no key pair on invalid type")
+	assert.NotNil(err, "expected error on invalid type")
+}
+
+func TestToX25519Alignment(t *testing.T) {
+	assert := tdd.New(t)
+	k, _ := New()
+	defer k.Destroy()
+
+	// The X25519 key derived by ToX25519 must match the birational-map
+	// conversion of the Ed25519 public key.
+	conv := k.ToX25519()
+	assert.Equal(conv[:], ToCurve25519(k.PublicKey()), "ToX25519 must match ToCurve25519")
 }
 
 func TestRestore(t *testing.T) {

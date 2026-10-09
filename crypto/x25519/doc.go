@@ -43,5 +43,15 @@ generate a shared secret with a provided public key.
 	if !bytes.Equal(s1, s2) {
 		panic("failed to generate valid secret")
 	}
+
+The 'DH' method returns the raw X25519 output, which must be passed through a key
+derivation function before being used as key material. Use the 'DHWithKDF' method to
+derive a cryptographically usable key of the desired size directly.
+
+	// Generate a 32-byte key using HKDF
+	key, err := alice.WithKDF(bob.PublicKey(), 32, []byte("shared-key-context"))
+	if err != nil {
+		panic(err)
+	}
 */
 package x25519
