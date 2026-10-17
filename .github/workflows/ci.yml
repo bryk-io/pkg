@@ -29,7 +29,7 @@ jobs:
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -41,7 +41,7 @@ jobs:
 
       # Go module cache for faster subsequent builds
       - name: Go module cache
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -81,7 +81,7 @@ jobs:
       # Can be excluded if the commit message contains: [skip scan-secrets]
       # https://github.com/marketplace/actions/trufflehog-oss
       - name: Scan for leaked secrets
-        uses: trufflesecurity/trufflehog@b2b0a92070f206ab7b5a1105d82a7f2f48d92341 # v3.99.0
+        uses: trufflesecurity/trufflehog@e76dff8a7e57d6df0c60ad8cbf5d5cba505a8fc9 # v3.99.2
         if: ${{ !contains(env.commit_msg, '[skip scan-secrets]') }}
         with:
           base: "" # scan entire branch
@@ -100,7 +100,7 @@ jobs:
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -157,7 +157,7 @@ jobs:
     steps:
       # Harden workflow runner
       - name: Harden workflow runner (audit all outbound calls)
-        uses: step-security/harden-runner@351661ca32ac09a36dc5ee2d536e3128f2a3c8ed # v2.22.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           egress-policy: audit
 
@@ -169,7 +169,7 @@ jobs:
 
       # Go module cache for faster subsequent builds
       - name: Go module cache
-        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -194,7 +194,7 @@ jobs:
       - name: Static analysis
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.13
+          version: v2.15
 
       # Run unit tests
       - name: Test
