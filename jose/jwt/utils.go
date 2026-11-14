@@ -3,7 +3,7 @@ package jwt
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"strings"
 
@@ -57,7 +57,7 @@ func verify(token string, key jwk.Key) error {
 
 	// Verify signature
 	segments := strings.Split(token, ".")
-	if !key.Verify(hm, []byte(fmt.Sprintf("%s.%s", segments[0], segments[1])), t.sg) {
+	if !key.Verify(hm, fmt.Appendf(nil, "%s.%s", segments[0], segments[1]), t.sg) {
 		return errors.New("invalid signature")
 	}
 
@@ -67,11 +67,11 @@ func verify(token string, key jwk.Key) error {
 
 // Encode the provided element using the standard base64 url-encoding method as
 // defined in RFC-4648.
-func encode(el interface{}, toJSON bool) ([]byte, error) {
+func encode(el any, toJSON bool) ([]byte, error) {
 	var err error
 	data, _ := el.([]byte)
 	if toJSON {
-		data, err = json.Marshal(el)
+		data, err = json.Marshal(el, json.Deterministic(true))
 		if err != nil {
 			return nil, err
 		}
@@ -80,15 +80,15 @@ func encode(el interface{}, toJSON bool) ([]byte, error) {
 }
 
 // Flatten the provided items into a single map structure.
-func merge(item ...interface{}) (map[string]interface{}, error) {
-	res := make(map[string]interface{})
+func merge(item ...any) (map[string]any, error) {
+	res := make(map[string]any)
 	for _, el := range item {
 		// Re-encode element into a map structure
 		b, err := json.Marshal(el)
 		if err != nil {
 			return nil, errors.New("failed to encode item")
 		}
-		m := make(map[string]interface{})
+		m := make(map[string]any)
 		if err := json.Unmarshal(b, &m); err != nil {
 			return nil, errors.New("failed to re-encode item")
 		}

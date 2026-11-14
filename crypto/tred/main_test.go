@@ -10,11 +10,11 @@ import (
 
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/errors"
-	"go.uber.org/goleak"
+	"go.bryk.io/pkg/internal/leaktest"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	leaktest.VerifyTestMain(m)
 }
 
 func TestConfig(t *testing.T) {
@@ -152,7 +152,7 @@ func TestConcurrency(t *testing.T) {
 	// Get pool of random data streams
 	pool := mr.Intn(50)
 	var stuff [][]byte
-	for i := 0; i < pool; i++ {
+	for i := range pool {
 		stuff = append(stuff, make([]byte, (1024*1024)*mr.Intn(9)+1))
 		rand.Read(stuff[i])
 	}

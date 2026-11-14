@@ -3,6 +3,7 @@ package shell
 import (
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -215,10 +216,8 @@ func (sh *Instance) Start() {
 		}
 
 		// Look for exit commands
-		for _, ec := range exitCommands {
-			if line == ec {
-				return
-			}
+		if slices.Contains(exitCommands, line) {
+			return
 		}
 
 		// Look for help commands
@@ -287,11 +286,9 @@ func (sh *Instance) updateAutoComplete() {
 
 // Inspect a user line and determine if help is being requested.
 func (sh *Instance) shouldShowHelp(line string) (ok bool) {
-	for _, ec := range sh.helpCommands {
-		if line == ec {
-			ok = true
-			return
-		}
+	if slices.Contains(sh.helpCommands, line) {
+		ok = true
+		return
 	}
 	return
 }

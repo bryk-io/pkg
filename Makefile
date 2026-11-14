@@ -118,7 +118,9 @@ proto-build:
 
 	# "protoc-gen-openapiv2" don't have runtime dependencies but the generated
 	# code includes the package by the default =/
-	@-sed -i.bak '/protoc-gen-openapiv2/d' proto/$(pkg)/*.pb.go
+	# remove the import statement; newer protoc-gen-go releases may also
+	# include this path within the raw descriptor string literal.
+	@-sed -i.bak '/^[[:space:]]*_ ".*protoc-gen-openapiv2.*"$$/d' proto/$(pkg)/*.pb.go
 
 	# Remove in-place edit backup files
 	@-rm proto/$(pkg)/*.bak

@@ -1,7 +1,8 @@
 package jwk
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
+	"slices"
 
 	"go.bryk.io/pkg/errors"
 )
@@ -221,12 +222,7 @@ func (s *Set) SelectByOperation(op string) []Record {
 				return true
 			}
 		}
-		for _, keyOp := range r.KeyOps {
-			if keyOp == op {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(r.KeyOps, op)
 	})
 }
 

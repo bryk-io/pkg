@@ -3,6 +3,8 @@ package errors
 import (
 	"fmt"
 	"io"
+	"maps"
+	"strings"
 	"sync"
 	"time"
 )
@@ -10,14 +12,14 @@ import (
 // Error is an error with an attached stacktrace. It can be used
 // wherever the builtin error interface is expected.
 type Error struct {
-	ts     int64                  // UNIX timestamp (in milliseconds)
-	err    error                  // root error value
-	prev   error                  // previous error in the chain, present only on wrapped errors
-	prefix string                 // prefix value when presenting error in simple textual form
-	frames []StackFrame           // error stacktrace
-	hints  []string               // additional contextual information
-	events []Event                // events associated to the error
-	tags   map[string]interface{} // additional metadata details
+	ts     int64          // UNIX timestamp (in milliseconds)
+	err    error          // root error value
+	prev   error          // previous error in the chain, present only on wrapped errors
+	prefix string         // prefix value when presenting error in simple textual form
+	frames []StackFrame   // error stacktrace
+	hints  []string       // additional contextual information
+	events []Event        // events associated to the error
+	tags   map[string]any // additional metadata details
 	mu     sync.Mutex
 }
 
@@ -34,7 +36,7 @@ type Event struct {
 	Stamp int64 `json:"stamp,omitempty"`
 
 	// Additional data associated with an event.
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
 // Error returns the underlying error's message.
@@ -110,11 +112,11 @@ func (e *Error) AddEvent(ev Event) {
 
 // SetTag registers a specific key/value pair on the error instance; replacing
 // any previously set values under the same key.
-func (e *Error) SetTag(key string, value interface{}) {
+func (e *Error) SetTag(key string, value any) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.tags == nil {
-		e.tags = make(map[string]interface{})
+		e.tags = make(map[string]any)
 	}
 	e.tags[key] = value
 }
@@ -127,17 +129,15 @@ func (e *Error) Stamp() int64 {
 // Tags provide additional context to an error in the form of arbitrary
 // key/value pairs. If no tags are set on the error instance this method
 // returns `nil`.
-func (e *Error) Tags() map[string]interface{} {
+func (e *Error) Tags() map[string]any {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.tags == nil {
 		return nil
 	}
 	// Return a copy to prevent race conditions
-	tagsCopy := make(map[string]interface{}, len(e.tags))
-	for k, v := range e.tags {
-		tagsCopy[k] = v
-	}
+	tagsCopy := make(map[string]any, len(e.tags))
+	maps.Copy(tagsCopy, e.tags)
 	return tagsCopy
 }
 
@@ -182,34 +182,35 @@ func (e *Error) Format(s fmt.State, verb rune) {
 	case 's':
 		_, _ = io.WriteString(s, e.Error())
 	case 'v':
-		str := fmt.Sprintf("%s\n", e.Error())
+		var str strings.Builder
+		fmt.Fprintf(&str, "%s\n", e.Error())
 		if s.Flag('+') {
 			for i, frame := range e.StackTrace() {
-				str += fmt.Sprintf("‹%d› %+v", i, frame)
+				fmt.Fprintf(&str, "‹%d› %+v", i, frame)
 			}
 			if len(e.hints) > 0 {
-				str += "‹hints›\n"
+				str.WriteString("‹hints›\n")
 				for _, h := range e.hints {
-					str += fmt.Sprintf("\t- %s\n", h)
+					fmt.Fprintf(&str, "\t- %s\n", h)
 				}
 			}
 			if len(e.tags) > 0 {
-				str += "‹tags›\n"
+				str.WriteString("‹tags›\n")
 				for k, v := range e.tags {
-					str += fmt.Sprintf("\t- %s=%v\n", k, v)
+					fmt.Fprintf(&str, "\t- %s=%v\n", k, v)
 				}
 			}
 			if len(e.events) > 0 {
-				str += "‹events›\n"
+				str.WriteString("‹events›\n")
 				for _, ev := range e.events {
-					str += fmt.Sprintf("\t- (%s) %s\n", ev.Kind, ev.Message)
+					fmt.Fprintf(&str, "\t- (%s) %s\n", ev.Kind, ev.Message)
 				}
 			}
 		} else {
 			for _, frame := range e.StackTrace() {
-				str += fmt.Sprintf("%v", frame)
+				fmt.Fprintf(&str, "%v", frame)
 			}
 		}
-		_, _ = io.WriteString(s, str)
+		_, _ = io.WriteString(s, str.String())
 	}
 }

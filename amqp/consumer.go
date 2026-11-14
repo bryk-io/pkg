@@ -32,7 +32,7 @@ type SubscribeOptions struct {
 	Exclusive bool `json:"exclusive" yaml:"exclusive"`
 
 	// Additional arguments.
-	Arguments map[string]interface{} `json:"arguments,omitempty" yaml:",omitempty"`
+	Arguments map[string]any `json:"arguments,omitempty" yaml:",omitempty"`
 }
 
 // Consumer instances can receive or pull messages from a broker

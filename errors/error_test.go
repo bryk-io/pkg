@@ -47,7 +47,7 @@ func TestReport(t *testing.T) {
 	e3.AddEvent(Event{
 		Kind:    "debug",
 		Message: "sample event",
-		Attributes: map[string]interface{}{
+		Attributes: map[string]any{
 			"payload": "event-value-goes-here",
 		},
 	})

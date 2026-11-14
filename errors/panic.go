@@ -20,7 +20,7 @@ func (p uncaughtPanic) Error() string {
 // native `recover()` to it from within the panicking goroutine:
 //
 //	recovered := FromRecover(recover())
-func FromRecover(src interface{}) *Error {
+func FromRecover(src any) *Error {
 	if src == nil {
 		return nil
 	}
@@ -42,8 +42,8 @@ func ParsePanic(text string) (*Error, error) {
 		line := lines[i]
 		switch state {
 		case "start":
-			if strings.HasPrefix(line, "panic: ") {
-				message = strings.TrimPrefix(line, "panic: ")
+			if after, ok := strings.CutPrefix(line, "panic: "); ok {
+				message = after
 				state = "seek"
 			} else {
 				return nil, Errorf("panic-parser: invalid line (no prefix): %s", line)
@@ -58,8 +58,8 @@ func ParsePanic(text string) (*Error, error) {
 				break
 			}
 			createdBy := false
-			if strings.HasPrefix(line, "created by ") {
-				line = strings.TrimPrefix(line, "created by ")
+			if after, ok := strings.CutPrefix(line, "created by "); ok {
+				line = after
 				createdBy = true
 			}
 

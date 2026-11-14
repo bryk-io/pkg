@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	tdd "github.com/stretchr/testify/assert"
-	"go.uber.org/goleak"
+	"go.bryk.io/pkg/internal/leaktest"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	leaktest.VerifyTestMain(m)
 }
 
 func TestSplit(t *testing.T) {
@@ -88,12 +88,12 @@ func TestCombine(t *testing.T) {
 	assert.Nil(err, "split error")
 
 	// There is 5*4*3 possible choices, brute force them all
-	for i := 0; i < 5; i++ {
-		for j := 0; j < 5; j++ {
+	for i := range 5 {
+		for j := range 5 {
 			if j == i {
 				continue
 			}
-			for k := 0; k < 5; k++ {
+			for k := range 5 {
 				if k == i || k == j {
 					continue
 				}

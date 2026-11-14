@@ -2,8 +2,7 @@ package amqp
 
 import (
 	"time"
-
-	"github.com/google/uuid"
+	"uuid"
 )
 
 // Producer instances simplify the process of generating multiple message

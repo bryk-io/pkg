@@ -87,7 +87,7 @@ func (g *Generator) Issue(keyID string, params *TokenParameters) (*Token, error)
 
 	// Payload
 	now := time.Now()
-	var pl interface{} = RegisteredClaims{
+	var pl any = RegisteredClaims{
 		Issuer:         g.name,
 		IssuedAt:       now.Unix(),
 		ExpirationTime: now.Add(params.exp).Unix(),

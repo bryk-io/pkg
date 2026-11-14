@@ -56,7 +56,7 @@ func TestPolynomial_Eval(t *testing.T) {
 
 func TestInterpolate_Rand(t *testing.T) {
 	assert := tdd.New(t)
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		p, err := makePolynomial(uint8(i), 2)
 		assert.Nil(err, "failed to make polynomial")
 

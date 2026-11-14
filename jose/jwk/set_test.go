@@ -1,7 +1,7 @@
 package jwk
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"testing"
 
 	tdd "github.com/stretchr/testify/assert"

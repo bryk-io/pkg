@@ -9,12 +9,12 @@ import (
 	"time"
 
 	tdd "github.com/stretchr/testify/assert"
+	"go.bryk.io/pkg/internal/leaktest"
 	xlog "go.bryk.io/pkg/log"
 	"go.bryk.io/pkg/net/http"
 	mwGzip "go.bryk.io/pkg/net/middleware/gzip"
 	mwLogging "go.bryk.io/pkg/net/middleware/logging"
 	mwRecover "go.bryk.io/pkg/net/middleware/recovery"
-	"go.uber.org/goleak"
 )
 
 type customEventData struct {
@@ -73,7 +73,7 @@ func sampleStreamSetup(req *lib.Request) *Subscription {
 }
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	leaktest.VerifyTestMain(m)
 }
 
 func TestHandler(t *testing.T) {

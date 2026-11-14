@@ -69,7 +69,7 @@ func (ep *eventProcessor) process(event *sdk.Event, _ *sdk.EventHint) *sdk.Event
 
 func (ep *eventProcessor) addContext(frames []sdk.Frame) []sdk.Frame {
 	var output []sdk.Frame
-	for i := 0; i < len(frames); i++ {
+	for i := range frames {
 		fr := frames[i]
 
 		// Ignore frames internal to the SDK

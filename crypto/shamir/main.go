@@ -65,7 +65,7 @@ func Split(secret []byte, parts, threshold int) ([][]byte, error) {
 		// Generate a `parts` number of (x,y) pairs
 		// We cheat by encoding the x value once as the final index,
 		// so that it only needs to be stored once.
-		for i := 0; i < parts; i++ {
+		for i := range parts {
 			x := uint8(xCoordinates[i]) + 1
 			y := p.evaluate(x)
 			out[i][idx] = y

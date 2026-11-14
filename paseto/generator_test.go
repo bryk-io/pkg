@@ -4,7 +4,8 @@ import (
 	"crypto/elliptic"
 	"crypto/x509"
 	"encoding/hex"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -128,7 +129,7 @@ func runTestFile(t *testing.T, tf *testFile, gen *Generator) {
 				}
 
 				// Decode payload
-				body := map[string]interface{}{}
+				body := map[string]any{}
 				err = token.DecodePayload(&body)
 				assert.Nil(err, "decode payload")
 				assert.NotEmpty(body["data"])
@@ -139,7 +140,7 @@ func runTestFile(t *testing.T, tf *testFile, gen *Generator) {
 
 				// Decode footer
 				if strings.Contains(vt.Footer, "{") {
-					footer := map[string]interface{}{}
+					footer := map[string]any{}
 					err = token.DecodeFooter(&footer)
 					assert.Nil(err, "decode footer")
 					assert.NotEmpty(footer["kid"])
@@ -471,7 +472,7 @@ func TestExport(t *testing.T) {
 			k1, _ := NewKey(cryptoutils.RandomID(), tt.proto)
 			rec, err := k1.Export()
 			assert.Nil(err, "export")
-			js, _ := json.MarshalIndent(rec, "", "  ")
+			js, _ := json.Marshal(rec, jsontext.WithIndent("  "))
 			t.Logf("\n%s\n", js)
 
 			if tt.equal {
@@ -553,8 +554,8 @@ func ExampleNewGenerator() {
 	fmt.Printf("footer: %s\n", token.Footer())
 
 	// You can easily decode contents in the payload and footer to any generic or custom type.
-	ftr := customFooter{}           // Custom type
-	pld := map[string]interface{}{} // Generic map; registered claims will also be included
+	ftr := customFooter{}   // Custom type
+	pld := map[string]any{} // Generic map; registered claims will also be included
 	_ = token.DecodeFooter(&ftr)
 	_ = token.DecodePayload(&pld)
 	fmt.Printf("custom footer value: %s\n", ftr.Dimension)

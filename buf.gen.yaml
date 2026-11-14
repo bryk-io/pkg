@@ -14,9 +14,7 @@ managed:
     - file_option: go_package_prefix
       module: buf.build/grpc-ecosystem/grpc-gateway
 plugins:
-  # ! with >=v1.36.4 the pb.go files generated break when using the
-  # ! protoc_gen_openapiv2 annotations.
-  - remote: buf.build/protocolbuffers/go:v1.36.3
+  - remote: buf.build/protocolbuffers/go:v1.36.12
     out: .
     opt:
       - paths=source_relative
@@ -25,11 +23,11 @@ plugins:
     opt:
       - paths=source_relative
       - require_unimplemented_servers=true
-  - remote: buf.build/grpc-ecosystem/openapiv2:v2.32.0
+  - remote: buf.build/grpc-ecosystem/openapiv2:v2.33.0
     out: .
     opt:
       - logtostderr=true
-  - remote: buf.build/grpc-ecosystem/gateway:v2.32.0
+  - remote: buf.build/grpc-ecosystem/gateway:v2.33.0
     out: .
     opt:
       - paths=source_relative

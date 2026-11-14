@@ -11,18 +11,18 @@ import (
 // to keep a pointer to active connections. Is the client's
 // responsibility to put back connections when no longer active.
 type pool struct {
-	new    func() (interface{}, error) // constructor method
-	free   func(el interface{}) error  // dispose method
-	idle   []interface{}               // items available for use
-	active int                         // number of items in-use
-	limit  int                         // max number of items
-	mtx    sync.Mutex                  // concurrent access lock
+	new    func() (any, error) // constructor method
+	free   func(el any) error  // dispose method
+	idle   []any               // items available for use
+	active int                 // number of items in-use
+	limit  int                 // max number of items
+	mtx    sync.Mutex          // concurrent access lock
 }
 
 // Get an idle element from the pool. If there's no available
 // element a new one will be created. If the pool capacity is
 // exceeded an error will be returned.
-func (p *pool) Get() (interface{}, error) {
+func (p *pool) Get() (any, error) {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
@@ -48,7 +48,7 @@ func (p *pool) Get() (interface{}, error) {
 }
 
 // Put elements back in the pool.
-func (p *pool) Put(el ...interface{}) {
+func (p *pool) Put(el ...any) {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 	for _, e := range el {
@@ -78,7 +78,7 @@ func (p *pool) Drain() <-chan error {
 			}
 			p.idle[i] = nil
 		}
-		p.idle = []interface{}{}
+		p.idle = []any{}
 		close(sink)
 	}()
 	return sink

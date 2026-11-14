@@ -10,8 +10,8 @@ import (
 
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/errors"
+	"go.bryk.io/pkg/internal/leaktest"
 	xlog "go.bryk.io/pkg/log"
-	"go.uber.org/goleak"
 	"gopkg.in/yaml.v3"
 )
 
@@ -222,10 +222,7 @@ func publisherEvents(ctx context.Context, pub *Publisher, opts MessageOptions) {
 }
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m,
-		goleak.IgnoreAnyFunction("net/http.(*persistConn).writeLoop"),
-		goleak.IgnoreAnyFunction("internal/poll.runtime_pollWait"),
-	)
+	leaktest.VerifyTestMain(m)
 }
 
 func TestFlows(t *testing.T) {
@@ -577,7 +574,7 @@ func TestFlows(t *testing.T) {
 
 			// Publish messages with different routing keys
 			msg := randomMessage()
-			msg.Headers = map[string]interface{}{"foo": "bar"}
+			msg.Headers = map[string]any{"foo": "bar"}
 			_ = pub.UnsafePush(msg, MessageOptions{Exchange: "sample.headers"})             // Will be delivered
 			_ = pub.UnsafePush(randomMessage(), MessageOptions{Exchange: "sample.headers"}) // Won't reach queue
 

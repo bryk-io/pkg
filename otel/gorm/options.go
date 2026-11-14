@@ -10,7 +10,7 @@ type Option func(p *plugin)
 
 // WithAttributes register additional attributes that will be used
 // when creating spans.
-func WithAttributes(attrs map[string]interface{}) Option {
+func WithAttributes(attrs map[string]any) Option {
 	return func(p *plugin) {
 		kv := otel.Attributes(attrs)
 		p.attrs = append(p.attrs, kv.Expand()...)

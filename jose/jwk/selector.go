@@ -1,5 +1,7 @@
 package jwk
 
+import "slices"
+
 // KeySelector is a function that determines if a key should be selected.
 // It returns true if the key matches the selection criteria.
 type KeySelector func(Record) bool
@@ -26,13 +28,7 @@ func CanSign() KeySelector {
 		}
 		// Check key_ops - must include "sign" or be empty
 		if len(r.KeyOps) > 0 {
-			hasSign := false
-			for _, op := range r.KeyOps {
-				if op == KeyOpSign {
-					hasSign = true
-					break
-				}
-			}
+			hasSign := slices.Contains(r.KeyOps, KeyOpSign)
 			if !hasSign {
 				return false
 			}
@@ -50,13 +46,7 @@ func CanVerify() KeySelector {
 		}
 		// Check key_ops - must include "verify" or be empty
 		if len(r.KeyOps) > 0 {
-			hasVerify := false
-			for _, op := range r.KeyOps {
-				if op == KeyOpVerify {
-					hasVerify = true
-					break
-				}
-			}
+			hasVerify := slices.Contains(r.KeyOps, KeyOpVerify)
 			if !hasVerify {
 				return false
 			}

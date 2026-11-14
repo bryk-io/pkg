@@ -12,7 +12,7 @@ import (
 
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/errors"
-	"go.uber.org/goleak"
+	"go.bryk.io/pkg/internal/leaktest"
 )
 
 type src struct {
@@ -41,7 +41,7 @@ func (s *src) MarshalBinary() ([]byte, error) {
 
 func TestSolve(t *testing.T) {
 	assert := tdd.New(t)
-	defer goleak.VerifyNone(t)
+	defer leaktest.VerifyNone(t)
 	rec := &src{value: []byte("this is the value")}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

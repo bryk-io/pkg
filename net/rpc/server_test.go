@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/prometheus/client_golang/prometheus"
@@ -859,8 +859,7 @@ func TestServer(t *testing.T) {
 		}()
 
 		// Monitor client connection
-		ctx, monitorClose := context.WithCancel(context.Background())
-		defer monitorClose()
+		ctx := t.Context()
 		monitor := MonitorClientConnection(ctx, conn, 100*time.Millisecond)
 		go func() {
 			for s := range monitor {
@@ -898,7 +897,7 @@ func TestServer(t *testing.T) {
 		}
 
 		// Custom middleware to print any metadata available in a request
-		printMetadata := func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		printMetadata := func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 			if md, ok := metadata.FromIncomingContext(ctx); !ok {
 				fmt.Println("no metadata")
 			} else {

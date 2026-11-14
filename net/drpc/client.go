@@ -52,14 +52,14 @@ func NewClient(network, address string, options ...ClientOption) (*Client, error
 	}
 	cl.cache = &pool{
 		limit: cl.capacity,
-		free: func(el interface{}) error {
+		free: func(el any) error {
 			conn, ok := el.(*drpcconn.Conn)
 			if !ok {
 				return errors.New(invalidConnectionErr)
 			}
 			return conn.Close()
 		},
-		new: func() (interface{}, error) {
+		new: func() (any, error) {
 			nc, err := cl.dial()
 			if err != nil {
 				return nil, err

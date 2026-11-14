@@ -2,7 +2,7 @@ package orm
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"reflect"
 	"sync"
 
@@ -67,7 +67,7 @@ func (m *Model) Estimate() (int64, error) {
 // speed for accuracy.
 // For more information:
 // https://docs.mongodb.com/manual/reference/method/db.collection.countDocuments/
-func (m *Model) Count(filter map[string]interface{}) (int64, error) {
+func (m *Model) Count(filter map[string]any) (int64, error) {
 	f, err := doc(filter)
 	if err != nil {
 		return 0, err
@@ -83,7 +83,7 @@ func (m *Model) Count(filter map[string]interface{}) (int64, error) {
 //	err := mod.Distinct("user_type", Filter(), &list)
 //
 // [Command documentation]: https://docs.mongodb.com/manual/reference/command/distinct/
-func (m *Model) Distinct(field string, filter map[string]interface{}, result interface{}) error {
+func (m *Model) Distinct(field string, filter map[string]any, result any) error {
 	f, err := doc(filter)
 	if err != nil {
 		return err
@@ -97,7 +97,7 @@ func (m *Model) Distinct(field string, filter map[string]interface{}, result int
 }
 
 // Insert the item in the model's underlying collection.
-func (m *Model) Insert(item interface{}) (string, error) {
+func (m *Model) Insert(item any) (string, error) {
 	res, err := m.Collection.InsertOne(m.ctx(), item)
 	if err != nil {
 		return "", err
@@ -112,7 +112,7 @@ func (m *Model) Insert(item interface{}) (string, error) {
 // Batch executes an insert command to save multiple documents into the
 // collection and return the number of successfully stored items. The
 // provided item must be a slice.
-func (m *Model) Batch(item interface{}, opts ...*options.InsertManyOptions) (int64, error) {
+func (m *Model) Batch(item any, opts ...*options.InsertManyOptions) (int64, error) {
 	// Verify input type
 	if err := checkType(item, reflect.Slice, "slice"); err != nil {
 		return 0, err
@@ -120,8 +120,8 @@ func (m *Model) Batch(item interface{}, opts ...*options.InsertManyOptions) (int
 
 	// Get source slice of items
 	src := reflect.ValueOf(item)
-	documents := make([]interface{}, src.Len())
-	for i := 0; i < len(documents); i++ {
+	documents := make([]any, src.Len())
+	for i := range documents {
 		documents[i] = src.Index(i).Interface()
 	}
 
@@ -136,7 +136,7 @@ func (m *Model) Batch(item interface{}, opts ...*options.InsertManyOptions) (int
 // Update will look for the first document that satisfies the 'filter' value
 // and apply the 'patch' to it. If no such document currently exists, it will
 // be automatically generated if 'upsert' is set to true.
-func (m *Model) Update(filter map[string]interface{}, patch interface{}, upsert bool) error {
+func (m *Model) Update(filter map[string]any, patch any, upsert bool) error {
 	// Get filter
 	f, err := doc(filter)
 	if err != nil {
@@ -153,7 +153,7 @@ func (m *Model) Update(filter map[string]interface{}, patch interface{}, upsert 
 // UpdateAll will try to apply the provided 'patch' to all the documents
 // satisfying the specified 'filter' and return the number of documents modified
 // by the operation.
-func (m *Model) UpdateAll(filter map[string]interface{}, patch interface{}) (int64, error) {
+func (m *Model) UpdateAll(filter map[string]any, patch any) (int64, error) {
 	// Get filter
 	f, err := doc(filter)
 	if err != nil {
@@ -171,7 +171,7 @@ func (m *Model) UpdateAll(filter map[string]interface{}, patch interface{}) (int
 // Delete will look for the first document that satisfies the provided 'filter'
 // value and permanently remove it. The operation does not fail if no document
 // satisfy the filter value.
-func (m *Model) Delete(filter map[string]interface{}) error {
+func (m *Model) Delete(filter map[string]any) error {
 	f, err := doc(filter)
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (m *Model) Delete(filter map[string]interface{}) error {
 
 // DeleteAll will remove any document that satisfies the provided 'filter'
 // value and return the number of documents deleted by the operation.
-func (m *Model) DeleteAll(filter map[string]interface{}) (int64, error) {
+func (m *Model) DeleteAll(filter map[string]any) (int64, error) {
 	f, err := doc(filter)
 	if err != nil {
 		return 0, err
@@ -198,7 +198,7 @@ func (m *Model) DeleteAll(filter map[string]interface{}) (int64, error) {
 // The provided 'id' value must be a MongoDB objectID hex string.
 // The returned document is automatically decoded into 'result',
 // that must be a pointer to a given struct.
-func (m *Model) FindByID(id string, result interface{}) error {
+func (m *Model) FindByID(id string, result any) error {
 	// Verify target type
 	if err := checkType(result, reflect.Pointer, "pointer"); err != nil {
 		return err
@@ -223,7 +223,7 @@ func (m *Model) FindByID(id string, result interface{}) error {
 // First looks for the first document in the collection that satisfies the
 // specified 'filter'. The returned document is automatically decoded into
 // 'result', that must be a pointer to a given struct.
-func (m *Model) First(filter map[string]interface{}, result interface{}, opts ...*options.FindOneOptions) error {
+func (m *Model) First(filter map[string]any, result any, opts ...*options.FindOneOptions) error {
 	// Verify target type
 	if err := checkType(result, reflect.Pointer, "pointer"); err != nil {
 		return err
@@ -248,7 +248,7 @@ func (m *Model) First(filter map[string]interface{}, result interface{}, opts ..
 // Find all documents in the collection that satisfy the provided 'filter'.
 // The returned documents will be automatically decoded into 'result', that
 // must be a pointer to a slice.
-func (m *Model) Find(filter map[string]interface{}, result interface{}, opts ...*options.FindOptions) error {
+func (m *Model) Find(filter map[string]any, result any, opts ...*options.FindOptions) error {
 	// Verify target type
 	if err := checkType(result, reflect.Pointer, "pointer to a slice"); err != nil {
 		return err

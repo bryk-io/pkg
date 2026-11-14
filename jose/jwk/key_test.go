@@ -5,7 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"math/big"
 	"strings"
@@ -495,8 +495,7 @@ func BenchmarkRecordValidation(b *testing.B) {
 	}
 	record := key.Export(false)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := record.Validate()
 		if err != nil {
 			b.Fatalf("record validation failed: %v", err)

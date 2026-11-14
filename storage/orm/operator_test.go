@@ -7,8 +7,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	tdd "github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readconcern"
@@ -114,7 +114,7 @@ func TestOperator(t *testing.T) {
 
 		t.Run("Batch", func(t *testing.T) {
 			list := make([]*sampleStructure, 10)
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				list[i] = notAnnotatedStruct()
 			}
 			n, err := mod.Batch(list)
@@ -161,10 +161,10 @@ func TestOperator(t *testing.T) {
 		})
 
 		t.Run("UpdateAll", func(t *testing.T) {
-			filter := map[string]interface{}{
+			filter := map[string]any{
 				"ocsp_no_check": true,
 			}
-			patch := map[string]interface{}{
+			patch := map[string]any{
 				"ocsp_no_check": false,
 			}
 			res, err := mod.UpdateAll(filter, patch)
@@ -203,7 +203,7 @@ func TestOperator(t *testing.T) {
 
 		t.Run("Batch", func(t *testing.T) {
 			list := make([]*book, 10)
-			for i := 0; i < 10; i++ {
+			for i := range 10 {
 				list[i] = annotatedStruct()
 			}
 			n, err := mod.Batch(list)
@@ -303,8 +303,8 @@ func TestOperator(t *testing.T) {
 		}()
 
 		// Run updates
-		selector := map[string]interface{}{"_id": oid}
-		for i := 0; i < 3; i++ {
+		selector := map[string]any{"_id": oid}
+		for range 3 {
 			account.addBook(annotatedStruct())
 			assert.Nil(mod.Update(selector, account, false), "update error")
 			<-time.After(1 * time.Second)
@@ -343,11 +343,11 @@ func TestOperator(t *testing.T) {
 			}
 			el := annotatedStruct()
 			el.Author = "jane doe"
-			err = mod.Update(map[string]interface{}{"author_name": "john doe"}, el, false)
+			err = mod.Update(map[string]any{"author_name": "john doe"}, el, false)
 			if err != nil {
 				return tx.Abort()
 			}
-			err = mod.Delete(map[string]interface{}{"pages": 50})
+			err = mod.Delete(map[string]any{"pages": 50})
 			if err != nil {
 				return tx.Abort()
 			}
@@ -489,10 +489,10 @@ func ExampleModel_UpdateAll() {
 
 	// Filter and patch are based on the encoded records as
 	// they appear on the database.
-	filter := map[string]interface{}{
+	filter := map[string]any{
 		"author_name": "John Dow",
 	}
-	patch := map[string]interface{}{
+	patch := map[string]any{
 		"author_name": "Jane Dow",
 	}
 

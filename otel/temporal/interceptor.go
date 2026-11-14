@@ -121,7 +121,7 @@ func (m *monitor) StartSpan(opts *interceptor.TracerStartSpanOptions) (intercept
 
 	// Set tags
 	if len(opts.Tags) > 0 {
-		tags := map[string]interface{}{}
+		tags := map[string]any{}
 		for k, v := range opts.Tags {
 			tags[k] = v
 		}

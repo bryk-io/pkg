@@ -3,6 +3,7 @@ package errors
 import (
 	"fmt"
 	"io"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -81,7 +82,7 @@ type joinedError struct {
 	frames []StackFrame
 	hints  []string
 	events []Event
-	tags   map[string]interface{}
+	tags   map[string]any
 	mu     sync.Mutex
 }
 
@@ -109,24 +110,22 @@ func (e *joinedError) Stamp() int64 {
 }
 
 // Tags returns a copy of the tags map.
-func (e *joinedError) Tags() map[string]interface{} {
+func (e *joinedError) Tags() map[string]any {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.tags == nil {
 		return nil
 	}
-	tagsCopy := make(map[string]interface{}, len(e.tags))
-	for k, v := range e.tags {
-		tagsCopy[k] = v
-	}
+	tagsCopy := make(map[string]any, len(e.tags))
+	maps.Copy(tagsCopy, e.tags)
 	return tagsCopy
 }
 
-func (e *joinedError) setTag(key string, value interface{}) {
+func (e *joinedError) setTag(key string, value any) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.tags == nil {
-		e.tags = make(map[string]interface{})
+		e.tags = make(map[string]any)
 	}
 	e.tags[key] = value
 }
@@ -175,40 +174,41 @@ func (e *joinedError) Format(s fmt.State, verb rune) {
 	case 's':
 		_, _ = io.WriteString(s, e.Error())
 	case 'v':
-		str := e.Error() + "\n"
+		var str strings.Builder
+		fmt.Fprintf(&str, "%s\n", e.Error())
 		if s.Flag('+') {
 			for i, frame := range e.StackTrace() {
-				str += fmt.Sprintf("‹%d› %+v", i, frame)
+				fmt.Fprintf(&str, "‹%d› %+v", i, frame)
 			}
 			if hints := e.Hints(); len(hints) > 0 {
-				str += "‹hints›\n"
+				str.WriteString("‹hints›\n")
 				for _, h := range hints {
-					str += fmt.Sprintf("\t- %s\n", h)
+					fmt.Fprintf(&str, "\t- %s\n", h)
 				}
 			}
 			if tags := e.Tags(); len(tags) > 0 {
-				str += "‹tags›\n"
+				str.WriteString("‹tags›\n")
 				for k, v := range tags {
-					str += fmt.Sprintf("\t- %s=%v\n", k, v)
+					fmt.Fprintf(&str, "\t- %s=%v\n", k, v)
 				}
 			}
 			if events := e.Events(); len(events) > 0 {
-				str += "‹events›\n"
+				str.WriteString("‹events›\n")
 				for _, ev := range events {
-					str += fmt.Sprintf("\t- (%s) %s\n", ev.Kind, ev.Message)
+					fmt.Fprintf(&str, "\t- (%s) %s\n", ev.Kind, ev.Message)
 				}
 			}
 			// List all wrapped errors
-			str += "‹wrapped errors›\n"
+			str.WriteString("‹wrapped errors›\n")
 			for i, err := range e.errs {
-				str += fmt.Sprintf("\t[%d] %s\n", i, err.Error())
+				fmt.Fprintf(&str, "\t[%d] %s\n", i, err.Error())
 			}
 		} else {
 			for _, frame := range e.StackTrace() {
-				str += fmt.Sprintf("%v", frame)
+				fmt.Fprintf(&str, "%v", frame)
 			}
 		}
-		_, _ = io.WriteString(s, str)
+		_, _ = io.WriteString(s, str.String())
 	}
 }
 

@@ -18,15 +18,15 @@ func (gl *logger) LogMode(glog.LogLevel) glog.Interface {
 	return gl
 }
 
-func (gl *logger) Info(_ context.Context, msg string, data ...interface{}) {
+func (gl *logger) Info(_ context.Context, msg string, data ...any) {
 	gl.ll.Infof("%s: %+v", msg, data)
 }
 
-func (gl *logger) Warn(_ context.Context, msg string, data ...interface{}) {
+func (gl *logger) Warn(_ context.Context, msg string, data ...any) {
 	gl.ll.Warningf("%s: %+v", msg, data)
 }
 
-func (gl *logger) Error(_ context.Context, msg string, data ...interface{}) {
+func (gl *logger) Error(_ context.Context, msg string, data ...any) {
 	gl.ll.Errorf("%s: %+v", msg, data)
 }
 

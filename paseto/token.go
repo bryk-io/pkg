@@ -1,7 +1,7 @@
 package paseto
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"strings"
 
 	"go.bryk.io/pkg/errors"
@@ -136,14 +136,14 @@ func (t *Token) KeyID() string {
 
 // DecodeFooter parses the content in the footer segment and stores the result
 // in the value pointed by "v".
-func (t *Token) DecodeFooter(v interface{}) error {
+func (t *Token) DecodeFooter(v any) error {
 	return json.Unmarshal(t.ftr, v)
 }
 
 // DecodePayload parses the content in the payload segment and stores the result
 // in the value pointed by "v". Encrypted tokens need to be unsealed before accessing
 // its contents.
-func (t *Token) DecodePayload(v interface{}) error {
+func (t *Token) DecodePayload(v any) error {
 	// encrypted and sealed (i.e. payload is not available)
 	if t.isEncrypted() && t.pld == nil {
 		return errors.New("token needs to be unsealed")

@@ -1,7 +1,8 @@
 package errors
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"strings"
 )
@@ -13,12 +14,12 @@ func CodecJSON(pretty bool) Codec {
 }
 
 type errReport struct {
-	Msg    string                 `json:"error,omitempty"`
-	Stamp  int64                  `json:"stamp,omitempty"`
-	Frames []StackFrame           `json:"frames,omitempty"`
-	Hints  []string               `json:"hints,omitempty"`
-	Tags   map[string]interface{} `json:"tags,omitempty"`
-	Events []Event                `json:"events,omitempty"`
+	Msg    string         `json:"error,omitempty"`
+	Stamp  int64          `json:"stamp,omitzero"`
+	Frames []StackFrame   `json:"frames,omitempty"`
+	Hints  []string       `json:"hints,omitempty"`
+	Tags   map[string]any `json:"tags,omitempty"`
+	Events []Event        `json:"events,omitempty"`
 }
 
 type jsonCodec struct {
@@ -37,9 +38,9 @@ func (c *jsonCodec) Marshal(err error) ([]byte, error) {
 		rec.Events = oe.Events()
 	}
 	if c.pretty {
-		return json.MarshalIndent(rec, "", "  ")
+		return json.Marshal(rec, jsontext.WithIndent("  "), json.Deterministic(true))
 	}
-	return json.Marshal(rec)
+	return json.Marshal(rec, json.Deterministic(true))
 }
 
 func (c *jsonCodec) Unmarshal(src []byte) error {

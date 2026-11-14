@@ -4,7 +4,7 @@ This file provides essential information for AI agents working with this Go mono
 
 ## Project Overview
 
-- **Language**: Go 1.25.4
+- **Language**: Go 1.27.0
 - **Module**: `go.bryk.io/pkg`
 - **Type**: Public library collection (crypto, logging, CLI tools, networking, etc.)
 - **Status**: Under heavy development - APIs may change

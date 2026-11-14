@@ -1,7 +1,7 @@
 package jwt
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"strings"
 
@@ -12,7 +12,7 @@ import (
 // Token represents a specific JWT token instance.
 type Token struct {
 	he Header
-	pl interface{}
+	pl any
 	sg []byte
 }
 
@@ -95,7 +95,7 @@ func (t *Token) RegisteredClaims() (RegisteredClaims, error) {
 
 // Decode will load the token payload segment (i.e., claims content) into the
 // provided holder.
-func (t *Token) Decode(v interface{}) error {
+func (t *Token) Decode(v any) error {
 	pb, err := json.Marshal(t.pl)
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (t *Token) Validate(checks ...Check) error {
 //   - "/custom/list/0"
 //
 // https://datatracker.ietf.org/doc/html/rfc6901
-func (t *Token) Get(jp string) (interface{}, error) {
+func (t *Token) Get(jp string) (any, error) {
 	p, err := xjson.ParseJP(jp)
 	if err != nil {
 		return nil, err
@@ -152,5 +152,5 @@ func (t *Token) material() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []byte(fmt.Sprintf("%s.%s", hb, pb)), nil
+	return fmt.Appendf(nil, "%s.%s", hb, pb), nil
 }

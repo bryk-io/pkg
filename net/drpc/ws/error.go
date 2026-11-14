@@ -1,7 +1,7 @@
 package ws
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 
 	"storj.io/drpc/drpcerr"
@@ -12,7 +12,7 @@ type proxyErr struct {
 	err    error
 }
 
-func newProxyErr(status int, format string, args ...interface{}) *proxyErr {
+func newProxyErr(status int, format string, args ...any) *proxyErr {
 	return wrapErr(status, fmt.Errorf(format, args...))
 }
 
@@ -37,7 +37,7 @@ func (pe *proxyErr) JSON() string {
 	if dc := drpcerr.Code(pe.err); dc != 0 {
 		code = fmt.Sprintf("drpcerr(%d)", dc)
 	}
-	data, _ := json.Marshal(map[string]interface{}{
+	data, _ := json.Marshal(map[string]any{
 		"code": code,
 		"msg":  pe.err.Error(),
 	})

@@ -55,9 +55,9 @@ func makePolynomial(intercept, degree uint8) (polynomial, error) {
 func interpolatePolynomial(xSamples, ySamples []uint8, x uint8) (uint8, error) {
 	limit := len(xSamples)
 	var result, basis uint8
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		basis = 1
-		for j := 0; j < limit; j++ {
+		for j := range limit {
 			if i == j {
 				continue
 			}
@@ -98,7 +98,7 @@ func inverse(b uint8) (uint8, error) {
 	result := uint8(1)
 	base := b
 	// 254 = 0b11111110: square-and-multiply over the fixed exponent.
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		if 254&(1<<i) != 0 {
 			result = multiply(result, base)
 		}
@@ -111,7 +111,7 @@ func inverse(b uint8) (uint8, error) {
 // the inputs: the number of iterations is fixed and there are no branches or
 // memory accesses depending on the values of a or b.
 func multiply(a, b uint8) (out uint8) {
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		// Select a when the current bit of b is set, without branching.
 		mask := uint8(-int8(b & 1))
 		out ^= a & mask

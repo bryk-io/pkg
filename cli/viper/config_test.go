@@ -62,13 +62,13 @@ func TestConfigHandler(t *testing.T) {
 		assert.Equal(9191, vp.GetInt("http.port"))
 
 		// Unmarshal full settings
-		exp := make(map[string]interface{})
+		exp := make(map[string]any)
 		assert.Nil(conf.Unmarshal(&exp, ""), "unmarshal")
 		assert.NotNil(exp["http"])
 		exp = nil
 
 		// Unmarshal settings section
-		exp = make(map[string]interface{})
+		exp = make(map[string]any)
 		assert.Nil(conf.Unmarshal(&exp, "middleware.cors"), "unmarshal")
 		assert.Nil(exp["http"])
 	})
@@ -95,13 +95,13 @@ func TestConfigHandler(t *testing.T) {
 		assert.Equal(9191, vp.GetInt("http.port"))
 
 		// Unmarshal full settings
-		exp := make(map[string]interface{})
+		exp := make(map[string]any)
 		assert.Nil(conf.Unmarshal(&exp, ""), "unmarshal")
 		assert.NotNil(exp["http"])
 		exp = nil
 
 		// Unmarshal settings section
-		exp = make(map[string]interface{})
+		exp = make(map[string]any)
 		assert.Nil(conf.Unmarshal(&exp, "middleware.cors"), "unmarshal")
 		assert.Nil(exp["http"])
 	})

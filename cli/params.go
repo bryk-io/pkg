@@ -25,7 +25,7 @@ type Param struct {
 	// Default value to use for the parameter, the type of the default value will
 	// determine the expected type for the parameter. Supported types are:
 	// int, int32, int64 uint32, uint64, string, bool, []string
-	ByDefault interface{}
+	ByDefault any
 
 	// If provided the parameter can be provided using a shorthand letter that can
 	// be used after a single dash. Must be unique.

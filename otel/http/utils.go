@@ -1,17 +1,14 @@
 package otelhttp
 
+import "slices"
+
 import "net/http"
 
 // FilterByPath will omit instrumentation for requests that match any
 // of the provided paths.
 func FilterByPath(paths []string) Filter {
 	return func(r *http.Request) bool {
-		for _, path := range paths {
-			if r.URL.Path == path {
-				return false
-			}
-		}
-		return true
+		return !slices.Contains(paths, r.URL.Path)
 	}
 }
 

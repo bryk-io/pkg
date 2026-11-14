@@ -7,14 +7,11 @@ import (
 
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/crypto/x25519"
-	"go.uber.org/goleak"
+	"go.bryk.io/pkg/internal/leaktest"
 )
 
 func TestMain(m *testing.M) {
-	// The method "github.com/awnumar/memguard/core.NewCoffer" currently
-	// leaks a routine used to re-key the global enclave handler.
-	// https://github.com/awnumar/memguard/blob/master/core/coffer.go#L36
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/awnumar/memguard/core.NewCoffer.func1"))
+	leaktest.VerifyTestMain(m)
 }
 
 func TestNew(t *testing.T) {

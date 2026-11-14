@@ -1,7 +1,7 @@
 package json
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"strconv"
 	"strings"
 
@@ -66,15 +66,15 @@ func escapeRT(rt string) string {
 // turning '~01' first into '~1' and then into '/', which would be
 // incorrect (the string '~01' correctly becomes '~1' after
 // transformation).
-func evalRT(rt string, data interface{}) (interface{}, error) {
+func evalRT(rt string, data any) (any, error) {
 	switch ch := data.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		v := ch[rt]
 		if v == nil {
 			return nil, errors.Errorf("invalid reference token: %s", rt)
 		}
 		return v, nil
-	case []interface{}:
+	case []any:
 		i, err := strconv.Atoi(rt)
 		if err != nil {
 			return nil, errors.Errorf("invalid array index: %s", rt)
@@ -102,7 +102,7 @@ func (p Pointer) String() (str string) {
 // with a reference to the root value of a JSON document and completes
 // with a reference to some value within the document. Each reference
 // token in the JSON Pointer is evaluated sequentially.
-func (p Pointer) Eval(src interface{}) (result any, err error) {
+func (p Pointer) Eval(src any) (result any, err error) {
 	// Get JSON document from original data
 	doc, err := json.Marshal(src)
 	if err != nil {

@@ -2,7 +2,7 @@ package sse
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 
 	"go.bryk.io/pkg/errors"
@@ -23,7 +23,7 @@ type Event struct {
 	name string
 
 	// Payload/contents for the event/message.
-	data interface{}
+	data any
 
 	// Reconnection time. If the connection to the server is lost, the browser
 	// will wait for the specified time (in milliseconds) before attempting to
@@ -43,7 +43,7 @@ func (e Event) Name() string {
 }
 
 // Data returns the event's payload.
-func (e Event) Data() interface{} {
+func (e Event) Data() any {
 	return e.data
 }
 
@@ -72,8 +72,8 @@ func (e Event) Encode() ([]byte, error) {
 }
 
 // Decode the event data into the provided `target` element. If `target`
-// is `nil` or not a pointer this method returns `json.InvalidUnmarshalError`.
-func (e Event) Decode(target interface{}) error {
+// is `nil` or not a pointer an error is returned.
+func (e Event) Decode(target any) error {
 	js, err := json.Marshal(e.data)
 	if err != nil {
 		return err

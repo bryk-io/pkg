@@ -54,7 +54,7 @@ type ChangeEvent struct {
 
 // Decode will load the 'fullDocument' contents of the event instance
 // into the provided 'target' element.
-func (ce *ChangeEvent) Decode(target interface{}) error {
+func (ce *ChangeEvent) Decode(target any) error {
 	// Is there data to decode?
 	if ce.FullDocument == nil {
 		return errors.New("no 'fullDocument' available")

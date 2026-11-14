@@ -2,7 +2,7 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"reflect"
 	"strings"
@@ -279,7 +279,7 @@ func kvAny(k string, value any) attribute.KeyValue {
 	case reflect.String:
 		return attribute.String(k, rv.String())
 	default:
-		if b, err := json.Marshal(value); b != nil && err == nil {
+		if b, err := json.Marshal(value, json.Deterministic(true)); b != nil && err == nil {
 			return attribute.String(k, string(b))
 		}
 		return attribute.String(k, fmt.Sprint(value))

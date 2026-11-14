@@ -15,7 +15,7 @@ import (
 //     value set as the root cause for the new error instance.
 //
 // The stacktrace will point to the line of code that called this function.
-func New(e interface{}) error {
+func New(e any) error {
 	if e == nil {
 		return nil
 	}
@@ -91,7 +91,7 @@ func WithStackAt(err error, at int) error {
 // It is invalid to include more than one `%w` verb or to supply it with an
 // operand that does not implement the `error` interface. The `%w` verb is
 // otherwise a synonym for `%v`.
-func Errorf(format string, args ...interface{}) error {
+func Errorf(format string, args ...any) error {
 	// Use fmt.Errorf to create the error - this handles %w properly
 	formattedErr := fmt.Errorf(format, args...)
 
@@ -114,7 +114,7 @@ func Errorf(format string, args ...interface{}) error {
 
 // Wrapf returns a wrapped version of the provided error using a formatted
 // string as prefix.
-func Wrapf(err error, format string, args ...interface{}) error {
+func Wrapf(err error, format string, args ...any) error {
 	return Wrap(err, fmt.Sprintf(format, args...))
 }
 
@@ -168,7 +168,7 @@ func Cause(err error) error {
 // to `target`, which must be a pointer. If it succeeds, it performs the
 // assignment and returns true. Otherwise, it returns false. `target` must
 // be a pointer to an interface or to a type implementing the error interface.
-func As(err error, target interface{}) bool {
+func As(err error, target any) bool {
 	if target == nil {
 		return false
 	}

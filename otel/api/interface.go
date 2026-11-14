@@ -2,7 +2,7 @@ package api
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"net/http"
 
 	"go.bryk.io/pkg/errors"
@@ -64,7 +64,7 @@ func SpanFromContext(ctx context.Context) Span {
 func Export(ctx context.Context) ([]byte, error) {
 	md := propagation.MapCarrier{}
 	apiOtel.GetTextMapPropagator().Inject(ctx, md)
-	return json.Marshal(md)
+	return json.Marshal(md, json.Deterministic(true))
 }
 
 // Restore previously exported span context data.

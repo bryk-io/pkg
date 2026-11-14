@@ -72,7 +72,7 @@ func ContextWithMetadata(ctx context.Context, md metadata.MD) context.Context {
 		if vals := md.Get(k); len(vals) > 0 {
 			size := len(vals)
 			nv := make([]string, size)
-			for i := 0; i < size; i++ {
+			for i := range size {
 				nv[i] = strings.TrimSpace(vals[i])
 			}
 			md.Set(k, nv...)

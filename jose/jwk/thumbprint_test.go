@@ -3,7 +3,7 @@ package jwk
 import (
 	"crypto"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/json/v2"
 	"os"
 	"strings"
 	"testing"
@@ -345,7 +345,7 @@ func BenchmarkThumbprintRSA(b *testing.B) {
 		E:       "AQAB",
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = rec.Thumbprint(crypto.SHA256)
 	}
 }
@@ -358,7 +358,7 @@ func BenchmarkThumbprintEC(b *testing.B) {
 		Y:       "x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",
 	}
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _ = rec.Thumbprint(crypto.SHA256)
 	}
 }

@@ -33,7 +33,7 @@ func PipelineCollection() mongo.Pipeline {
 func PipelineUpdateDocument(oid primitive.ObjectID) mongo.Pipeline {
 	var doc mongo.Pipeline
 	buf := bytes.NewBuffer(nil)
-	_ = tplUpdateDocument.Execute(buf, map[string]interface{}{"ID": oid})
+	_ = tplUpdateDocument.Execute(buf, map[string]any{"ID": oid})
 	_ = bson.UnmarshalExtJSON(buf.Bytes(), false, &doc)
 	return doc
 }

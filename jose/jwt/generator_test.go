@@ -171,7 +171,7 @@ func standardMethods() []jwa.Alg {
 type customData struct {
 	Username string      `json:"username,omitempty"`
 	Email    string      `json:"email,omitempty"`
-	Metadata nestedValue `json:"metadata,omitempty"`
+	Metadata nestedValue `json:"metadata"`
 }
 
 type nestedValue struct {

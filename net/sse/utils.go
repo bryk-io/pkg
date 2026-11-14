@@ -3,7 +3,7 @@ package sse
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
+	"encoding/json/v2"
 	"strconv"
 	"strings"
 )

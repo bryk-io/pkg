@@ -29,10 +29,10 @@ func init() {
 //	%s   return the redacted version of the message.
 //	%v   return the redacted version of the message.
 //	%+v  return the full version of the message.
-func SensitiveMessage(format string, args ...interface{}) Redactable {
+func SensitiveMessage(format string, args ...any) Redactable {
 	return pii{
 		format:   format,
-		args:     append([]interface{}{}, args...),
+		args:     append([]any{}, args...),
 		redacted: ecr.ReplaceAllString(format, piiMarker),
 	}
 }
@@ -50,7 +50,7 @@ type Redactable interface {
 
 type pii struct {
 	format   string
-	args     []interface{}
+	args     []any
 	redacted string
 }
 

@@ -119,12 +119,12 @@ func (c *Config) Read(src io.Reader) error {
 }
 
 // Get the value registered for `key`, if any.
-func (c *Config) Get(key string) interface{} {
+func (c *Config) Get(key string) any {
 	return c.vp.Get(key)
 }
 
 // Set the provided `key` to `value`.
-func (c *Config) Set(key string, value interface{}) {
+func (c *Config) Set(key string, value any) {
 	c.vp.Set(key, value)
 }
 
@@ -136,7 +136,7 @@ func (c *Config) IsSet(key string) bool {
 // Unmarshal will load configuration values into `receiver`; which must be a
 // pointer. A `key` value can be provided to load a specific subsection of the
 // settings available.
-func (c *Config) Unmarshal(receiver interface{}, key string) error {
+func (c *Config) Unmarshal(receiver any, key string) error {
 	if key != "" {
 		return c.vp.UnmarshalKey(key, receiver)
 	}

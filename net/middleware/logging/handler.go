@@ -107,7 +107,7 @@ func getLevel(status int) xlog.Level {
 }
 
 func getFields(r *http.Request) metadata.MD {
-	data := metadata.FromMap(map[string]interface{}{
+	data := metadata.FromMap(map[string]any{
 		"user_agent.original":     r.UserAgent(),
 		"client.ip":               getIP(r),
 		"client.packets":          r.ContentLength,

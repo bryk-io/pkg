@@ -1,7 +1,7 @@
 package konf
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"errors"
 	"os"
 	"path"
@@ -119,7 +119,10 @@ func getUnmarshal(extension string) (tag string, mf func([]byte, any) error, err
 	case ".yml":
 		return "yaml", yaml.Unmarshal, nil
 	case ".json":
-		return "json", json.Unmarshal, nil
+		return "json", func(data []byte, v any) error {
+			// Keep the case-insensitive field matching provided by v1.
+			return json.Unmarshal(data, v, json.MatchCaseInsensitiveNames(true))
+		}, nil
 	}
 	return "", nil, errors.New("unsupported file format")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"html"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -128,10 +129,5 @@ func sanitize(src string) string {
 }
 
 func isValidContentType(ct string) bool {
-	for _, el := range supportContentTypes {
-		if ct == el {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(supportContentTypes, ct)
 }

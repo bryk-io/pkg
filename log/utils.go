@@ -63,10 +63,7 @@ func fields(md ...metadata.MD) []any {
 	values := fields.Values()
 
 	// ensure max number of fields is not exceeded
-	size := len(values) * 2
-	if size > maxFields {
-		size = maxFields
-	}
+	size := min(len(values)*2, maxFields)
 
 	// build the list of fields
 	i := 0

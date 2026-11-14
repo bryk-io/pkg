@@ -48,7 +48,7 @@ func NewStream(name string, opts ...StreamOption) (*Stream, error) {
 
 // SendEvent broadcast an event with the provided `name` and `payload`
 // to the stream clients.
-func (st *Stream) SendEvent(name string, payload interface{}) {
+func (st *Stream) SendEvent(name string, payload any) {
 	st.push(Event{
 		name:  name,
 		data:  payload,
@@ -58,7 +58,7 @@ func (st *Stream) SendEvent(name string, payload interface{}) {
 
 // SendMessage broadcast a message with the provided `payload` to the
 // stream clients.
-func (st *Stream) SendMessage(payload interface{}) {
+func (st *Stream) SendMessage(payload any) {
 	st.push(Event{
 		data:  payload,
 		retry: st.retry,

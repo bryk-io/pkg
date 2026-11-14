@@ -57,7 +57,7 @@ func (s *Handler) Request(ctx context.Context, _ *empty.Empty) (*Response, error
 
 // OpenServerStream starts a streaming operation on the server side.
 func (s *Handler) OpenServerStream(_ *empty.Empty, stream FooAPI_OpenServerStreamServer) error {
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		t := <-time.After(100 * time.Millisecond) // random latency
 		c := &GenericStreamChunk{
 			Sender: s.Name,
@@ -105,9 +105,6 @@ func ri(minV, maxV int) int {
 	if err != nil {
 		return 0 + minV
 	}
-	res := int(r.Int64()) + minV
-	if res > maxV {
-		res = maxV
-	}
+	res := min(int(r.Int64())+minV, maxV)
 	return res
 }

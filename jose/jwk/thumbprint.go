@@ -2,7 +2,7 @@ package jwk
 
 import (
 	"crypto"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"sort"
 	"strings"
@@ -255,7 +255,7 @@ func (r *Record) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	return json.Marshal(alias)
+	return json.Marshal(alias, json.Deterministic(true))
 }
 
 // hashAlgorithmName returns the algorithm name for use in URIs.

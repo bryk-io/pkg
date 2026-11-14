@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"uuid"
 
-	"github.com/google/uuid"
 	driver "github.com/rabbitmq/amqp091-go"
 	"go.bryk.io/pkg/errors"
 	xlog "go.bryk.io/pkg/log"

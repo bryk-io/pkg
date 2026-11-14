@@ -17,19 +17,19 @@ import (
 	"github.com/gorilla/websocket"
 	tdd "github.com/stretchr/testify/assert"
 	"go.bryk.io/pkg/errors"
+	"go.bryk.io/pkg/internal/leaktest"
 	xlog "go.bryk.io/pkg/log"
 	clMW "go.bryk.io/pkg/net/drpc/middleware/client"
 	srvMW "go.bryk.io/pkg/net/drpc/middleware/server"
 	"go.bryk.io/pkg/net/drpc/ws"
 	sampleV1 "go.bryk.io/pkg/proto/sample/v1"
-	"go.uber.org/goleak"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"storj.io/drpc"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	leaktest.VerifyTestMain(m)
 }
 
 func TestMetadata(t *testing.T) {
@@ -48,10 +48,10 @@ func TestPool(t *testing.T) {
 	// uninteresting pool of random integers between 0 and 100
 	ri := &pool{
 		limit: 2,
-		new: func() (interface{}, error) {
+		new: func() (any, error) {
 			return rand.Intn(100), nil
 		},
-		free: func(_ interface{}) error {
+		free: func(_ any) error {
 			return nil
 		},
 	}
@@ -171,7 +171,7 @@ func TestServer(t *testing.T) {
 			// Simulate a randomly slow RPC client
 			startWorker := func(cl *Client, wg *sync.WaitGroup) {
 				wk := sampleV1.NewDRPCFooAPIClient(cl)
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					<-time.After(time.Duration(rand.Intn(100)) * time.Millisecond)
 					_, err := wk.Ping(context.Background(), &emptypb.Empty{})
 					assert.Nil(err)
@@ -182,7 +182,7 @@ func TestServer(t *testing.T) {
 			// Run 'x' number of concurrent RPC clients
 			run := func(x int, cl *Client, wg *sync.WaitGroup) {
 				wg.Add(x)
-				for i := 0; i < x; i++ {
+				for range x {
 					go startWorker(cl, wg)
 				}
 			}
@@ -644,7 +644,7 @@ func TestServer(t *testing.T) {
 					Sender: "client-1",
 					Stamp:  time.Now().Unix(),
 				}
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					<-time.After(100 * time.Millisecond)
 					msg.Stamp = time.Now().Unix()
 					if err := ss.Send(msg); err != nil {
@@ -711,7 +711,7 @@ func TestServer(t *testing.T) {
 
 				// Send messages
 				var ce *websocket.CloseError
-				for i := 0; i < 10; i++ {
+				for range 10 {
 					<-time.After(100 * time.Millisecond)
 					msg.Stamp = time.Now().Unix()
 					msgData, _ := jsM.Marshal(msg)
@@ -798,7 +798,7 @@ func (fsp *fooServiceProvider) Faulty(_ context.Context, _ *emptypb.Empty) (*sam
 
 func (fsp *fooServiceProvider) OpenServerStream(_ *emptypb.Empty, stream sampleV1.DRPCFooAPI_OpenServerStreamStream) error {
 	// Send 10 messages to the client
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		t := <-time.After(100 * time.Millisecond)
 		c := &sampleV1.GenericStreamChunk{
 			Sender: fsp.Name,

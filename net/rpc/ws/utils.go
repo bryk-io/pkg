@@ -1,7 +1,7 @@
 package ws
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,8 +10,8 @@ import (
 )
 
 type chuckWrapper struct {
-	Result interface{} `json:"result"`
-	Error  string      `json:"error"`
+	Result any    `json:"result"`
+	Error  string `json:"error"`
 }
 
 // Remove the result wrapper added by the gateway to stream chunks.

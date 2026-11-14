@@ -145,7 +145,7 @@ func (srv *Server) Stop() error {
 
 // RegisterService associates the RPCs described by `desc` to the provided `impl`
 // element and exposes them through the server instance.
-func (srv *Server) RegisterService(impl interface{}, desc drpc.Description) error {
+func (srv *Server) RegisterService(impl any, desc drpc.Description) error {
 	return srv.mux.Register(impl, desc)
 }
 

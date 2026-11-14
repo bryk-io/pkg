@@ -16,12 +16,12 @@ func ParseID(id string) (primitive.ObjectID, error) {
 
 // Filter provides a simple shortcut for a commonly used filter value
 // when no fields are specified.
-func Filter() map[string]interface{} {
-	return map[string]interface{}{}
+func Filter() map[string]any {
+	return map[string]any{}
 }
 
 // Returns a properly encoded BSON document.
-func doc(filter map[string]interface{}) (bson.D, error) {
+func doc(filter map[string]any) (bson.D, error) {
 	data, err := bson.Marshal(filter)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func doc(filter map[string]interface{}) (bson.D, error) {
 }
 
 // Verify the provided element is of the expected kind.
-func checkType(el interface{}, expected reflect.Kind, desc string) error {
+func checkType(el any, expected reflect.Kind, desc string) error {
 	rv := reflect.ValueOf(el)
 	if rv.Kind() != expected {
 		return fmt.Errorf("target must be a %s, but was a %s", desc, rv.Kind())

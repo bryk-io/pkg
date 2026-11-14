@@ -48,7 +48,7 @@ type TokenParameters struct {
 	// Additional public and private claims to be added/expected on the JWT payload,
 	// optional. If any key in the custom claims conflicts with an existing registered
 	// claim, the latter will take precedence and override the custom value.
-	CustomClaims interface{}
+	CustomClaims any
 
 	// Produced when parsing 'NotBefore'.
 	nbf time.Duration

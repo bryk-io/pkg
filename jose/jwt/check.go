@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"slices"
 	"time"
 
 	"go.bryk.io/pkg/errors"
@@ -41,10 +42,8 @@ func AudienceCheck(aud []string) Check {
 			return err
 		}
 		for _, serverAud := range aud {
-			for _, clientAud := range pl.Audience {
-				if clientAud == serverAud {
-					return nil
-				}
+			if slices.Contains(pl.Audience, serverAud) {
+				return nil
 			}
 		}
 		return errors.New(ErrAudValidation)

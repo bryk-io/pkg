@@ -4,7 +4,7 @@ package sentry
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"strings"
 	"sync"
@@ -177,7 +177,7 @@ func updateTransactionWithOtelData(transaction *sdk.Span, s sdkTrace.ReadOnlySpa
 	for _, kv := range s.Resource().Attributes() {
 		resource[kv.Key] = asString(kv.Value)
 	}
-	otelCtx := map[string]interface{}{"Resource": resource}
+	otelCtx := map[string]any{"Resource": resource}
 	if len(attributes) > 0 {
 		otelCtx["Attributes"] = attributes
 	}
@@ -226,7 +226,7 @@ func linkTraceContextToErrorEvent(event *sdk.Event, hint *sdk.EventHint) *sdk.Ev
 
 	traceContext, found := event.Contexts["trace"]
 	if !found {
-		event.Contexts["trace"] = make(map[string]interface{})
+		event.Contexts["trace"] = make(map[string]any)
 		traceContext = event.Contexts["trace"]
 	}
 	traceContext["trace_id"] = sentrySpan.TraceID.String()
@@ -304,7 +304,7 @@ func asBreadcrumb(ev sdkTrace.Event) *sdk.Breadcrumb {
 	kind := "debug"
 	level := "debug"
 	category := "event"
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 	if k, ok := attrs["event.kind"]; ok {
 		kind = fmt.Sprintf("%v", k)
 	}

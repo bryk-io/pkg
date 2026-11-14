@@ -1,6 +1,7 @@
 package paseto
 
 import (
+	"slices"
 	"time"
 
 	"go.bryk.io/pkg/errors"
@@ -88,10 +89,8 @@ func AudienceCheck(aud []string) Check {
 			return err
 		}
 		for _, serverAud := range aud {
-			for _, clientAud := range rc.Audience {
-				if clientAud == serverAud {
-					return nil
-				}
+			if slices.Contains(rc.Audience, serverAud) {
+				return nil
 			}
 		}
 		return errors.New(ErrAudValidation)
@@ -134,10 +133,8 @@ func AuthenticationMethodCheck(amr string) Check {
 		if err != nil {
 			return err
 		}
-		for _, el := range rc.AuthenticationMethod {
-			if el == amr {
-				return nil
-			}
+		if slices.Contains(rc.AuthenticationMethod, amr) {
+			return nil
 		}
 		return errors.New(ErrAmrValidation)
 	}

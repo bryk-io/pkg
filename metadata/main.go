@@ -1,24 +1,26 @@
 package metadata
 
+import "maps"
+
 import "sync"
 
 // MD provides a basic dataset that is safe to use concurrently.
 type MD struct {
-	data map[string]interface{}
+	data map[string]any
 	mu   *sync.RWMutex
 }
 
 // New returns an empty metadata set.
 func New() MD {
 	return MD{
-		data: make(map[string]interface{}),
+		data: make(map[string]any),
 		mu:   new(sync.RWMutex),
 	}
 }
 
 // FromMap creates a new metadata set and populates with the
 // provided `src` data.
-func FromMap(src map[string]interface{}) MD {
+func FromMap(src map[string]any) MD {
 	md := New()
 	md.Load(src)
 	return md
@@ -32,7 +34,7 @@ func (m MD) Copy() MD {
 }
 
 // Get the value of a single data entry, return nil if no value is set.
-func (m MD) Get(key string) interface{} {
+func (m MD) Get(key string) any {
 	m.mu.RLock()
 	v, ok := m.data[key]
 	m.mu.RUnlock()
@@ -44,7 +46,7 @@ func (m MD) Get(key string) interface{} {
 
 // Set a single data entry, override any value previously set for the
 // same key.
-func (m MD) Set(key string, value interface{}) {
+func (m MD) Set(key string, value any) {
 	m.mu.Lock()
 	m.data[key] = value
 	m.mu.Unlock()
@@ -61,16 +63,14 @@ func (m MD) Delete(key ...string) {
 }
 
 // Load the provided list of values; overriding any previously set entries.
-func (m MD) Load(src map[string]interface{}) {
+func (m MD) Load(src map[string]any) {
 	m.mu.Lock()
-	for k, v := range src {
-		m.data[k] = v
-	}
+	maps.Copy(m.data, src)
 	m.mu.Unlock()
 }
 
 // Values returns all values currently registered in the fields handler.
-func (m MD) Values() map[string]interface{} {
+func (m MD) Values() map[string]any {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.data
@@ -100,9 +100,7 @@ func (m MD) Join(other ...MD) {
 		if b.IsEmpty() {
 			continue
 		}
-		for k, v := range b.data {
-			m.data[k] = v
-		}
+		maps.Copy(m.data, b.data)
 	}
 	m.mu.Unlock()
 }

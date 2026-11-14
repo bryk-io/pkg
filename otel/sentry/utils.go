@@ -2,7 +2,7 @@ package sentry
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/v2"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -112,11 +112,7 @@ func (sr *sourceReader) calculateContextLines(lines [][]byte, line, context int)
 		start = 0
 	}
 
-	end := line + context + 1
-
-	if end > len(lines) {
-		end = len(lines)
-	}
+	end := min(line+context+1, len(lines))
 
 	return lines[start:end], contextLine
 }
@@ -134,11 +130,11 @@ func asString(v attribute.Value) string {
 	case attribute.STRING:
 		res = v.AsString()
 	case attribute.MAP:
-		js, _ := json.Marshal(v.AsMap())
+		js, _ := json.Marshal(v.AsMap(), json.Deterministic(true))
 		res = string(js)
 	case attribute.BOOLSLICE, attribute.FLOAT64SLICE, attribute.INT64SLICE,
 		attribute.STRINGSLICE, attribute.BYTESLICE, attribute.SLICE:
-		js, _ := json.Marshal(v.AsInterface())
+		js, _ := json.Marshal(v.AsInterface(), json.Deterministic(true))
 		res = string(js)
 	case attribute.EMPTY:
 		res = "-"

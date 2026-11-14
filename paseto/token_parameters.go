@@ -1,7 +1,7 @@
 package paseto
 
 import (
-	"encoding/json"
+	"encoding/json/v2"
 	"time"
 
 	"go.bryk.io/pkg/errors"
@@ -36,11 +36,11 @@ type TokenParameters struct {
 	// optional. If any key in the custom claims conflicts with an existing registered
 	// claim, the latter will take precedence and override the custom value.
 	// https://tools.ietf.org/html/draft-paragon-paseto-rfc-00#section-6
-	CustomClaims interface{} `json:"payload,omitempty"`
+	CustomClaims any `json:"payload,omitempty"`
 
 	// Footer content, optional. If provided this claims will be JSON encoded an included
 	// in the token's footer segment.
-	Footer interface{} `json:"footer,omitempty"`
+	Footer any `json:"footer,omitempty"`
 
 	// The principal that is the subject of the token, required.
 	Subject string `json:"subject"`
@@ -127,7 +127,7 @@ func (tp *TokenParameters) getFooter(key string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Errorf("failed to encode footer claims: %w", err)
 	}
-	return json.Marshal(ftr)
+	return json.Marshal(ftr, json.Deterministic(true))
 }
 
 // Merge the user's provided custom claims with the required payload
@@ -141,7 +141,7 @@ func (tp *TokenParameters) getPayload(issuer string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	pldB, err := json.Marshal(pld)
+	pldB, err := json.Marshal(pld, json.Deterministic(true))
 	if err != nil {
 		return nil, err
 	}

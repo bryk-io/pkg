@@ -11,8 +11,9 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
+	"encoding/json/v2"
 	"io"
+	"slices"
 	"strings"
 
 	"dario.cat/mergo"
@@ -29,17 +30,12 @@ var b64 = base64.RawURLEncoding
 
 // Is "v" part of the provided list?
 func in(v string, list []string) bool {
-	for _, k := range list {
-		if k == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, v)
 }
 
 // Flatten the provided items into a single map structure.
-func merge(item ...interface{}) (map[string]interface{}, error) {
-	dst := make(map[string]interface{})
+func merge(item ...any) (map[string]any, error) {
+	dst := make(map[string]any)
 	for _, el := range item {
 		// Ignore "nil" elements
 		if el == nil {
@@ -50,7 +46,7 @@ func merge(item ...interface{}) (map[string]interface{}, error) {
 		if err != nil {
 			return nil, errors.New("failed to encode item")
 		}
-		m := make(map[string]interface{})
+		m := make(map[string]any)
 		if err := json.Unmarshal(b, &m); err != nil {
 			return nil, errors.New("failed to re-encode item")
 		}
