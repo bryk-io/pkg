@@ -9,13 +9,13 @@ a client and server implementation using ogen.
 * Install `ogen`
 
 ```bash
-go install -v github.com/ogen-go/ogen/cmd/ogen@latest
+go get -tool github.com/ogen-go/ogen/cmd/ogen@latest
 ```
 
 * Generate the client and server implementation from your schema file
 
 ```bash
-ogen -target petstore -clean petstore.yml
+go tool ogen -target petstore -clean petstore.yml
 ```
 
 * Write a service implementation that conforms to the generated interface
